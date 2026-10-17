@@ -1,32 +1,21 @@
-import { NativeTabs } from 'expo-router/unstable-native-tabs';
-import { useColorScheme } from 'react-native';
+import { Tabs } from 'expo-router';
 
-import { Colors } from '@/constants/theme';
+import { BottomTabBar } from '@/components/navigation/bottom-tab-bar';
+import { MOCK_PROFILE } from '@/components/profile/profile-data';
 
 export default function AppTabs() {
-  const scheme = useColorScheme();
-  const colors = Colors[scheme === 'unspecified' ? 'light' : scheme];
-
   return (
-    <NativeTabs
-      backgroundColor={colors.background}
-      indicatorColor={colors.backgroundElement}
-      labelStyle={{ selected: { color: colors.text } }}>
-      <NativeTabs.Trigger name="index">
-        <NativeTabs.Trigger.Label>Home</NativeTabs.Trigger.Label>
-        <NativeTabs.Trigger.Icon
-          src={require('@/assets/images/tabIcons/home.png')}
-          renderingMode="template"
+    <Tabs
+      screenOptions={{ headerShown: false }}
+      tabBar={({ state }) => (
+        <BottomTabBar
+          activeKey={state.routes[state.index].name}
+          avatar={MOCK_PROFILE.avatarUri}
+          companyLogo={MOCK_PROFILE.companyLogoUri}
         />
-      </NativeTabs.Trigger>
-
-      <NativeTabs.Trigger name="explore">
-        <NativeTabs.Trigger.Label>Explore</NativeTabs.Trigger.Label>
-        <NativeTabs.Trigger.Icon
-          src={require('@/assets/images/tabIcons/explore.png')}
-          renderingMode="template"
-        />
-      </NativeTabs.Trigger>
-    </NativeTabs>
+      )}>
+      {/* Explore se conserva como ruta pero fuera de la barra. */}
+      <Tabs.Screen name="explore" options={{ href: null }} />
+    </Tabs>
   );
 }
