@@ -1,5 +1,7 @@
 import { Host, TextInput, type TextInputProps as ExpoTextInputProps } from '@expo/ui';
-import { StyleSheet, View } from 'react-native';
+import { semantics } from '@expo/ui/jetpack-compose/modifiers';
+import { accessibilityLabel } from '@expo/ui/swift-ui/modifiers';
+import { Platform, StyleSheet, View } from 'react-native';
 import {
   useController,
   type Control,
@@ -11,6 +13,17 @@ import {
 import { ThemedText } from '@/components/themed-text';
 import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
+
+// @expo/ui's TextInput has no accessibilityLabel prop — it's a SwiftUI/Jetpack Compose
+// view, not a standard RN host component. The `modifiers` escape hatch is the real way
+// in, confirmed against @expo/ui 57.0.25's source (the version this bumped to; 57.0.20
+// had no `contentDescription` on Android's `semantics` modifier at all).
+function accessibilityModifiers(label?: string) {
+  if (!label) return [];
+  return Platform.OS === 'ios'
+    ? [accessibilityLabel(label)]
+    : [semantics({ contentDescription: label })];
+}
 
 export type FormInputProps<
   TFieldValues extends FieldValues,
@@ -29,6 +42,7 @@ export function FormInput<
   const theme = useTheme();
   const { field, fieldState } = useController({ control, name, rules });
   const { ref, value, onChange, onBlur } = field;
+  const { modifiers: callerModifiers, ...restInputProps } = inputProps;
 
   return (
     <View style={styles.container}>
@@ -54,7 +68,8 @@ export function FormInput<
             paddingVertical: Spacing.two,
           }}
           textStyle={{ color: theme.text, fontSize: 15 }}
-          {...inputProps}
+          modifiers={[...accessibilityModifiers(label), ...(callerModifiers ?? [])]}
+          {...restInputProps}
         />
       </Host>
 

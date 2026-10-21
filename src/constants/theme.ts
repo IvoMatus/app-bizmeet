@@ -39,6 +39,11 @@ export const Colors = {
     buttonDark: '#0c1d32',
     onButtonDark: '#ffffff',
     accentSoft: 'rgba(29, 150, 172, 0.15)',
+    // Mis Empresas (Figma "Mis Empresas - Listado Corporativo", modo claro)
+    offerSoft: 'rgba(12, 110, 127, 0.1)',
+    offerIconSoft: 'rgba(12, 110, 127, 0.2)',
+    seekSoft: 'rgba(31, 143, 25, 0.1)',
+    seekIconSoft: 'rgba(31, 143, 25, 0.2)',
   },
   dark: {
     text: '#ffffff',
@@ -70,6 +75,11 @@ export const Colors = {
     buttonDark: '#15406a',
     onButtonDark: '#ffffff',
     accentSoft: 'rgba(91, 198, 216, 0.15)',
+    // Mis Empresas (Figma "Mis Empresas - Listado Corporativo", modo oscuro)
+    offerSoft: 'rgba(29, 150, 172, 0.1)',
+    offerIconSoft: 'rgba(29, 150, 172, 0.2)',
+    seekSoft: 'rgba(42, 187, 34, 0.1)',
+    seekIconSoft: 'rgba(42, 187, 34, 0.2)',
   },
 } as const;
 

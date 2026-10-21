@@ -8,6 +8,7 @@ import { PrimaryButton } from '@/components/register/primary-button';
 import { ThemedText } from '@/components/themed-text';
 import { showAlert } from '@/components/ui/app-alert';
 import { FormInput } from '@/components/ui/form-input';
+import { useAccessibilityFocusOnMount } from '@/hooks/use-accessibility-focus-on-mount';
 import { getClerkErrorMessage } from '@/utils/clerk-error';
 
 type LoginForm = {
@@ -21,6 +22,7 @@ export default function LoginScreen() {
   const { control, handleSubmit } = useForm<LoginForm>({
     defaultValues: { email: '', password: '' },
   });
+  const headingRef = useAccessibilityFocusOnMount();
 
   async function onSubmit(data: LoginForm) {
     setSubmitting(true);
@@ -50,7 +52,9 @@ export default function LoginScreen() {
 
   return (
     <AuthScreenShell title="Iniciar sesión" onBack={() => router.back()}>
-      <ThemedText type="subtitle">Bienvenido de vuelta</ThemedText>
+      <ThemedText ref={headingRef} type="subtitle" accessibilityRole="header">
+        Bienvenido de vuelta
+      </ThemedText>
       <FormInput
         control={control}
         name="email"

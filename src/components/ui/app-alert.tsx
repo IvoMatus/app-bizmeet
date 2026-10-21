@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react';
-import { Modal, Pressable, StyleSheet, View } from 'react-native';
+import { useEffect, useRef, useState } from 'react';
+import { AccessibilityInfo, findNodeHandle, Modal, Pressable, StyleSheet, View, type Text } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
 import { Spacing } from '@/constants/theme';
@@ -24,6 +24,7 @@ export function showAlert(title: string, message?: string, buttons: AppAlertButt
 export function AppAlertHost() {
   const theme = useTheme();
   const [state, setLocalState] = useState<AlertState>(null);
+  const titleRef = useRef<Text>(null);
 
   useEffect(() => {
     setState = setLocalState;
@@ -32,13 +33,34 @@ export function AppAlertHost() {
     };
   }, []);
 
+  // RN's <Modal> — unlike the native Alert.alert this replaced — doesn't move
+  // VoiceOver/TalkBack focus to its content by itself, so without this a screen
+  // reader user gets no signal that an error/alert just appeared.
+  useEffect(() => {
+    if (!state) return;
+    const tag = findNodeHandle(titleRef.current);
+    if (tag) AccessibilityInfo.setAccessibilityFocus(tag);
+  }, [state]);
+
   if (!state) return null;
 
   return (
     <Modal transparent animationType="fade" visible onRequestClose={() => setLocalState(null)}>
       <View style={styles.backdrop}>
-        <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.border }]}>
-          <ThemedText style={[styles.title, { color: theme.textPrimary }]}>{state.title}</ThemedText>
+        <View
+          style={[styles.card, { backgroundColor: theme.card, borderColor: theme.border }]}
+          accessibilityViewIsModal
+          // ponytail: accessibilityViewIsModal is iOS-only. Trapping TalkBack on Android
+          // would mean marking the rest of the screen importantForAccessibility="no-hide-descendants"
+          // while this is open — a root-layout-level change, not local to this component.
+        >
+          <ThemedText
+            ref={titleRef}
+            style={[styles.title, { color: theme.textPrimary }]}
+            accessibilityRole="alert"
+          >
+            {state.title}
+          </ThemedText>
           {state.message ? (
             <ThemedText type="small" style={{ color: theme.textMuted }}>
               {state.message}
@@ -54,6 +76,7 @@ export function AppAlertHost() {
                   button.onPress?.();
                 }}
                 style={styles.button}
+                accessibilityRole="button"
               >
                 <ThemedText
                   type="smallBold"

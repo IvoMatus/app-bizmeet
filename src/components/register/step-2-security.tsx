@@ -7,6 +7,7 @@ import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { FormInput } from '@/components/ui/form-input';
 import { Spacing } from '@/constants/theme';
+import { useAccessibilityFocusOnMount } from '@/hooks/use-accessibility-focus-on-mount';
 import { useTheme } from '@/hooks/use-theme';
 
 export type SecurityForm = {
@@ -34,6 +35,7 @@ type Step2SecurityProps = {
 export function Step2Security({ onSubmit, submitting }: Step2SecurityProps) {
   const theme = useTheme();
   const { control, handleSubmit, getValues } = useForm<SecurityForm>({ defaultValues });
+  const headingRef = useAccessibilityFocusOnMount();
 
   return (
     <View style={styles.container}>
@@ -44,7 +46,7 @@ export function Step2Security({ onSubmit, submitting }: Step2SecurityProps) {
       </ThemedView>
 
       <View style={styles.headingBlock}>
-        <ThemedText type="subtitle">
+        <ThemedText ref={headingRef} type="subtitle" accessibilityRole="header">
           Crea tu <ThemedText type="subtitle" themeColor="accent">cuenta</ThemedText>
         </ThemedText>
         <ThemedText type="default" themeColor="textMuted">
@@ -80,6 +82,8 @@ export function Step2Security({ onSubmit, submitting }: Step2SecurityProps) {
                 tintColor={theme.success}
                 name={{ ios: 'checkmark.circle.fill', android: 'check_circle', web: 'check' }}
                 size={14}
+                accessibilityElementsHidden
+                importantForAccessibility="no-hide-descendants"
               />
               <ThemedText type="small" themeColor="textMuted">
                 {requirement}
@@ -108,7 +112,8 @@ export function Step2Security({ onSubmit, submitting }: Step2SecurityProps) {
         disabled={submitting}
       />
 
-      <Pressable style={styles.googleLink}>
+      {/* ponytail: onPress de Google sign-in todavía no está implementado (pendiente aparte de a11y) */}
+      <Pressable style={styles.googleLink} accessibilityRole="button">
         <ThemedText type="link" themeColor="accent">
           ¿Prefieres conectar con Google? Acceso directo
         </ThemedText>
@@ -116,6 +121,8 @@ export function Step2Security({ onSubmit, submitting }: Step2SecurityProps) {
           tintColor={theme.accent}
           name={{ ios: 'arrow.up.right.square', android: 'link', web: 'link' }}
           size={12}
+          accessibilityElementsHidden
+          importantForAccessibility="no-hide-descendants"
         />
       </Pressable>
     </View>

@@ -57,6 +57,7 @@ export function OtpInput({ value, onChange }: OtpInputProps) {
           onKeyPress={({ nativeEvent }) => handleKeyPress(index, nativeEvent.key)}
           keyboardType="number-pad"
           textContentType="oneTimeCode"
+          accessibilityLabel={`Código, dígito ${index + 1} de ${LENGTH}`}
           style={[
             styles.box,
             {

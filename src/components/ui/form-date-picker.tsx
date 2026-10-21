@@ -54,6 +54,9 @@ export function FormDatePicker<
     <View style={styles.container}>
       {label && <ThemedText type="smallBold">{label}</ThemedText>}
 
+      {/* ponytail: same @expo/ui gap as form-input.tsx — DateTimePickerProps (SDK 57) only
+          extends Pick<ViewProps, 'style'>, no accessibility prop exists to attach the label
+          above. Not fixable from here; see form-input.tsx for the full note. */}
       {Platform.OS === 'ios' && (
         <DateTimePicker
           value={value}
@@ -67,7 +70,11 @@ export function FormDatePicker<
 
       {Platform.OS === 'android' && (
         <>
-          <Pressable onPress={() => setAndroidPickerOpen(true)}>
+          <Pressable
+            onPress={() => setAndroidPickerOpen(true)}
+            accessibilityRole="button"
+            accessibilityLabel={label}
+            accessibilityValue={{ text: field.value ? formatValue(value) : placeholder }}>
             <ThemedView
               type="card"
               style={[styles.androidField, { borderColor: theme.border, borderWidth: 1 }]}>

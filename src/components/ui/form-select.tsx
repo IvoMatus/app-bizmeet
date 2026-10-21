@@ -60,7 +60,14 @@ export function FormSelect<
     <View style={styles.container}>
       {label && <ThemedText type="smallBold">{label}</ThemedText>}
 
-      <Pressable disabled={!enabled} onPress={() => setOpen(true)}>
+      <Pressable
+        disabled={!enabled}
+        onPress={() => setOpen(true)}
+        accessibilityRole="button"
+        accessibilityLabel={label}
+        accessibilityValue={{ text: selectedLabel ?? placeholder }}
+        accessibilityState={{ disabled: !enabled }}
+      >
         <ThemedView type="card" style={[styles.trigger, { borderColor: theme.border }]}>
           <ThemedText themeColor={selectedLabel ? 'text' : 'textSecondary'}>
             {selectedLabel ?? placeholder}
@@ -81,7 +88,10 @@ export function FormSelect<
                       field.onChange(item.value);
                       setOpen(false);
                     }}
-                    style={styles.option}>
+                    style={styles.option}
+                    accessibilityRole="radio"
+                    accessibilityState={{ selected: item.value === field.value }}
+                    accessibilityLabel={item.label}>
                     <ThemedText themeColor={item.value === field.value ? 'accent' : 'text'}>
                       {item.label}
                     </ThemedText>

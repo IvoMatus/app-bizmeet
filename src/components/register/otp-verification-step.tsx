@@ -7,6 +7,7 @@ import { PrimaryButton } from '@/components/register/primary-button';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Spacing } from '@/constants/theme';
+import { useAccessibilityFocusOnMount } from '@/hooks/use-accessibility-focus-on-mount';
 import { useTheme } from '@/hooks/use-theme';
 
 type OtpVerificationStepProps = {
@@ -48,10 +49,14 @@ export function OtpVerificationStep({
 }: OtpVerificationStepProps) {
   const theme = useTheme();
   const [otp, setOtp] = useState<string[]>(['', '', '', '']);
+  const headingRef = useAccessibilityFocusOnMount();
 
   return (
     <ThemedView type="card" style={[styles.card, { borderColor: theme.border }]}>
-      <View style={[styles.iconCircle, { backgroundColor: theme.cardElevated }]}>
+      <View
+        style={[styles.iconCircle, { backgroundColor: theme.cardElevated }]}
+        accessibilityElementsHidden
+        importantForAccessibility="no-hide-descendants">
         <SymbolView tintColor={theme.accent} name={icon} size={28} />
         <View style={[styles.iconBadge, { backgroundColor: theme.success }]}>
           <SymbolView
@@ -63,7 +68,7 @@ export function OtpVerificationStep({
       </View>
 
       <View style={styles.headingBlock}>
-        <ThemedText type="subtitle" style={styles.centerText}>
+        <ThemedText ref={headingRef} type="subtitle" style={styles.centerText} accessibilityRole="header">
           {titlePrefix} <ThemedText type="subtitle" themeColor="accent">{titleHighlight}</ThemedText>
         </ThemedText>
         <ThemedText type="default" themeColor="textMuted" style={styles.centerText}>
@@ -71,7 +76,12 @@ export function OtpVerificationStep({
         </ThemedText>
       </View>
 
-      <Pressable onPress={onTargetAction} style={[styles.pill, { backgroundColor: theme.cardElevated }]}>
+      <Pressable
+        onPress={onTargetAction}
+        style={[styles.pill, { backgroundColor: theme.cardElevated }]}
+        accessibilityRole="button"
+        accessibilityLabel={`${target}. ${targetActionLabel}`}
+      >
         <ThemedText type="small">{target}</ThemedText>
         <ThemedText type="small" themeColor="accent">
           {targetActionLabel}
@@ -85,17 +95,26 @@ export function OtpVerificationStep({
           tintColor={theme.success}
           name={{ ios: 'lock.fill', android: 'lock', web: 'lock' }}
           size={12}
+          accessibilityElementsHidden
+          importantForAccessibility="no-hide-descendants"
         />
         <ThemedText type="small" themeColor="success">
           {secureChannelLabel}
         </ThemedText>
       </View>
 
-      <Pressable onPress={onResend} style={styles.resendRow}>
+      <Pressable
+        onPress={onResend}
+        style={styles.resendRow}
+        accessibilityRole="button"
+        accessibilityLabel={resendLabel}
+      >
         <SymbolView
           tintColor={theme.accent}
           name={{ ios: 'arrow.clockwise', android: 'refresh', web: 'refresh' }}
           size={14}
+          accessibilityElementsHidden
+          importantForAccessibility="no-hide-descendants"
         />
         <ThemedText type="link" themeColor="accent">
           {resendLabel}

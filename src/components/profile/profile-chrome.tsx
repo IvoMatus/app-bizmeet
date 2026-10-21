@@ -11,10 +11,12 @@ type ProfileChromeProps = {
   avatar: ImageSourcePropType;
   companyLogo: number;
   hasUnread: boolean;
+  /** Subtítulo bajo "BizAInet" (p. ej. "Mi Perfil", "Mis Empresas"). */
+  subtitle?: string;
 };
 
-/** Header fijo de Ver Perfil: marca BizAInet + PRO, notificaciones y avatar. */
-export function ProfileTopBar({ avatar, hasUnread }: ProfileChromeProps) {
+/** Header fijo compartido: marca BizAInet + PRO, subtítulo, notificaciones y avatar. */
+export function ProfileTopBar({ avatar, hasUnread, subtitle = 'Mi Perfil' }: ProfileChromeProps) {
   const theme = useTheme();
 
   return (
@@ -33,7 +35,7 @@ export function ProfileTopBar({ avatar, hasUnread }: ProfileChromeProps) {
                 <ThemedText style={[styles.proLabel, { color: theme.accent }]}>PRO</ThemedText>
               </View>
             </View>
-            <ThemedText style={[styles.subtitle, { color: theme.textMuted }]}>Mi Perfil</ThemedText>
+            <ThemedText style={[styles.subtitle, { color: theme.textMuted }]}>{subtitle}</ThemedText>
           </View>
         </View>
 

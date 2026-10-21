@@ -11,6 +11,7 @@ import { FormDatePicker } from '@/components/ui/form-date-picker';
 import { FormInput } from '@/components/ui/form-input';
 import { FormSelect } from '@/components/ui/form-select';
 import { Spacing } from '@/constants/theme';
+import { useAccessibilityFocusOnMount } from '@/hooks/use-accessibility-focus-on-mount';
 import { useTheme } from '@/hooks/use-theme';
 
 const COUNTRIES = [{ label: 'México 🇲🇽', value: 'MX' }];
@@ -73,7 +74,13 @@ function ProfilePhotoPicker({ control }: { control: Control<PersonalDataForm> })
   }
 
   return (
-    <Pressable style={styles.avatarRow} onPress={pickPhoto}>
+    <Pressable
+      style={styles.avatarRow}
+      onPress={pickPhoto}
+      accessibilityRole="button"
+      accessibilityLabel="Foto de perfil"
+      accessibilityHint="Abre la galería para elegir una foto"
+    >
       <View style={[styles.avatar, { backgroundColor: theme.cardElevated }]}>
         {field.value ? (
           <Image source={{ uri: field.value }} style={styles.avatarImage} />
@@ -112,7 +119,13 @@ function DocumentPhotoPicker({ control }: { control: Control<PersonalDataForm> }
   }
 
   return (
-    <Pressable style={[styles.dropzone, { borderColor: theme.border }]} onPress={pickDocument}>
+    <Pressable
+      style={[styles.dropzone, { borderColor: theme.border }]}
+      onPress={pickDocument}
+      accessibilityRole="button"
+      accessibilityLabel={field.value ? 'Cambiar foto del documento' : 'Subir foto del documento'}
+      accessibilityHint="INE, pasaporte o cédula, en PNG o JPG"
+    >
       {field.value ? (
         <Image source={{ uri: field.value }} style={styles.documentPreview} />
       ) : (
@@ -150,7 +163,13 @@ function LanguageChips({ control }: { control: Control<PersonalDataForm> }) {
         {LANGUAGES.map((lang) => {
           const active = selected.includes(lang);
           return (
-            <Pressable key={lang} onPress={() => toggle(lang)}>
+            <Pressable
+              key={lang}
+              onPress={() => toggle(lang)}
+              accessibilityRole="checkbox"
+              accessibilityState={{ checked: active }}
+              accessibilityLabel={lang}
+            >
               <ThemedView
                 style={[
                   styles.chip,
@@ -178,6 +197,7 @@ type Step1PersonalDataProps = {
 /** Paso 1: Datos personales — form + subida de foto de documento (revisión manual, C5). */
 export function Step1PersonalData({ onSubmit }: Step1PersonalDataProps) {
   const { control, handleSubmit } = useForm<PersonalDataForm>({ defaultValues });
+  const headingRef = useAccessibilityFocusOnMount();
 
   return (
     <View style={styles.container}>
@@ -187,7 +207,7 @@ export function Step1PersonalData({ onSubmit }: Step1PersonalDataProps) {
             REGISTRO BIZAINET
           </ThemedText>
         </ThemedView>
-        <ThemedText type="subtitle">
+        <ThemedText ref={headingRef} type="subtitle" accessibilityRole="header">
           Datos <ThemedText type="subtitle" themeColor="accent">personales</ThemedText>
         </ThemedText>
         <ThemedText type="default" themeColor="textMuted">
