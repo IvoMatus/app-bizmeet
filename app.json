@@ -2,6 +2,7 @@
   "expo": {
     "name": "app-bizmeet",
     "slug": "app-bizmeet",
+    "owner": "ivomatus",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
@@ -18,7 +19,10 @@
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
       },
       "predictiveBackGestureEnabled": false,
-      "package": "com.anonymous.appbizmeet"
+      "package": "com.anonymous.appbizmeet",
+      "permissions": [
+        "android.permission.RECORD_AUDIO"
+      ]
     },
     "web": {
       "output": "static",
@@ -46,6 +50,12 @@
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "74976947-8773-4eba-9bc4-d8d713e61516"
+      }
     }
   }
 }
