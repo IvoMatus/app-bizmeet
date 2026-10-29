@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { FlatList, Modal, Pressable, StyleSheet, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import {
   useController,
   type Control,
@@ -78,7 +79,9 @@ export function FormSelect<
       <Modal visible={open} transparent animationType="fade" onRequestClose={() => setOpen(false)}>
         <Pressable style={styles.backdrop} onPress={() => setOpen(false)}>
           <Pressable onPress={() => {}}>
-            <ThemedView type="card" style={[styles.sheet, { borderColor: theme.border }]}>
+            <SafeAreaView
+              edges={['bottom']}
+              style={[styles.sheet, { backgroundColor: theme.card, borderColor: theme.border }]}>
               <FlatList
                 data={options}
                 keyExtractor={(item) => String(item.value)}
@@ -98,7 +101,7 @@ export function FormSelect<
                   </Pressable>
                 )}
               />
-            </ThemedView>
+            </SafeAreaView>
           </Pressable>
         </Pressable>
       </Modal>
@@ -132,6 +135,10 @@ const styles = StyleSheet.create({
     borderTopRightRadius: Spacing.four,
     borderWidth: 1,
     maxHeight: '60%',
+    // ponytail: fixed floor, not content-aware (e.g. 3 rows) — a 1-option list (today's
+    // placeholder país/comuna data) would otherwise shrink the sheet to a single barely-visible
+    // row. Revisit if a sheet ever needs to look cramped with 4+ real options.
+    minHeight: 220,
     paddingVertical: Spacing.two,
   },
   option: {

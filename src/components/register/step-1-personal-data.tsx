@@ -1,5 +1,7 @@
+import { type TextInputRef } from '@expo/ui';
 import * as ImagePicker from 'expo-image-picker';
 import { SymbolView } from 'expo-symbols';
+import { useRef } from 'react';
 import { Image, Pressable, StyleSheet, View } from 'react-native';
 import { useController, useForm, type Control } from 'react-hook-form';
 
@@ -198,6 +200,8 @@ type Step1PersonalDataProps = {
 export function Step1PersonalData({ onSubmit }: Step1PersonalDataProps) {
   const { control, handleSubmit } = useForm<PersonalDataForm>({ defaultValues });
   const headingRef = useAccessibilityFocusOnMount();
+  const apellidoPaternoRef = useRef<TextInputRef>(null);
+  const apellidoMaternoRef = useRef<TextInputRef>(null);
 
   return (
     <View style={styles.container}>
@@ -225,25 +229,32 @@ export function Step1PersonalData({ onSubmit }: Step1PersonalDataProps) {
         name="nombre"
         label="Nombre(s)*"
         placeholder="Alejandro"
+        returnKeyType="next"
+        onSubmitEditing={() => apellidoPaternoRef.current?.focus()}
         rules={{ required: 'Requerido' }}
       />
 
       <View style={styles.row}>
         <View style={styles.flex1}>
           <FormInput
+            ref={apellidoPaternoRef}
             control={control}
             name="apellidoPaterno"
             label="Apellido Paterno*"
             placeholder="Mendoza"
+            returnKeyType="next"
+            onSubmitEditing={() => apellidoMaternoRef.current?.focus()}
             rules={{ required: 'Requerido' }}
           />
         </View>
         <View style={styles.flex1}>
           <FormInput
+            ref={apellidoMaternoRef}
             control={control}
             name="apellidoMaterno"
             label="Apellido Materno"
             placeholder="García"
+            returnKeyType="done"
           />
         </View>
       </View>

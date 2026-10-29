@@ -1,4 +1,6 @@
+import { type TextInputRef } from '@expo/ui';
 import { SymbolView } from 'expo-symbols';
+import { useRef } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { useForm } from 'react-hook-form';
 
@@ -36,6 +38,8 @@ export function Step2Security({ onSubmit, submitting }: Step2SecurityProps) {
   const theme = useTheme();
   const { control, handleSubmit, getValues } = useForm<SecurityForm>({ defaultValues });
   const headingRef = useAccessibilityFocusOnMount();
+  const passwordRef = useRef<TextInputRef>(null);
+  const confirmPasswordRef = useRef<TextInputRef>(null);
 
   return (
     <View style={styles.container}>
@@ -61,15 +65,20 @@ export function Step2Security({ onSubmit, submitting }: Step2SecurityProps) {
         placeholder="ejemplo@empresa.com"
         keyboardType="email-address"
         autoCapitalize="none"
+        returnKeyType="next"
+        onSubmitEditing={() => passwordRef.current?.focus()}
         rules={{ required: 'Requerido' }}
       />
 
       <FormInput
+        ref={passwordRef}
         control={control}
         name="password"
         label="Contraseña"
         placeholder="••••••••"
         secureTextEntry
+        returnKeyType="next"
+        onSubmitEditing={() => confirmPasswordRef.current?.focus()}
         rules={{ required: 'Requerido', minLength: { value: 8, message: 'Mínimo 8 caracteres' } }}
       />
 
@@ -94,11 +103,14 @@ export function Step2Security({ onSubmit, submitting }: Step2SecurityProps) {
       </ThemedView>
 
       <FormInput
+        ref={confirmPasswordRef}
         control={control}
         name="confirmPassword"
         label="Repetir contraseña"
         placeholder="••••••••"
         secureTextEntry
+        returnKeyType="done"
+        onSubmitEditing={() => handleSubmit(onSubmit)()}
         rules={{
           required: 'Requerido',
           validate: (value) => value === getValues('password') || 'Las contraseñas no coinciden',

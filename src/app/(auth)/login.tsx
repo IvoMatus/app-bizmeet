@@ -1,6 +1,7 @@
 import { useSignIn } from '@clerk/expo';
+import { type TextInputRef } from '@expo/ui';
 import { router } from 'expo-router';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { useForm } from 'react-hook-form';
 
 import { AuthScreenShell } from '@/components/register/auth-screen-shell';
@@ -23,6 +24,7 @@ export default function LoginScreen() {
     defaultValues: { email: '', password: '' },
   });
   const headingRef = useAccessibilityFocusOnMount();
+  const passwordRef = useRef<TextInputRef>(null);
 
   async function onSubmit(data: LoginForm) {
     setSubmitting(true);
@@ -62,14 +64,19 @@ export default function LoginScreen() {
         placeholder="ejemplo@empresa.com"
         keyboardType="email-address"
         autoCapitalize="none"
+        returnKeyType="next"
+        onSubmitEditing={() => passwordRef.current?.focus()}
         rules={{ required: 'Requerido' }}
       />
       <FormInput
+        ref={passwordRef}
         control={control}
         name="password"
         label="Contraseña"
         placeholder="••••••••"
         secureTextEntry
+        returnKeyType="done"
+        onSubmitEditing={() => handleSubmit(onSubmit)()}
         rules={{ required: 'Requerido' }}
       />
       <PrimaryButton

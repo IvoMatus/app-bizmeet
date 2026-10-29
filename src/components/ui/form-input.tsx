@@ -1,6 +1,12 @@
-import { Host, TextInput, type TextInputProps as ExpoTextInputProps } from '@expo/ui';
+import {
+  Host,
+  TextInput,
+  type TextInputProps as ExpoTextInputProps,
+  type TextInputRef,
+} from '@expo/ui';
 import { semantics } from '@expo/ui/jetpack-compose/modifiers';
 import { accessibilityLabel } from '@expo/ui/swift-ui/modifiers';
+import { type Ref, type RefCallback } from 'react';
 import { Platform, StyleSheet, View } from 'react-native';
 import {
   useController,
@@ -25,6 +31,17 @@ function accessibilityModifiers(label?: string) {
     : [semantics({ contentDescription: label })];
 }
 
+// RHF needs the native ref to manage focus-on-error; callers need it to call
+// `.focus()` (e.g. moving to the next field on the keyboard's "next"/"done" key).
+function mergeRefs<T>(...refs: (Ref<T> | undefined)[]): RefCallback<T> {
+  return (instance) => {
+    for (const ref of refs) {
+      if (typeof ref === 'function') ref(instance);
+      else if (ref) (ref as { current: T | null }).current = instance;
+    }
+  };
+}
+
 export type FormInputProps<
   TFieldValues extends FieldValues,
   TName extends FieldPath<TFieldValues> = FieldPath<TFieldValues>,
@@ -33,15 +50,16 @@ export type FormInputProps<
   name: TName;
   label?: string;
   rules?: UseControllerProps<TFieldValues, TName>['rules'];
+  ref?: Ref<TextInputRef>;
 };
 
 export function FormInput<
   TFieldValues extends FieldValues,
   TName extends FieldPath<TFieldValues> = FieldPath<TFieldValues>,
->({ control, name, label, rules, ...inputProps }: FormInputProps<TFieldValues, TName>) {
+>({ control, name, label, rules, ref, ...inputProps }: FormInputProps<TFieldValues, TName>) {
   const theme = useTheme();
   const { field, fieldState } = useController({ control, name, rules });
-  const { ref, value, onChange, onBlur } = field;
+  const { ref: fieldRef, value, onChange, onBlur } = field;
   const { modifiers: callerModifiers, ...restInputProps } = inputProps;
 
   return (
@@ -54,7 +72,7 @@ export function FormInput<
           // reflects external value changes via an ObservableState `value` prop. If this field
           // needs to react to form.reset()/setValue() after mount, switch to useNativeState and
           // sync it from field.value in a useEffect.
-          ref={ref}
+          ref={mergeRefs(fieldRef, ref)}
           defaultValue={value ?? ''}
           onChangeText={onChange}
           onBlur={onBlur}
