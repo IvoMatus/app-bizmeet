@@ -1,4 +1,4 @@
-import { useSignUp } from '@clerk/expo';
+import { useAuth, useSignUp } from '@clerk/expo';
 import { router } from 'expo-router';
 import { useState } from 'react';
 
@@ -13,6 +13,7 @@ import { useRegisterForm } from './_layout';
 
 export default function Step3aScreen() {
   const { signUp } = useSignUp();
+  const { getToken } = useAuth();
   const { personalData } = useRegisterForm();
   const [submitting, setSubmitting] = useState(false);
 
@@ -34,23 +35,29 @@ export default function Step3aScreen() {
         }
         if (personalData && signUp.createdUserId) {
           try {
-            await createUserProfile({
-              clerkUserId: signUp.createdUserId,
-              nombre: personalData.nombre,
-              apellidoPaterno: personalData.apellidoPaterno,
-              apellidoMaterno: personalData.apellidoMaterno,
-              fechaNacimiento: personalData.fechaNacimiento.toISOString(),
-              pais: personalData.pais,
-              estado: personalData.estado,
-              comuna: personalData.comuna,
-              phoneNumber: personalData.phoneNumber,
-              idiomas: personalData.idiomas,
-              curp: personalData.curp,
-            });
+            const token = await getToken();
+            if (!token) throw new Error('No se pudo obtener la sesión recién creada.');
+
+            await createUserProfile(
+              {
+                clerkUserId: signUp.createdUserId,
+                nombre: personalData.nombre,
+                apellidoPaterno: personalData.apellidoPaterno,
+                apellidoMaterno: personalData.apellidoMaterno,
+                fechaNacimiento: personalData.fechaNacimiento.toISOString(),
+                pais: personalData.pais,
+                estado: personalData.estado,
+                comuna: personalData.comuna,
+                phoneNumber: personalData.phoneNumber,
+                idiomas: personalData.idiomas,
+                curp: personalData.curp,
+              },
+              token
+            );
 
             if (personalData.fotoPerfilUri) {
               try {
-                await uploadProfilePhoto(signUp.createdUserId, personalData.fotoPerfilUri);
+                await uploadProfilePhoto(signUp.createdUserId, personalData.fotoPerfilUri, token);
               } catch {
                 // ponytail: photo is optional cosmetics, don't block registration over it.
                 // User can re-upload later from their profile once that screen exists.

@@ -26,7 +26,9 @@ export function RegisterHeader({ onBack, title = 'Account Setup' }: RegisterHead
           size={18}
         />
       </Pressable>
-      <ThemedText type="smallBold">{title}</ThemedText>
+      <ThemedText type="smallBold" numberOfLines={1} style={styles.title}>
+        {title}
+      </ThemedText>
       <View style={styles.backButton} />
     </View>
   );
@@ -46,5 +48,10 @@ const styles = StyleSheet.create({
     borderRadius: 18,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  title: {
+    flex: 1,
+    textAlign: 'center',
+    marginHorizontal: Spacing.two,
   },
 });

@@ -15,7 +15,7 @@ import { fetchUserProfile } from '@/utils/api';
 
 export default function PerfilScreen() {
   const theme = useTheme();
-  const { signOut } = useAuth();
+  const { signOut, getToken } = useAuth();
   const { user } = useUser();
   const [profile, setProfile] = useState<ProfileData | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -23,10 +23,14 @@ export default function PerfilScreen() {
   useEffect(() => {
     if (!user) return;
     const email = user.primaryEmailAddress?.emailAddress;
-    fetchUserProfile(user.id)
+    getToken()
+      .then((token) => {
+        if (!token) throw new Error('No se pudo obtener la sesión.');
+        return fetchUserProfile(user.id, token);
+      })
       .then((api) => setProfile(buildProfileData(api, { email, imageUrl: user.imageUrl })))
       .catch((e: Error) => setError(e.message));
-  }, [user]);
+  }, [user, getToken]);
 
   if (!profile) {
     return (
