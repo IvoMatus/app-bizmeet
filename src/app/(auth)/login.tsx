@@ -10,7 +10,7 @@ import { ThemedText } from '@/components/themed-text';
 import { showAlert } from '@/components/ui/app-alert';
 import { FormInput } from '@/components/ui/form-input';
 import { useAccessibilityFocusOnMount } from '@/hooks/use-accessibility-focus-on-mount';
-import { getClerkErrorMessage } from '@/utils/clerk-error';
+import { getClerkErrorMessage, getSignInIncompleteMessage } from '@/utils/clerk-error';
 
 type LoginForm = {
   email: string;
@@ -38,7 +38,7 @@ export default function LoginScreen() {
         return;
       }
       if (signIn.status !== 'complete') {
-        showAlert('Inicio de sesión incompleto', 'Verifica tus datos e intenta de nuevo.');
+        showAlert('Inicio de sesión incompleto', getSignInIncompleteMessage(signIn.status));
         return;
       }
       const { error: finalizeError } = await signIn.finalize();
