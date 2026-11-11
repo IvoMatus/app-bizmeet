@@ -17,7 +17,7 @@ import {
 } from 'react-hook-form';
 
 import { ThemedText } from '@/components/themed-text';
-import { Spacing } from '@/constants/theme';
+import { interFontFamily, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 
 // @expo/ui's TextInput has no accessibilityLabel prop — it's a SwiftUI/Jetpack Compose
@@ -85,7 +85,11 @@ export function FormInput<
             paddingHorizontal: Spacing.three,
             paddingVertical: Spacing.two,
           }}
-          textStyle={{ color: theme.text, fontSize: 15 }}
+          // Sin dato de Figma para el peso de los inputs — Regular (400), el default razonable
+          // para texto editado. interFontFamily resuelve `fontFamily`, igual que ThemedText;
+          // acá es manual porque @expo/ui's TextInput es una vista nativa (SwiftUI/Compose) y
+          // no pasa por `StyleSheet.flatten` de RN.
+          textStyle={{ color: theme.text, fontSize: 15, fontFamily: interFontFamily('400') }}
           modifiers={[...accessibilityModifiers(label), ...(callerModifiers ?? [])]}
           {...restInputProps}
         />

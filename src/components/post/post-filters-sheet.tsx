@@ -1,10 +1,11 @@
 import { SymbolView } from 'expo-symbols';
 import { useState } from 'react';
-import { Modal, Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
+import { Modal, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ThemedText } from '@/components/themed-text';
 import { POST_TYPE_CHIPS } from '@/components/post/post-data';
+import { ThemedTextInput } from '@/components/ui/themed-text-input';
 import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import type { Rubro } from '@/utils/api';
@@ -55,7 +56,7 @@ export function PostFiltersSheet({ visible, initial, industries, onApply, onClos
             </View>
 
             <ScrollView contentContainerStyle={styles.content}>
-              <TextInput
+              <ThemedTextInput
                 value={draft.query}
                 onChangeText={(query) => setDraft((d) => ({ ...d, query }))}
                 placeholder="Buscar por palabra clave"

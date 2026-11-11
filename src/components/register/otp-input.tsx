@@ -1,6 +1,7 @@
 import { useRef } from 'react';
-import { StyleSheet, TextInput, View } from 'react-native';
+import { StyleSheet, View, type TextInput } from 'react-native';
 
+import { ThemedTextInput } from '@/components/ui/themed-text-input';
 import { useTheme } from '@/hooks/use-theme';
 
 const LENGTH = 6;
@@ -47,7 +48,7 @@ export function OtpInput({ value, onChange }: OtpInputProps) {
   return (
     <View style={styles.row}>
       {Array.from({ length: LENGTH }).map((_, index) => (
-        <TextInput
+        <ThemedTextInput
           key={index}
           ref={(el) => {
             inputs.current[index] = el;

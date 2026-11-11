@@ -5,7 +5,6 @@ import {
   Pressable,
   StyleSheet,
   Switch,
-  TextInput,
   View,
   type ImageSourcePropType,
   type TextInputProps,
@@ -15,6 +14,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { ThemedText } from '@/components/themed-text';
 import { ProfileIcon } from '@/components/profile/profile-icons';
 import { StatusPill, SectionCard } from '@/components/profile/profile-primitives';
+import { ThemedTextInput } from '@/components/ui/themed-text-input';
 import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { withStableCacheKey } from '@/utils/image';
@@ -168,7 +168,7 @@ export function FormField({
             {prefix}
           </ThemedText>
         )}
-        <TextInput
+        <ThemedTextInput
           value={value}
           onChangeText={onChangeText}
           editable={editable}
