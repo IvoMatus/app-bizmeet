@@ -5,6 +5,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { PostAttachments } from '@/components/post/post-attachments';
 import { POST_TYPE_LABEL, timeAgo } from '@/components/post/post-data';
 import { rubroNombre, useRubrosCatalog } from '@/components/post/use-rubros-catalog';
 import { ThemedText } from '@/components/themed-text';
@@ -94,14 +95,8 @@ export default function PublicacionDetalleScreen() {
         </View>
 
         <ScrollView contentContainerStyle={styles.content}>
-          {post.adjuntos.length > 0 && (
-            <View style={[styles.attachmentBanner, { backgroundColor: theme.surfaceInset }]}>
-              <SymbolView tintColor={theme.textMuted} name={{ ios: 'paperclip', android: 'attach_file', web: 'attach_file' }} size={16} />
-              <ThemedText type="small" style={{ color: theme.textMuted }}>
-                {post.adjuntos.length} adjunto{post.adjuntos.length === 1 ? '' : 's'}
-              </ThemedText>
-            </View>
-          )}
+          {/* RN-PUB-06: el perfil básico no ve adjuntos de requerimientos — viene vacío, no es error. */}
+          <PostAttachments adjuntos={post.adjuntos} size={150} />
 
           <Pressable
             accessibilityRole="button"
@@ -202,13 +197,6 @@ const styles = StyleSheet.create({
     gap: Spacing.three,
     paddingHorizontal: Spacing.three,
     paddingBottom: Spacing.six,
-  },
-  attachmentBanner: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.one,
-    padding: Spacing.two,
-    borderRadius: 8,
   },
   card: {
     borderRadius: 12,

@@ -196,7 +196,10 @@ export async function fetchMyCompanies(token: string): Promise<MyCompany[]> {
 export type TipoPublicacion = 'OFERTA' | 'REQUERIMIENTO' | 'CONOCIMIENTO';
 export type SubtipoPublicacion = 'SERVICIO' | 'PRODUCTO' | 'TRABAJO';
 
-export type AdjuntoView = { tipo: 'IMAGEN' | 'VIDEO'; key: string };
+/** `url` solo viene en `GET /posts/feed` y `GET /posts/:id` (firmada, vence a los 15 min — no
+ * cachear el valor, volver a pedir el post/feed en vez de reusarla). `POST /posts` no la manda
+ * ni la espera: ahí `adjuntos` va solo con `{ tipo, key }`. */
+export type AdjuntoView = { tipo: 'IMAGEN' | 'VIDEO'; key: string; url?: string };
 
 /** `rubros` son códigos del catálogo SCIAN (ver `fetchRubros`), no texto libre. */
 export type RubroCodigo = string;
@@ -352,7 +355,7 @@ export async function uploadPostMedia(companyId: string, uri: string, mimeType: 
   if (status < 200 || status >= 300 || !parsed) {
     throw new Error(parsed?.message ?? `No se pudo subir el archivo (${status}).`);
   }
-  return { tipo: parsed.tipo, key: parsed.key };
+  return { tipo: parsed.tipo, key: parsed.key, url: parsed.url };
 }
 
 // --- Notificaciones (T2.5, módulo `notification` de api-bizmeet) ---

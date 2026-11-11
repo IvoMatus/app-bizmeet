@@ -3,6 +3,7 @@ import { SymbolView } from 'expo-symbols';
 import { Pressable, StyleSheet, View } from 'react-native';
 
 import { POST_TYPE_LABEL, timeAgo } from '@/components/post/post-data';
+import { PostAttachments } from '@/components/post/post-attachments';
 import { rubroNombre } from '@/components/post/use-rubros-catalog';
 import { ThemedText } from '@/components/themed-text';
 import { Spacing } from '@/constants/theme';
@@ -36,7 +37,7 @@ function IndustryBadge({ label }: { label: string }) {
 }
 
 /** Tarjeta completa del feed (vista "COMPLETA" de GET /posts/feed): autor, título, copy,
- * adjuntos (solo indicador, sin URL firmada todavía) y barra de interacciones estática. */
+ * adjuntos reales (ver `post-attachments.tsx`) y barra de interacciones estática. */
 export function PostCard({ post, rubros }: { post: PostView; rubros: Rubro[] | null }) {
   const theme = useTheme();
   const companyName = post.empresa.name;
@@ -76,18 +77,7 @@ export function PostCard({ post, rubros }: { post: PostView; rubros: Rubro[] | n
         {post.descripcion}
       </ThemedText>
 
-      {post.adjuntos.length > 0 && (
-        <View style={[styles.attachmentRow, { backgroundColor: theme.surfaceInset }]}>
-          <SymbolView
-            tintColor={theme.textMuted}
-            name={{ ios: post.adjuntos[0].tipo === 'VIDEO' ? 'video' : 'photo', android: 'image', web: 'image' }}
-            size={14}
-          />
-          <ThemedText type="small" style={{ color: theme.textMuted }}>
-            {post.adjuntos.length} adjunto{post.adjuntos.length === 1 ? '' : 's'}
-          </ThemedText>
-        </View>
-      )}
+      <PostAttachments adjuntos={post.adjuntos} />
 
       <View style={[styles.footer, { borderTopColor: theme.surfaceBorder }]}>
         {/* TODO T3.3: likes/comentarios reales — el backend hoy no expone contadores. */}
@@ -210,15 +200,6 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 15,
     fontWeight: '700',
-  },
-  attachmentRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.one,
-    paddingHorizontal: Spacing.two,
-    paddingVertical: Spacing.one,
-    borderRadius: 8,
-    alignSelf: 'flex-start',
   },
   footer: {
     flexDirection: 'row',
