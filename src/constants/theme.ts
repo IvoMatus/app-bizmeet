@@ -44,6 +44,19 @@ export const Colors = {
     offerIconSoft: 'rgba(12, 110, 127, 0.2)',
     seekSoft: 'rgba(31, 143, 25, 0.1)',
     seekIconSoft: 'rgba(31, 143, 25, 0.2)',
+    // Equipo y Contactos / Invitaciones Corporativas (Figma 2006:5286 / 2046:847, modo claro):
+    // ámbar y rojo "pendiente/cancelar" del diseño no coinciden con `warning`/`error` de arriba
+    // (son tonos Tailwind amber-500/600/100/200/50 y red-600, no los de BizAInet) — nuevos
+    // tokens en vez de hex sueltos en los componentes. El verde "Propietario"/"EMPRESA
+    // TITULAR" del mismo frame (#10b981) SÍ se normalizó a `success` (decisión de diseño,
+    // ver commit) en lugar de agregarse como token aparte.
+    warningAccent: '#f59e0b',
+    warningText: '#d97706',
+    warningSoft: '#fef3c7',
+    warningBorder: '#fde68a',
+    warningSurface: '#fffbeb',
+    errorSoft: '#fef2f2',
+    errorBorder: '#fca5a5',
   },
   dark: {
     text: '#ffffff',
@@ -80,6 +93,16 @@ export const Colors = {
     offerIconSoft: 'rgba(29, 150, 172, 0.2)',
     seekSoft: 'rgba(42, 187, 34, 0.1)',
     seekIconSoft: 'rgba(42, 187, 34, 0.2)',
+    // ponytail: no hay frame dark en el brief (2006:5874 / 2046:292 no se pudieron leer) —
+    // derivados del mismo hue ambar/rojo sobre fondo oscuro en vez de pixel-matched. Ajustar
+    // si aparece el screenshot real.
+    warningAccent: '#e9a83b',
+    warningText: '#f5c767',
+    warningSoft: 'rgba(233, 168, 59, 0.18)',
+    warningBorder: 'rgba(233, 168, 59, 0.35)',
+    warningSurface: 'rgba(233, 168, 59, 0.12)',
+    errorSoft: 'rgba(249, 112, 102, 0.12)',
+    errorBorder: 'rgba(249, 112, 102, 0.35)',
   },
 } as const;
 

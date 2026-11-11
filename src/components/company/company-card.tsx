@@ -89,9 +89,12 @@ export function CompanyCard({ company }: { company: Company }) {
           <Pressable
             accessibilityRole="button"
             accessibilityLabel={`Editar ${company.name}`}
-            onPress={() => {
-              // TODO: navegar a editar empresa cuando exista la ruta
-            }}
+            onPress={() =>
+              // TODO: no existe ruta/endpoint de edición de empresa ni diseño de Figma
+              // relevado para esa pantalla todavía. Navegar a `/empresa/editar?id=...` cuando
+              // ambos existan.
+              showAlert('Próximamente', 'Editar empresa estará disponible próximamente.')
+            }
             style={({ pressed }) => [styles.secondaryButton, { backgroundColor: theme.surfaceInset, opacity: pressed ? 0.85 : 1 }]}>
             <CompanyIcon name="edit" color={theme.textMuted} width={12} height={12} />
             <ThemedText style={[styles.secondaryLabel, { color: theme.textMuted }]}>Editar</ThemedText>
@@ -99,9 +102,7 @@ export function CompanyCard({ company }: { company: Company }) {
           <Pressable
             accessibilityRole="button"
             accessibilityLabel={`Gestionar equipo de ${company.name}`}
-            onPress={() => {
-              // TODO: navegar a gestión de equipo cuando exista la ruta
-            }}
+            onPress={() => router.push(`/empresa/equipo?companyId=${company.id}`)}
             style={({ pressed }) => [styles.secondaryButton, { backgroundColor: theme.surfaceInset, opacity: pressed ? 0.85 : 1 }]}>
             <CompanyIcon name="team" color={theme.textMuted} width={13} height={11} />
             <ThemedText style={[styles.secondaryLabel, { color: theme.textMuted }]}>Gestionar equipo</ThemedText>
