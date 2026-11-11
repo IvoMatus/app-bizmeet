@@ -43,18 +43,27 @@ if (!g.__bizmeetFetchPatched) {
   }) as typeof globalThis.fetch;
 }
 
-// ponytail: diagnóstico temporal — patch sobre `Response.prototype.json` para capturar el
-// stack trace real en el momento exacto en que explota, sin importar cuál de los ~15 call-sites
-// de `response.json()` en este archivo sea. Sacar junto con el resto de los logs de diagnóstico.
+// Guard compartido: confirmado en emulador que GET /companies/mine puede devolver 200 con body
+// vacío, y `response.json()` revienta ("Unexpected end of input") en el camino feliz de
+// cualquiera de los ~15 call-sites de este archivo que hacen `return response.json()` sin medir
+// el body primero. Un solo patch sobre `Response.prototype.json` cubre a todos sin tocarlos uno
+// por uno: 2xx/204 con body vacío → `null` en vez de tirar. NO va detrás de `__DEV__` — es el
+// fix real (backend-dev lo está arreglando del lado API, esto es la red de contención del lado
+// app mientras tanto, y para cualquier otro endpoint que haga lo mismo).
 const gj = globalThis as typeof globalThis & { __bizmeetJsonPatched?: boolean };
-if (__DEV__ && !gj.__bizmeetJsonPatched) {
+if (!gj.__bizmeetJsonPatched) {
   gj.__bizmeetJsonPatched = true;
   const originalJson = Response.prototype.json;
   Response.prototype.json = function (this: Response, ...args: Parameters<typeof originalJson>) {
-    return originalJson.apply(this, args).catch((err: Error) => {
-      console.warn('[api][diag] response.json() reventó', this.url, this.status, err.message, err.stack);
-      throw err;
-    });
+    return this.clone()
+      .text()
+      .then((text: string) => {
+        if (text.length === 0) {
+          if (__DEV__) console.warn('[api][diag] body vacío, devolviendo null en vez de reventar', this.url, this.status);
+          return null;
+        }
+        return originalJson.apply(this, args);
+      });
   };
 }
 
@@ -246,7 +255,8 @@ export async function fetchMyCompanies(token: string): Promise<MyCompany[]> {
     const body = await response.json().catch(() => null);
     throw new Error(body?.message ?? `No se pudieron cargar tus empresas (${response.status}).`);
   }
-  return response.json();
+  // Body vacío (ver guard de Response.prototype.json más arriba) → sin empresas, no un error.
+  return (await response.json()) ?? [];
 }
 
 // --- Publicaciones (T3.1/T3.2, módulo `post` de api-bizmeet) ---

@@ -29,7 +29,8 @@ async function refreshToken(): Promise<string | null> {
     if (!token) return null;
     cached = { token, expiresAt: Date.now() + TOKEN_TTL_MS };
     return token;
-  } catch {
+  } catch (err) {
+    if (__DEV__) console.warn('[auth][diag] getToken() reventó, se trata como sesión no disponible', err);
     return null;
   }
 }
