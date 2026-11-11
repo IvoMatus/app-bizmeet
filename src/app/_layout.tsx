@@ -7,6 +7,7 @@ import { useColorScheme } from 'react-native';
 
 import { AnimatedSplashOverlay } from '@/components/animated-icon';
 import { AppAlertHost } from '@/components/ui/app-alert';
+import { ActiveCompanyProvider } from '@/hooks/use-active-company';
 
 const publishableKey = process.env.EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY!;
 if (!publishableKey) {
@@ -47,7 +48,11 @@ export default function RootLayout() {
       <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
         <AnimatedSplashOverlay />
         <AuthGuard />
-        <Stack screenOptions={{ headerShown: false }} />
+        {/* Arriba del Stack entero (no solo de (tabs)): pantallas de stack como
+            publicacion/crear también dependen de `useActiveCompany` (ver useCompanyBlocked). */}
+        <ActiveCompanyProvider>
+          <Stack screenOptions={{ headerShown: false }} />
+        </ActiveCompanyProvider>
         <AppAlertHost />
       </ThemeProvider>
     </ClerkProvider>

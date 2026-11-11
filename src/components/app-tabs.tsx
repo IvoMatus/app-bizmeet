@@ -5,7 +5,7 @@ import { CompanySwitcherSheet } from '@/components/company/company-switcher-shee
 import { BottomTabBar } from '@/components/navigation/bottom-tab-bar';
 import { ProfileTopBar } from '@/components/profile/profile-chrome';
 import { MOCK_PROFILE } from '@/components/profile/profile-data';
-import { ActiveCompanyProvider, useActiveCompany } from '@/hooks/use-active-company';
+import { useActiveCompany } from '@/hooks/use-active-company';
 import { ProfileAvatarProvider, useProfileAvatar } from '@/hooks/use-profile-avatar';
 
 function AppTabsInner() {
@@ -66,10 +66,8 @@ function AppTabsInner() {
 
 export default function AppTabs() {
   return (
-    <ActiveCompanyProvider>
-      <ProfileAvatarProvider>
-        <AppTabsInner />
-      </ProfileAvatarProvider>
-    </ActiveCompanyProvider>
+    <ProfileAvatarProvider>
+      <AppTabsInner />
+    </ProfileAvatarProvider>
   );
 }
