@@ -2,7 +2,30 @@ import type { ImageSourcePropType } from 'react-native';
 
 import type { UserProfileView } from '@/utils/api';
 
-// Mock tipado de Perfil (usado por editar y la barra de otras pestañas) + mapper del usuario logueado.
+// Vista Perfil del usuario logueado (real, api-bizmeet) + mapper del form de Editar Perfil.
+
+const NO_DATA = '—';
+
+// MVP de un solo país/estado — mismo catálogo hardcodeado que step-1-personal-data.tsx (registro)
+// hasta que haya más de una opción real y convenga traerlo de un catálogo del backend.
+const COUNTRY_LABELS: Record<string, string> = { MX: 'México' };
+const STATE_LABELS: Record<string, string> = { CDMX: 'Ciudad de México' };
+
+const birthDateFormatter = new Intl.DateTimeFormat('es-MX', { day: 'numeric', month: 'long', year: 'numeric' });
+
+function formatBirthDate(iso: string): string {
+  return birthDateFormatter.format(new Date(iso));
+}
+
+function calculateAge(iso: string): number {
+  const birth = new Date(iso);
+  const now = new Date();
+  let age = now.getFullYear() - birth.getFullYear();
+  const beforeBirthdayThisYear =
+    now.getMonth() < birth.getMonth() || (now.getMonth() === birth.getMonth() && now.getDate() < birth.getDate());
+  if (beforeBirthdayThisYear) age -= 1;
+  return age;
+}
 
 export type ProfileData = {
   fullName: string;
@@ -15,6 +38,7 @@ export type ProfileData = {
   contactLanguageDetail: string;
   residence: { country: string; countryCode: string; detail: string };
   phone: string;
+  curp: string;
   email: string;
   passwordChangedLabel: string;
   passwordMask: string;
@@ -27,24 +51,32 @@ export type ProfileData = {
   unreadNotifications: boolean;
 };
 
-const NO_DATA = '—';
-
 /**
- * Arma la vista Perfil del usuario logueado: nombre, celular y foto vienen de api-bizmeet;
- * correo y foto de respaldo de Clerk. Lo que aún no tiene fuente queda en "—".
+ * Arma la vista Perfil del usuario logueado con lo que ya devuelve api-bizmeet (nombre, foto,
+ * celular, fecha de nacimiento + edad calculada, idiomas, residencia, CURP) + correo de Clerk.
+ * Cargo, membresía, seguridad y KYC todavía no tienen fuente propia y quedan en "—".
  */
 export function buildProfileData(api: UserProfileView, clerk: { email?: string; imageUrl: string }): ProfileData {
+  const idiomas = api.idiomas ?? [];
+  const countryLabel = COUNTRY_LABELS[api.pais] ?? api.pais;
+  const stateLabel = STATE_LABELS[api.estado] ?? api.estado;
+
   return {
     fullName: [api.nombre, api.apellidoPaterno, api.apellidoMaterno].filter(Boolean).join(' '),
     role: NO_DATA,
     membership: NO_DATA,
     aiVerifiedScore: NO_DATA,
-    birthDateLabel: NO_DATA,
-    ageLabel: NO_DATA,
-    contactLanguage: NO_DATA,
-    contactLanguageDetail: NO_DATA,
-    residence: { country: NO_DATA, countryCode: NO_DATA, detail: NO_DATA },
+    birthDateLabel: api.fechaNacimiento ? formatBirthDate(api.fechaNacimiento) : NO_DATA,
+    ageLabel: api.fechaNacimiento ? `${calculateAge(api.fechaNacimiento)} años` : NO_DATA,
+    contactLanguage: idiomas[0] ?? NO_DATA,
+    contactLanguageDetail: idiomas.slice(1).join(' / ') || NO_DATA,
+    residence: {
+      country: countryLabel,
+      countryCode: api.pais || NO_DATA,
+      detail: api.pais ? `${countryLabel}, ${stateLabel} • ${api.comuna}` : NO_DATA,
+    },
     phone: api.celular || NO_DATA,
+    curp: api.curp || NO_DATA,
     email: clerk.email ?? NO_DATA,
     passwordChangedLabel: NO_DATA,
     passwordMask: '••••••••••',
@@ -54,7 +86,7 @@ export function buildProfileData(api: UserProfileView, clerk: { email?: string; 
     kycAccuracy: '',
     avatarUri: { uri: api.fotoPerfilUrl ?? clerk.imageUrl },
     companyLogoUri: MOCK_PROFILE.companyLogoUri,
-    unreadNotifications: false,
+    unreadNotifications: MOCK_PROFILE.unreadNotifications,
   };
 }
 
@@ -62,59 +94,43 @@ export type EditProfileForm = {
   firstName: string;
   paternalLastName: string;
   maternalLastName: string;
-  position: string;
-  birthDate: string;
-  languages: string;
   countryLabel: string;
   state: string;
   municipality: string;
   phone: string;
+  languagesLabel: string;
   curp: string;
+  birthDateLabel: string;
+  ageLabel: string;
   email: string;
-  passwordMask: string;
-  passwordStrengthLabel: string;
-  twoFactorLabel: string;
-  twoFactorEnabled: boolean;
 };
 
-export const MOCK_PROFILE: ProfileData = {
-  fullName: 'Alejandro Hernández Castillo',
-  role: 'Director de Operaciones & Estrategia',
-  membership: 'SOCIO ACTIVO • PLAN BÁSICO',
-  aiVerifiedScore: 'IA Verified 99.8%',
-  birthDateLabel: '14 Mayo, 1988',
-  ageLabel: '35 años',
-  contactLanguage: 'Español',
-  contactLanguageDetail: 'Inglés (Avanzado C1)',
-  residence: { country: 'México', countryCode: 'MX', detail: 'México, CDMX • Miguel Hidalgo' },
-  phone: '+52 55 1234 5678',
-  email: 'alejandro.hernandez@empresa.com',
-  passwordChangedLabel: 'Cambio: Hace 2 días',
-  passwordMask: '••••••••••',
-  passwordStrengthLabel: 'Robustez Máxima',
-  kycDocumentName: 'INE_Alejandro_Hernandez.pdf',
-  kycSummary: 'Fotografía de INE / Pasaporte aprobada mediante el algoritmo biométrico BizAInet con',
-  kycAccuracy: '99.8% de precisión.',
-  avatarUri: require('../../../assets/figma/perfil/shared/avatar-alejandro.jpg'),
-  companyLogoUri: require('../../../assets/figma/perfil/shared/empresa-activa-logo.jpg'),
+/** Mapea el perfil real al form de Editar Perfil. `countryLabel`/`languagesLabel` quedan de solo
+ * lectura acá: país e idiomas todavía no tienen picker (ver `SelectField`, sin UI interactiva) —
+ * y `curp`/fecha de nacimiento tampoco se editan porque el backend los ignora si se mandan. */
+export function buildEditProfileForm(api: UserProfileView, email: string): EditProfileForm {
+  const idiomas = api.idiomas ?? [];
+  return {
+    firstName: api.nombre,
+    paternalLastName: api.apellidoPaterno,
+    maternalLastName: api.apellidoMaterno ?? '',
+    countryLabel: COUNTRY_LABELS[api.pais] ?? api.pais,
+    state: api.estado,
+    municipality: api.comuna,
+    phone: api.celular,
+    languagesLabel: idiomas.join(' / ') || NO_DATA,
+    curp: api.curp,
+    birthDateLabel: api.fechaNacimiento ? formatBirthDate(api.fechaNacimiento) : NO_DATA,
+    ageLabel: api.fechaNacimiento ? `${calculateAge(api.fechaNacimiento)} años` : NO_DATA,
+    email,
+  };
+}
+
+/** Chrome compartido sin fuente propia todavía (fuera de alcance de este cambio): logo de la
+ * empresa activa y el punto de notificaciones sin leer. Ver app-tabs.tsx, perfil/_layout.tsx y
+ * RootBottomTabBar en el root _layout.tsx. */
+export const MOCK_PROFILE = {
+  avatarUri: require('../../../assets/figma/perfil/shared/avatar-alejandro.jpg') as ImageSourcePropType,
+  companyLogoUri: require('../../../assets/figma/perfil/shared/empresa-activa-logo.jpg') as number,
   unreadNotifications: true,
-};
-
-export const MOCK_EDIT_PROFILE: EditProfileForm = {
-  firstName: 'Alejandro',
-  paternalLastName: 'Hernández',
-  maternalLastName: 'Castillo',
-  position: 'Director de Operaciones & Estrategia',
-  birthDate: '14 de Mayo, 1988',
-  languages: 'Español (Nativo) / Inglés (C1)',
-  countryLabel: 'México (MX)',
-  state: 'CDMX',
-  municipality: 'Miguel Hidalgo',
-  phone: '55 1234 5678',
-  curp: 'ABCD850101HDFRRN09',
-  email: 'alejandro.hernandez@empresa.com',
-  passwordMask: '••••••••••',
-  passwordStrengthLabel: 'Robusta (Nivel 4/4)',
-  twoFactorLabel: 'Activo con Google / Biz Authenticator',
-  twoFactorEnabled: true,
 };

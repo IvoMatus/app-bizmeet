@@ -37,6 +37,7 @@ export function IdentitySection({ profile }: { profile: ProfileData }) {
         value={profile.phone}
         trailing={<StatusPill label="WhatsApp" variant="success" />}
       />
+      <InfoRow icon="document" label="CURP / Identificación Fiscal" value={profile.curp} />
     </SectionCard>
   );
 }
