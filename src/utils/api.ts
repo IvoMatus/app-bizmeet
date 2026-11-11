@@ -72,6 +72,10 @@ export async function createCompany(input: CreateCompanyInput, token: string): P
   return response.json();
 }
 
+/** Código de plan que puede tener una empresa (confirmado con backend-dev: `plan` viaja como
+ * string plano, no como objeto — `PERFIL_BASICO` no aplica, eso es "sin empresa"). */
+export type CompanyPlanCode = 'RED_PRIVADA' | 'EMPRENDIMIENTO' | 'EMPRESA' | 'PREMIUM';
+
 /** Empresa tal como la devuelve api-bizmeet (GET /companies/mine). */
 export type CompanyView = {
   id: string;
@@ -80,25 +84,17 @@ export type CompanyView = {
   industry: string;
   tipo: 'CLUB' | 'CLIENTE' | 'PARTNER';
   formaJuridica: 'JURIDICA' | 'NATURAL' | null;
-  plan: { type: 'EMPRENDIMIENTO' | 'EMPRESA' | 'PREMIUM' };
+  plan: CompanyPlanCode;
   verified: boolean;
   estado: 'ACTIVA' | 'PENDIENTE_PAGO' | 'BLOQUEADA';
 };
 
 export type MyCompany = { company: CompanyView; rol: 'ADMINISTRADOR' | 'INVITADO' };
 
-export type CompanyPlanDetail = {
-  type: 'EMPRENDIMIENTO' | 'EMPRESA' | 'PREMIUM';
-  priceMxn: number;
-  maxChatsPerMonth: number;
-  maxWallPosts: number;
-  maxActiveMatches: number;
-  eventDiscount: number;
-};
-
 export type CompanyDocument = { tipo: string; key: string };
 
-/** Empresa tal como la devuelve api-bizmeet (GET /companies/:id), con el plan y documentos completos. */
+/** Empresa tal como la devuelve api-bizmeet (GET /companies/:id), con el plan (código) y documentos
+ * completos. Para precio/cupos del plan, cruzar `plan` contra el catálogo de `fetchPlans`. */
 export type CompanyDetail = {
   id: string;
   name: string;
@@ -106,11 +102,43 @@ export type CompanyDetail = {
   industry: string;
   tipo: 'CLUB' | 'CLIENTE' | 'PARTNER';
   formaJuridica: 'JURIDICA' | 'NATURAL' | null;
-  plan: CompanyPlanDetail;
+  plan: CompanyPlanCode;
   verified: boolean;
   documentos: CompanyDocument[];
   estado: 'ACTIVA' | 'PENDIENTE_PAGO' | 'BLOQUEADA';
 };
+
+/** Catálogo de un plan pagado (GET /plans, `billing.controller.ts`). Precio en USD; `cupos` son
+ * los límites mensuales reales del motor de permisos (`plan-catalog.ts`). Solo trae los planes
+ * contratables (`EMPRENDIMIENTO`/`EMPRESA`/`PREMIUM`) — `RED_PRIVADA`/`PERFIL_BASICO` no aparecen. */
+export type PlanCatalogEntry = {
+  code: 'EMPRENDIMIENTO' | 'EMPRESA' | 'PREMIUM';
+  precioUsdMes: number;
+  muroCompleto: boolean;
+  directorioCompleto: boolean;
+  comentar: boolean;
+  recibirConversaciones: boolean;
+  aparecerEnDirectorio: boolean;
+  prioritarias: boolean;
+  cupos: {
+    publicacionesPorTipoMes: number;
+    iniciarConversacionesMes: number;
+    sugerenciasMes: number;
+    contactos: number;
+  };
+};
+
+/** GET /plans — catálogo de planes contratables, con precio y cupos reales (pantalla "Elegir plan"). */
+export async function fetchPlans(token: string): Promise<PlanCatalogEntry[]> {
+  const response = await fetch(`${API_URL}/plans`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (!response.ok) {
+    const body = await response.json().catch(() => null);
+    throw new Error(body?.message ?? `No se pudo cargar el catálogo de planes (${response.status}).`);
+  }
+  return response.json();
+}
 
 /** Trae el detalle de una empresa por id. */
 export async function fetchCompany(id: string, token: string): Promise<CompanyDetail> {

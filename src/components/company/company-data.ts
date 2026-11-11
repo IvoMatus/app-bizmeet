@@ -1,12 +1,12 @@
 import type { CompanyIconName } from '@/components/company/company-icons';
-import type { MyCompany } from '@/utils/api';
+import type { CompanyPlanCode, MyCompany } from '@/utils/api';
 
 export type Company = {
   id: string;
   name: string;
   industry: string;
   tipo: 'CLUB' | 'CLIENTE' | 'PARTNER';
-  planType: 'EMPRENDIMIENTO' | 'EMPRESA' | 'PREMIUM';
+  planType: CompanyPlanCode;
   verified: boolean;
   roleBadge: { label: string; icon: CompanyIconName };
   /** Solo el titular (rol ADMINISTRADOR) puede editar la empresa o gestionar su equipo. */
@@ -22,7 +22,7 @@ export function toCompany({ company, rol }: MyCompany): Company {
     name: company.name,
     industry: company.industry,
     tipo: company.tipo,
-    planType: company.plan.type,
+    planType: company.plan,
     verified: company.verified,
     roleBadge: isTitular ? { label: 'Titular · Admin', icon: 'titular-badge' } : { label: 'Invitado', icon: 'role-badge' },
     isTitular,

@@ -6,28 +6,31 @@ import { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { PLAN_LABEL } from '@/components/company/company-card';
 import { CompanyIcon } from '@/components/company/company-icons';
-import { createMockCheckoutSession, PLAN_CATALOG, priceForCycle, type BillingCycle, type PlanOption } from '@/components/company/plan-data';
+import { createMockCheckoutSession } from '@/components/company/plan-data';
 import { PrimaryButton } from '@/components/register/primary-button';
 import { RegisterHeader } from '@/components/register/register-header';
 import { showAlert } from '@/components/ui/app-alert';
-import { SegmentedControl } from '@/components/ui/segmented-control';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
-import { fetchCompany, type CompanyDetail } from '@/utils/api';
+import { fetchCompany, fetchPlans, type CompanyDetail, type PlanCatalogEntry } from '@/utils/api';
 
 /**
  * ⚠️ Figma: el MCP llegó al rate limit del plan Starter a mitad del relevamiento de este
  * nodo ("Cambiar Plan de Empresa", 2006:5017 claro / 2006:7359 oscuro, fileKey
- * cMjyM3XHZbQN7DGiquE67M). Solo hubo descripción estructural de alto nivel (selector de tipo
- * de entidad, selector mensual/anual, tarjeta de plan activo con precio y CTA) — SIN
+ * cMjyM3XHZbQN7DGiquE67M). Solo hubo descripción estructural de alto nivel — SIN
  * `get_design_context` real. Esta pantalla usa tokens/componentes existentes en vez de
- * adivinar textos/colores del diseño. Layout provisorio: tarjetas de los 3 planes en vez de un
- * selector de "tipo de entidad" separado (no quedó claro a qué refería esa descripción sin
- * el contexto completo del nodo). Re-extraer 2006:5017 / 2006:7359 cuando se libere el rate
+ * adivinar textos/colores del diseño. Re-extraer 2006:5017 / 2006:7359 cuando se libere el rate
  * limit para el ajuste fino visual.
+ *
+ * Catálogo real vía `GET /plans` (precio en USD, cupos del motor de permisos) — sin el selector
+ * Mensual/Anual del mock original: el backend no tiene precio anual, inventar un "2 meses
+ * gratis" encima hubiera sido fabricar datos otra vez. El checkout en sí sigue mockeado
+ * (`createMockCheckoutSession`): Stripe real existe en el backend pero queda bloqueado a
+ * Sprint 3 por decisión de producto.
  */
 export default function PlanScreen() {
   const theme = useTheme();
@@ -35,18 +38,17 @@ export default function PlanScreen() {
   const { companyId } = useLocalSearchParams<{ companyId: string }>();
 
   const [company, setCompany] = useState<CompanyDetail | null>(null);
+  const [plans, setPlans] = useState<PlanCatalogEntry[] | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [cycle, setCycle] = useState<BillingCycle>('MENSUAL');
-  const [checkoutLoadingPlan, setCheckoutLoadingPlan] = useState<PlanOption['type'] | null>(null);
+  const [checkoutLoadingPlan, setCheckoutLoadingPlan] = useState<PlanCatalogEntry['code'] | null>(null);
 
   const load = useCallback(() => {
     getToken()
-      .then((token) => {
+      .then(async (token) => {
         if (!token) throw new Error('No se pudo obtener la sesión.');
-        return fetchCompany(companyId, token);
-      })
-      .then((company) => {
+        const [company, plans] = await Promise.all([fetchCompany(companyId, token), fetchPlans(token)]);
         setCompany(company);
+        setPlans(plans);
         setError(null);
       })
       .catch((e: Error) => setError(e.message));
@@ -72,12 +74,10 @@ export default function PlanScreen() {
   }, [load]);
 
   const handleChoosePlan = useCallback(
-    async (plan: PlanOption) => {
-      setCheckoutLoadingPlan(plan.type);
+    async (plan: PlanCatalogEntry) => {
+      setCheckoutLoadingPlan(plan.code);
       try {
-        // TODO(backend): sustituir por fetch real a POST /companies/:id/billing/checkout-session
-        // (ver `createMockCheckoutSession`) cuando el endpoint exista.
-        const session = await createMockCheckoutSession(companyId, plan.type, cycle);
+        const session = await createMockCheckoutSession(companyId, plan.code);
         await WebBrowser.openAuthSessionAsync(session.url, Linking.createURL('empresa/billing-return'));
       } catch {
         showAlert('No se pudo iniciar el pago', 'Revisá tu conexión e intentá de nuevo.');
@@ -85,7 +85,7 @@ export default function PlanScreen() {
         setCheckoutLoadingPlan(null);
       }
     },
-    [companyId, cycle],
+    [companyId],
   );
 
   return (
@@ -99,35 +99,31 @@ export default function PlanScreen() {
           </Pressable>
         )}
 
-        {!company && !error && <ActivityIndicator color={theme.accent} style={styles.loading} />}
+        {(!company || !plans) && !error && <ActivityIndicator color={theme.accent} style={styles.loading} />}
 
-        {company && (
+        {company && plans && (
           <ScrollView contentContainerStyle={styles.content}>
-            <SegmentedControl
-              accessibilityLabel="Ciclo de facturación"
-              value={cycle}
-              onChange={setCycle}
-              activeBackgroundColor={theme.buttonDark}
-              options={[
-                { value: 'MENSUAL', label: 'Mensual' },
-                { value: 'ANUAL', label: 'Anual', badge: '2 meses gratis' },
-              ]}
-            />
-
-            {PLAN_CATALOG.map((plan) => {
-              const isCurrent = plan.type === company.plan.type;
-              const price = priceForCycle(plan, cycle);
-              const loadingThis = checkoutLoadingPlan === plan.type;
+            {plans.map((plan) => {
+              const isCurrent = plan.code === company.plan && company.estado !== 'PENDIENTE_PAGO';
+              const loadingThis = checkoutLoadingPlan === plan.code;
+              const features = [
+                `${plan.cupos.publicacionesPorTipoMes} publicaciones por tipo al mes`,
+                `${plan.cupos.iniciarConversacionesMes} conversaciones iniciadas al mes`,
+                plan.cupos.sugerenciasMes > 0 ? `${plan.cupos.sugerenciasMes} sugerencias al mes` : null,
+                `${plan.cupos.contactos} contactos de equipo`,
+                plan.prioritarias ? 'Publicaciones prioritarias' : null,
+                plan.aparecerEnDirectorio ? 'Aparece en el directorio' : null,
+              ].filter((f): f is string => f !== null);
 
               return (
                 <View
-                  key={plan.type}
+                  key={plan.code}
                   style={[
                     styles.card,
                     { backgroundColor: theme.cardElevated, borderColor: isCurrent ? theme.accent : theme.surfaceBorder },
                   ]}>
                   <View style={styles.cardHeader}>
-                    <ThemedText style={[styles.planLabel, { color: theme.textPrimary }]}>{plan.label}</ThemedText>
+                    <ThemedText style={[styles.planLabel, { color: theme.textPrimary }]}>{PLAN_LABEL[plan.code]}</ThemedText>
                     {isCurrent && (
                       <View style={[styles.currentBadge, { backgroundColor: theme.buttonDark }]}>
                         <ThemedText style={[styles.currentBadgeLabel, { color: theme.accent }]}>Plan actual</ThemedText>
@@ -135,16 +131,12 @@ export default function PlanScreen() {
                     )}
                   </View>
 
-                  <ThemedText style={[styles.description, { color: theme.textMuted }]}>{plan.description}</ThemedText>
-
                   <ThemedText style={[styles.price, { color: theme.textPrimary }]}>
-                    ${price.toLocaleString('es-MX')} MXN
-                    <ThemedText style={[styles.pricePeriod, { color: theme.textMuted }]}>
-                      {cycle === 'ANUAL' ? ' / año' : ' / mes'}
-                    </ThemedText>
+                    ${plan.precioUsdMes.toLocaleString('en-US')} USD
+                    <ThemedText style={[styles.pricePeriod, { color: theme.textMuted }]}> / mes</ThemedText>
                   </ThemedText>
 
-                  {plan.features.map((feature) => (
+                  {features.map((feature) => (
                     <View key={feature} style={styles.featureRow}>
                       <CompanyIcon name="verified-check" color={theme.success} width={12} height={12} />
                       <ThemedText style={[styles.featureLabel, { color: theme.textMuted }]}>{feature}</ThemedText>
@@ -152,7 +144,7 @@ export default function PlanScreen() {
                   ))}
 
                   <PrimaryButton
-                    label={isCurrent ? 'Plan actual' : loadingThis ? 'Abriendo pago…' : `Elegir ${plan.label}`}
+                    label={isCurrent ? 'Plan actual' : loadingThis ? 'Abriendo pago…' : `Elegir ${PLAN_LABEL[plan.code]}`}
                     disabled={isCurrent || checkoutLoadingPlan !== null}
                     onPress={() => handleChoosePlan(plan)}
                   />
@@ -195,9 +187,6 @@ const styles = StyleSheet.create({
   currentBadgeLabel: {
     fontSize: 11,
     fontWeight: '600',
-  },
-  description: {
-    fontSize: 13,
   },
   price: {
     fontSize: 24,

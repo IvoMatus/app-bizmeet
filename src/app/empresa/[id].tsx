@@ -4,19 +4,14 @@ import { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { PLAN_LABEL } from '@/components/company/company-card';
 import { CompanyIcon } from '@/components/company/company-icons';
 import { RegisterHeader } from '@/components/register/register-header';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
-import { fetchCompany, type CompanyDetail } from '@/utils/api';
-
-const PLAN_LABEL: Record<CompanyDetail['plan']['type'], string> = {
-  EMPRENDIMIENTO: 'Emprendimiento',
-  EMPRESA: 'Empresa',
-  PREMIUM: 'Premium',
-};
+import { fetchCompany, fetchPlans, type CompanyDetail, type PlanCatalogEntry } from '@/utils/api';
 
 const TIPO_LABEL: Record<CompanyDetail['tipo'], string> = {
   CLUB: 'Club',
@@ -52,16 +47,16 @@ export default function EmpresaDetalleScreen() {
   const { getToken } = useAuth();
   const { id } = useLocalSearchParams<{ id: string }>();
   const [company, setCompany] = useState<CompanyDetail | null>(null);
+  const [plans, setPlans] = useState<PlanCatalogEntry[] | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const load = useCallback(() => {
     getToken()
-      .then((token) => {
+      .then(async (token) => {
         if (!token) throw new Error('No se pudo obtener la sesión.');
-        return fetchCompany(id, token);
-      })
-      .then((company) => {
+        const [company, plans] = await Promise.all([fetchCompany(id, token), fetchPlans(token)]);
         setCompany(company);
+        setPlans(plans);
         setError(null);
       })
       .catch((e: Error) => setError(e.message));
@@ -92,7 +87,7 @@ export default function EmpresaDetalleScreen() {
               <ThemedText style={[styles.name, { color: theme.textPrimary }]}>{company.name}</ThemedText>
               <View style={styles.badgeRow}>
                 {company.verified && <Badge label="Verificado" bg={theme.seekIconSoft} fg={theme.success} />}
-                <Badge label={`Plan ${PLAN_LABEL[company.plan.type]}`} bg={theme.buttonDark} fg={theme.accent} />
+                <Badge label={`Plan ${PLAN_LABEL[company.plan]}`} bg={theme.buttonDark} fg={theme.accent} />
                 {company.formaJuridica && (
                   <Badge label={FORMA_JURIDICA_LABEL[company.formaJuridica]} bg={theme.buttonDark} fg={theme.accent} />
                 )}
@@ -104,12 +99,28 @@ export default function EmpresaDetalleScreen() {
               <DataRow label="RFC" value={company.rfc} />
               <DataRow label="Industria" value={company.industry} />
               <DataRow label="Tipo" value={TIPO_LABEL[company.tipo]} />
-              <DataRow label="Plan" value={PLAN_LABEL[company.plan.type]} />
-              <DataRow label="Precio mensual" value={`$${company.plan.priceMxn} MXN`} />
-              <DataRow label="Chats por mes" value={String(company.plan.maxChatsPerMonth)} />
-              <DataRow label="Publicaciones en muro" value={String(company.plan.maxWallPosts)} />
-              <DataRow label="Matches activos" value={String(company.plan.maxActiveMatches)} />
-              <DataRow label="Descuento en eventos" value={`${company.plan.eventDiscount}%`} />
+              <DataRow label="Plan" value={PLAN_LABEL[company.plan]} />
+              {company.estado === 'PENDIENTE_PAGO' ? (
+                <ThemedText style={{ color: theme.warningText }}>
+                  El pago todavía no se confirma: hasta que se acredite, la empresa opera con los derechos de perfil
+                  básico aunque el plan elegido sea {PLAN_LABEL[company.plan]}.
+                </ThemedText>
+              ) : (
+                (() => {
+                  // `plans` no trae RED_PRIVADA (no es contratable) — ahí no hay catálogo que mostrar.
+                  const catalog = plans?.find((p) => p.code === company.plan);
+                  if (!catalog) return null;
+                  return (
+                    <>
+                      <DataRow label="Precio mensual" value={`$${catalog.precioUsdMes} USD`} />
+                      <DataRow label="Publicaciones por tipo al mes" value={String(catalog.cupos.publicacionesPorTipoMes)} />
+                      <DataRow label="Conversaciones iniciadas al mes" value={String(catalog.cupos.iniciarConversacionesMes)} />
+                      <DataRow label="Sugerencias al mes" value={String(catalog.cupos.sugerenciasMes)} />
+                      <DataRow label="Contactos de equipo" value={String(catalog.cupos.contactos)} />
+                    </>
+                  );
+                })()
+              )}
               <Pressable
                 accessibilityRole="button"
                 accessibilityLabel="Cambiar plan"

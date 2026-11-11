@@ -10,6 +10,7 @@ import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 
 export const PLAN_LABEL: Record<Company['planType'], string> = {
+  RED_PRIVADA: 'Red Privada',
   EMPRENDIMIENTO: 'Emprendimiento',
   EMPRESA: 'Empresa',
   PREMIUM: 'Premium',
