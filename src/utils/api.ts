@@ -1,4 +1,40 @@
+import { reportAuthOutcome } from '@/hooks/use-auth-token';
+
 const API_URL = process.env.EXPO_PUBLIC_API_URL;
+
+// Intercepta cada fetch de la app para que `useAuthToken` sepa si el backend aceptó el token,
+// sin que los ~18 call-sites tengan que reportarlo a mano. Guard contra Fast Refresh: sin él,
+// cada recarga en caliente de este módulo envolvería `fetch` de nuevo sobre el wrapper anterior.
+const g = globalThis as typeof globalThis & { __bizmeetFetchPatched?: boolean };
+if (!g.__bizmeetFetchPatched) {
+  g.__bizmeetFetchPatched = true;
+  const originalFetch: typeof globalThis.fetch = globalThis.fetch;
+  globalThis.fetch = (async (...args: Parameters<typeof globalThis.fetch>) => {
+    const response = await originalFetch(...args);
+    // Solo nos interesa si NUESTRA API rechazó el token — el patch es sobre `global.fetch`
+    // completo, así que también pasan por acá la telemetría de Clerk, Spaces, etc. Sin este
+    // filtro, un 4xx/5xx de cualquier otro dominio (p.ej. clerk-telemetry.com, que no afecta
+    // la sesión) se contaba como rechazo de auth real y disparaba sign-out sin relación con
+    // el token.
+    const url = typeof args[0] === 'string' ? args[0] : args[0] instanceof URL ? args[0].href : args[0].url;
+    const isOurApi = !!API_URL && url.startsWith(API_URL);
+    if (isOurApi) {
+      reportAuthOutcome(response.status);
+    }
+    // ponytail: diagnóstico temporal — loguea el body real de cualquier respuesta no-ok de
+    // nuestra API sin consumir el stream que usa el código real (clona antes de leer). Sacar
+    // una vez confirmada la causa del "JSON Parse error"; no corre en release (`__DEV__` es
+    // `false`).
+    if (__DEV__ && isOurApi && !response.ok) {
+      response
+        .clone()
+        .text()
+        .then((text: string) => console.warn('[api][diag] respuesta no-ok', url, response.status, JSON.stringify(text)))
+        .catch((e: unknown) => console.warn('[api][diag] no se pudo clonar/leer el body', url, response.status, e));
+    }
+    return response;
+  }) as typeof globalThis.fetch;
+}
 
 export type CreateUserProfileInput = {
   clerkUserId: string;
