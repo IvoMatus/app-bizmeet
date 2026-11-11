@@ -21,7 +21,7 @@ type CrearEmpresaForm = {
   industry: string;
   tipo: CreateCompanyInput['tipo'] | '';
   formaJuridica: CreateCompanyInput['formaJuridica'] | '';
-  planType: CreateCompanyInput['planType'] | '';
+  plan: CreateCompanyInput['plan'] | '';
 };
 
 const TIPO_OPTIONS: FormSelectOption<CreateCompanyInput['tipo']>[] = [
@@ -35,8 +35,8 @@ const FORMA_JURIDICA_OPTIONS: FormSelectOption<NonNullable<CreateCompanyInput['f
   { label: 'Natural', value: 'NATURAL' },
 ];
 
-const PLAN_OPTIONS: FormSelectOption<CreateCompanyInput['planType']>[] = [
-  { label: 'Básico', value: 'BASICO' },
+const PLAN_OPTIONS: FormSelectOption<CreateCompanyInput['plan']>[] = [
+  { label: 'Emprendimiento', value: 'EMPRENDIMIENTO' },
   { label: 'Empresa', value: 'EMPRESA' },
   { label: 'Premium', value: 'PREMIUM' },
 ];
@@ -45,7 +45,7 @@ export default function CrearEmpresaScreen() {
   const { getToken } = useAuth();
   const [submitting, setSubmitting] = useState(false);
   const { control, handleSubmit, setValue } = useForm<CrearEmpresaForm>({
-    defaultValues: { name: '', rfc: '', industry: '', tipo: '', formaJuridica: '', planType: '' },
+    defaultValues: { name: '', rfc: '', industry: '', tipo: '', formaJuridica: '', plan: '' },
   });
   const tipo = useWatch({ control, name: 'tipo' });
   const requiereFormaJuridica = tipo === 'CLIENTE';
@@ -69,7 +69,7 @@ export default function CrearEmpresaScreen() {
           industry: data.industry,
           tipo: data.tipo as CreateCompanyInput['tipo'],
           formaJuridica: requiereFormaJuridica ? (data.formaJuridica as CreateCompanyInput['formaJuridica']) : undefined,
-          planType: data.planType as CreateCompanyInput['planType'],
+          plan: data.plan as CreateCompanyInput['plan'],
         },
         token,
       );
@@ -127,7 +127,7 @@ export default function CrearEmpresaScreen() {
           )}
           <FormSelect
             control={control}
-            name="planType"
+            name="plan"
             label="Plan"
             options={PLAN_OPTIONS}
             rules={{ required: 'Requerido' }}

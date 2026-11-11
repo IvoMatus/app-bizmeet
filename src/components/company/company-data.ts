@@ -6,7 +6,7 @@ export type Company = {
   name: string;
   industry: string;
   tipo: 'CLUB' | 'CLIENTE' | 'PARTNER';
-  planType: 'BASICO' | 'EMPRESA' | 'PREMIUM';
+  planType: 'EMPRENDIMIENTO' | 'EMPRESA' | 'PREMIUM';
   verified: boolean;
   roleBadge: { label: string; icon: CompanyIconName };
   /** Solo el titular (rol ADMINISTRADOR) puede editar la empresa o gestionar su equipo. */

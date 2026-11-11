@@ -7,23 +7,34 @@ import { ThemedText } from '@/components/themed-text';
 import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 
-const PLAN_LABEL: Record<Company['planType'], string> = {
-  BASICO: 'Básico',
+export const PLAN_LABEL: Record<Company['planType'], string> = {
+  EMPRENDIMIENTO: 'Emprendimiento',
   EMPRESA: 'Empresa',
   PREMIUM: 'Premium',
 };
 
-const TIPO_LABEL: Record<Company['tipo'], string> = {
+export const TIPO_LABEL: Record<Company['tipo'], string> = {
   CLUB: 'Club',
   CLIENTE: 'Cliente',
   PARTNER: 'Partner',
 };
 
-/** Badge pequeño con ícono + texto (Verificado, Titular · Admin, Invitado). */
-function Badge({ icon, label, bg, fg }: { icon: Parameters<typeof CompanyIcon>[0]['name']; label: string; bg: string; fg: string }) {
+/** Badge pequeño con ícono + texto (Verificado, Titular · Admin, Invitado). Ícono opcional
+ * para reusarlo en badges de texto solo (ACTIVO, MÁS POPULAR, PLAN ACTUAL en Planes). */
+export function Badge({
+  icon,
+  label,
+  bg,
+  fg,
+}: {
+  icon?: Parameters<typeof CompanyIcon>[0]['name'];
+  label: string;
+  bg: string;
+  fg: string;
+}) {
   return (
     <View style={[styles.badge, { backgroundColor: bg }]}>
-      <CompanyIcon name={icon} color={fg} width={11} height={11} />
+      {icon && <CompanyIcon name={icon} color={fg} width={11} height={11} />}
       <ThemedText style={[styles.badgeLabel, { color: fg }]}>{label}</ThemedText>
     </View>
   );

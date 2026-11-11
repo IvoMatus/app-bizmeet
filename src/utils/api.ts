@@ -54,7 +54,8 @@ export type CreateCompanyInput = {
   industry: string;
   tipo: 'CLUB' | 'CLIENTE' | 'PARTNER';
   formaJuridica?: 'JURIDICA' | 'NATURAL';
-  planType: 'BASICO' | 'EMPRESA' | 'PREMIUM';
+  /** v4: solo planes pagados al crear — "Red Privada" llega por invitación de un Partner. */
+  plan: 'EMPRENDIMIENTO' | 'EMPRESA' | 'PREMIUM';
 };
 
 /** Creates a company in api-bizmeet. The creator (from `token`) is set as its Administrador. */
@@ -79,7 +80,7 @@ export type CompanyView = {
   industry: string;
   tipo: 'CLUB' | 'CLIENTE' | 'PARTNER';
   formaJuridica: 'JURIDICA' | 'NATURAL' | null;
-  plan: { type: 'BASICO' | 'EMPRESA' | 'PREMIUM' };
+  plan: { type: 'EMPRENDIMIENTO' | 'EMPRESA' | 'PREMIUM' };
   verified: boolean;
 };
   estado: 'ACTIVA' | 'PENDIENTE_PAGO' | 'BLOQUEADA';
@@ -87,7 +88,7 @@ export type CompanyView = {
 export type MyCompany = { company: CompanyView; rol: 'ADMINISTRADOR' | 'INVITADO' };
 
 export type CompanyPlanDetail = {
-  type: 'BASICO' | 'EMPRESA' | 'PREMIUM';
+  type: 'EMPRENDIMIENTO' | 'EMPRESA' | 'PREMIUM';
   priceMxn: number;
   maxChatsPerMonth: number;
   maxWallPosts: number;

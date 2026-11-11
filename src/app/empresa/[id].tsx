@@ -13,7 +13,7 @@ import { useTheme } from '@/hooks/use-theme';
 import { fetchCompany, type CompanyDetail } from '@/utils/api';
 
 const PLAN_LABEL: Record<CompanyDetail['plan']['type'], string> = {
-  BASICO: 'Básico',
+  EMPRENDIMIENTO: 'Emprendimiento',
   EMPRESA: 'Empresa',
   PREMIUM: 'Premium',
 };
@@ -110,6 +110,14 @@ export default function EmpresaDetalleScreen() {
               <DataRow label="Publicaciones en muro" value={String(company.plan.maxWallPosts)} />
               <DataRow label="Matches activos" value={String(company.plan.maxActiveMatches)} />
               <DataRow label="Descuento en eventos" value={`${company.plan.eventDiscount}%`} />
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Cambiar plan"
+                onPress={() => router.push(`/empresa/plan?companyId=${company.id}`)}
+                style={({ pressed }) => [styles.detailsButton, { backgroundColor: theme.buttonDark, opacity: pressed ? 0.85 : 1 }]}>
+                <ThemedText style={[styles.detailsLabel, { color: theme.accent }]}>Cambiar plan</ThemedText>
+                <CompanyIcon name="arrow-right" color={theme.accent} width={12} height={12} />
+              </Pressable>
             </View>
 
             {company.documentos.length > 0 && (
@@ -192,5 +200,18 @@ const styles = StyleSheet.create({
   },
   docLabel: {
     fontSize: 13,
+  },
+  detailsButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: Spacing.two,
+    height: 44,
+    borderRadius: 8,
+    marginTop: Spacing.two,
+  },
+  detailsLabel: {
+    fontSize: 15,
+    fontWeight: '700',
   },
 });
