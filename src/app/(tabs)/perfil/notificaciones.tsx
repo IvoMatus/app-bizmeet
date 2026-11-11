@@ -1,44 +1,65 @@
-import { useCallback, useState } from 'react';
+import { useAuth } from '@clerk/expo';
+import { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 
-import { fetchNotifications, unreadCount, type AppNotification } from '@/components/notifications/notifications-data';
+import { toAppNotification, unreadCount, type AppNotification } from '@/components/notifications/notifications-data';
 import { NotificationCard } from '@/components/notifications/notifications-sections';
 import { ProfileTabs } from '@/components/profile/profile-chrome';
 import { ThemedText } from '@/components/themed-text';
 import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
+import { fetchNotifications } from '@/utils/api';
 
 /** "Centro de Notificaciones B2B" (T2.5, Figma 2046:558 claro / 2046:2 oscuro) — tab hermana de
  * Perfil/Invitaciones/Pago dentro del mismo stack/header compartido (ver perfil/_layout.tsx).
  *
- * ponytail: el MCP de Figma agotó el cupo de llamadas del plan Starter al momento de
- * implementar esta pantalla (get_design_context/get_metadata/get_screenshot con rate limit) —
- * se construyó por spec funcional + el patrón visual ya confirmado en Invitaciones/Equipo
- * (mismo header, mismos tokens de theme.ts). Verificar pixel-a-pixel contra 2046:558/2046:2
- * cuando vuelva el cupo: layout exacto, copy literal y si aparece un toggle de
- * push/correo (fuera de alcance de esta fase, no conectar a nada real si aparece).
- *
  * Alcance: solo feed in-app (invitaciones, pagos, cambios de rol/equipo). Push/correo y sus
- * settings son Fase 2, explícitamente fuera de alcance acá.
+ * settings son Fase 2, explícitamente fuera de alcance acá. El feed arranca desde que se creó
+ * el endpoint — no hay eventos históricos. Tampoco hay "marcar leído" server-side todavía.
  */
 export default function NotificacionesScreen() {
   const theme = useTheme();
-  // TODO(backend): mock — ver notifications-data.ts; sin fetch real el estado de error es
-  // inalcanzable hoy, se deja el flujo listo para cuando exista el endpoint.
-  const [notifications, setNotifications] = useState<AppNotification[] | null>(() => fetchNotifications());
+  const { getToken } = useAuth();
+  const [notifications, setNotifications] = useState<AppNotification[] | null>(null);
+  const [nextCursor, setNextCursor] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [loadingMore, setLoadingMore] = useState(false);
 
-  const load = useCallback(() => {
-    setNotifications(fetchNotifications());
-    setError(null);
-  }, []);
+  const load = useCallback(
+    (cursor?: string) => {
+      getToken()
+        .then((token) => {
+          if (!token) throw new Error('No se pudo obtener la sesión.');
+          return fetchNotifications(token, { cursor });
+        })
+        .then((page) => {
+          const mapped = page.items.map(toAppNotification);
+          setNotifications((prev) => (cursor ? [...(prev ?? []), ...mapped] : mapped));
+          setNextCursor(page.nextCursor);
+          setError(null);
+        })
+        .catch((e: Error) => setError(e.message))
+        .finally(() => setLoadingMore(false));
+    },
+    [getToken],
+  );
+
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  const handleLoadMore = () => {
+    if (!nextCursor || loadingMore) return;
+    setLoadingMore(true);
+    load(nextCursor);
+  };
 
   return (
     <View style={[styles.screen, { backgroundColor: theme.screenBackground }]}>
       <ProfileTabs activeKey="notif" />
 
       {error && !notifications && (
-        <Pressable onPress={load} style={styles.center}>
+        <Pressable onPress={() => load()} style={styles.center}>
           <ThemedText style={{ color: theme.textMuted, textAlign: 'center' }}>{error} Tocá para reintentar.</ThemedText>
         </Pressable>
       )}
@@ -73,6 +94,23 @@ export default function NotificacionesScreen() {
           ) : (
             notifications.map((notification) => <NotificationCard key={notification.id} notification={notification} />)
           )}
+
+          {nextCursor && (
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Cargar más notificaciones"
+              onPress={handleLoadMore}
+              disabled={loadingMore}
+              style={({ pressed }) => [styles.loadMoreButton, { borderColor: theme.accent, opacity: pressed || loadingMore ? 0.7 : 1 }]}>
+              {loadingMore ? (
+                <ActivityIndicator color={theme.accent} />
+              ) : (
+                <ThemedText type="smallBold" themeColor="accent">
+                  Cargar más
+                </ThemedText>
+              )}
+            </Pressable>
+          )}
         </ScrollView>
       )}
     </View>
@@ -88,4 +126,5 @@ const styles = StyleSheet.create({
   eyebrow: { fontSize: 11, fontWeight: '700', letterSpacing: 1, textTransform: 'uppercase' },
   counterBadge: { alignSelf: 'flex-start', paddingHorizontal: Spacing.two, paddingVertical: Spacing.half + 2, borderRadius: 9999, marginTop: Spacing.two },
   emptyText: { textAlign: 'center', paddingVertical: Spacing.four },
+  loadMoreButton: { height: 44, borderRadius: 10, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
 });

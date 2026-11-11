@@ -1,10 +1,7 @@
-// TODO(backend): mock — el feed de notificaciones in-app se desarrolla en paralelo en
-// api-bizmeet. Reemplazar por GET /users/me/notifications cuando el contrato esté confirmado.
-// Fase 2 (push/correo y sus settings) está fuera de alcance de esta pantalla — ver T2.5.
+import type { NotificationItemStatus, NotificationItemType, NotificationItemView } from '@/utils/api';
 
-export type NotificationType = 'invitation' | 'payment' | 'team';
-
-export type NotificationStatus = 'pending' | 'success' | 'error';
+export type NotificationType = NotificationItemType;
+export type NotificationStatus = NotificationItemStatus;
 
 export type AppNotification = {
   id: string;
@@ -19,56 +16,33 @@ export type AppNotification = {
   actionRoute?: string;
 };
 
-// ponytail: copy en español B2B razonable; verificar texto exacto contra Figma 2046:558/2046:2
-// cuando vuelva el cupo del MCP (rate limit agotado hoy).
-export const MOCK_NOTIFICATIONS: AppNotification[] = [
-  {
-    id: 'n1',
-    type: 'invitation',
-    title: 'Invitación corporativa',
-    body: 'Fernanda Castro te invitó a unirte a Pacífico Logística S.A. como Contacto Comercial.',
-    createdAt: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
-    read: false,
-    status: 'pending',
-    actionLabel: 'Ver invitación',
-    actionRoute: '/perfil/invitaciones',
-  },
-  {
-    id: 'n2',
-    type: 'payment',
-    title: 'Pago confirmado',
-    body: 'Tu plan Premium se renovó correctamente.',
-    createdAt: new Date(Date.now() - 26 * 60 * 60 * 1000).toISOString(),
-    read: false,
-    status: 'success',
-    actionLabel: 'Ver pagos',
-    actionRoute: '/empresa/pagos?companyId=c1',
-  },
-  {
-    id: 'n3',
-    type: 'team',
-    title: 'Cambio de rol',
-    body: 'Fuiste asignado como Director Financiero en Andes Capital SpA.',
-    createdAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
-    read: true,
-    actionLabel: 'Ver equipo',
-    actionRoute: '/empresa/equipo?companyId=c1',
-  },
-  {
-    id: 'n4',
-    type: 'payment',
-    title: 'Pago pendiente',
-    body: 'Hay un pago pendiente de tu suscripción. Revísalo para evitar la suspensión del plan.',
-    createdAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
-    read: true,
-    status: 'pending',
-    actionLabel: 'Ver pagos',
-    actionRoute: '/empresa/pagos?companyId=c1',
-  },
-];
+/**
+ * `GET /notifications` no manda `actionLabel`/`actionRoute` a propósito (el backend no se
+ * acopla a la navegación del front) — se arman acá a partir de `type`/`companyId`/`invitationId`.
+ * `team` queda sin acción: es informativo, no hay pantalla de detalle de un cambio de rol puntual.
+ */
+function actionFor(item: NotificationItemView): { actionLabel?: string; actionRoute?: string } {
+  switch (item.type) {
+    case 'invitation':
+      return { actionLabel: 'Ver invitación', actionRoute: '/perfil/invitaciones' };
+    case 'payment':
+      return { actionLabel: 'Ver pagos', actionRoute: `/empresa/pagos?companyId=${item.companyId}` };
+    case 'team':
+      return {};
+  }
+}
 
-export function fetchNotifications(): AppNotification[] {
-  return MOCK_NOTIFICATIONS;
+export function toAppNotification(item: NotificationItemView): AppNotification {
+  return {
+    id: item.id,
+    type: item.type,
+    title: item.title,
+    body: item.body,
+    createdAt: item.createdAt,
+    read: item.read,
+    status: item.status,
+    ...actionFor(item),
+  };
 }
 
 export function unreadCount(notifications: AppNotification[]): number {

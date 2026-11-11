@@ -352,6 +352,46 @@ export async function uploadPostMedia(companyId: string, uri: string, mimeType: 
   return { tipo: parsed.tipo, key: parsed.key };
 }
 
+// --- Notificaciones (T2.5, módulo `notification` de api-bizmeet) ---
+
+export type NotificationItemType = 'invitation' | 'payment' | 'team';
+export type NotificationItemStatus = 'pending' | 'success' | 'error';
+
+/** GET /notifications — item tal como lo devuelve el backend. `title`/`body` ya vienen armados
+ * server-side; `actionLabel`/`actionRoute` NO existen ahí a propósito (el backend no se acopla
+ * a la navegación del front) — se arman en `notifications-data.ts`. */
+export type NotificationItemView = {
+  id: string;
+  type: NotificationItemType;
+  title: string;
+  body: string;
+  createdAt: string;
+  read: boolean;
+  status?: NotificationItemStatus;
+  companyId: string;
+  invitationId?: string;
+};
+
+export type NotificationsPage = { items: NotificationItemView[]; nextCursor: string | null };
+
+/** GET /notifications?cursor=&limit= — más nuevas primero; sin más páginas si `items.length < limit`. */
+export async function fetchNotifications(token: string, params: { cursor?: string; limit?: number } = {}): Promise<NotificationsPage> {
+  const limit = params.limit ?? 20;
+  const qs = new URLSearchParams();
+  if (params.cursor) qs.set('cursor', params.cursor);
+  qs.set('limit', String(limit));
+
+  const response = await fetch(`${API_URL}/notifications?${qs}`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (!response.ok) {
+    const body = await response.json().catch(() => null);
+    throw new Error(body?.message ?? `No se pudieron cargar las notificaciones (${response.status}).`);
+  }
+  const items: NotificationItemView[] = await response.json();
+  return { items, nextCursor: items.length < limit ? null : (items[items.length - 1]?.id ?? null) };
+}
+
 // --- Equipo e Invitaciones (T2.2, módulos `membership`/`invitation` de api-bizmeet) ---
 
 /** Rol real de empresa. El backend NO tiene roles de negocio (Comercial/Operativo/etc.),
