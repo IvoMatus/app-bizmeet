@@ -14,13 +14,6 @@ import type { AdjuntoView } from '@/utils/api';
 function AttachmentThumb({ adjunto, size }: { adjunto: AdjuntoView; size: number }) {
   const theme = useTheme();
 
-  // ponytail: diagnóstico temporal — confirmar qué llega realmente a este componente (la foto
-  // del post "Test" se ve como placeholder, o sea que acá `adjunto.url` ya es falsy; esto dice
-  // si se pierde antes de llegar o si el placeholder es el comportamiento correcto porque el
-  // backend no mandó `url` para ese adjunto en esta response puntual). Sacar una vez confirmada
-  // la causa.
-  if (__DEV__) console.log('[post][diag] adjunto recibido por AttachmentThumb', JSON.stringify(adjunto));
-
   if (adjunto.tipo === 'IMAGEN' && adjunto.url) {
     return (
       <Image
