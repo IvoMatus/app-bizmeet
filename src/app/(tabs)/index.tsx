@@ -1,11 +1,9 @@
 import { useAuth } from '@clerk/expo';
-import { router } from 'expo-router';
+import { router, useNavigation } from 'expo-router';
 import { SymbolView } from 'expo-symbols';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, FlatList, Pressable, StyleSheet, View } from 'react-native';
 
-import { ProfileTopBar } from '@/components/profile/profile-chrome';
-import { MOCK_PROFILE } from '@/components/profile/profile-data';
 import { CategoryPills, GENERAL_FEED } from '@/components/post/category-pills';
 import { PostCard, PostCardBasic } from '@/components/post/post-card';
 import { EMPTY_FILTERS, PostFiltersSheet, type AppliedFilters } from '@/components/post/post-filters-sheet';
@@ -14,40 +12,23 @@ import { useRubrosCatalog } from '@/components/post/use-rubros-catalog';
 import { showAlert } from '@/components/ui/app-alert';
 import { ThemedText } from '@/components/themed-text';
 import { BottomTabInset, Spacing } from '@/constants/theme';
+import { useActiveCompany } from '@/hooks/use-active-company';
 import { useTheme } from '@/hooks/use-theme';
-import { fetchMyCompanies, fetchPostsFeed, type FeedView, type MyCompany, type PostSinDetalleView, type PostView } from '@/utils/api';
-
-/** Empresa activa del usuario. TODO: reemplazar por el selector real de "empresa activa"
- * (T1.3/T1.4) — hoy se usa la primera membership de GET /companies/mine como estándar. */
-function useActiveCompany() {
-  const { getToken } = useAuth();
-  const [company, setCompany] = useState<MyCompany | null | undefined>(undefined); // undefined = cargando
-  const [error, setError] = useState<string | null>(null);
-
-  const load = useCallback(() => {
-    getToken()
-      .then((token) => {
-        if (!token) throw new Error('No se pudo obtener la sesión.');
-        return fetchMyCompanies(token);
-      })
-      .then((mine) => {
-        setCompany(mine[0] ?? null);
-        setError(null);
-      })
-      .catch((e: Error) => setError(e.message));
-  }, [getToken]);
-
-  useEffect(load, [load]);
-
-  return { company, error, reload: load };
-}
+import { fetchPostsFeed, type FeedView, type PostSinDetalleView, type PostView } from '@/utils/api';
 
 export default function InicioScreen() {
   const theme = useTheme();
   const { getToken } = useAuth();
-  const { company: activeCompany, error: companyError, reload: reloadCompany } = useActiveCompany();
+  const navigation = useNavigation();
+  const { active, error: companyError, reload: reloadCompany } = useActiveCompany();
   const { rubros: catalog } = useRubrosCatalog();
-  const { blocked } = useCompanyBlocked(activeCompany?.company.id);
+  const { blocked } = useCompanyBlocked(active?.company.id);
+
+  // El topbar es compartido (ver app-tabs.tsx) y lee el título de las opciones de la ruta —
+  // esta pantalla es la única tab con subtítulo dinámico (nombre de la empresa activa).
+  useEffect(() => {
+    navigation.setOptions({ title: active?.company.name ?? 'Muro General' });
+  }, [navigation, active]);
 
   const [category, setCategory] = useState(GENERAL_FEED);
   const [filters, setFilters] = useState<AppliedFilters>(EMPTY_FILTERS);
@@ -56,7 +37,7 @@ export default function InicioScreen() {
   const [feedError, setFeedError] = useState<string | null>(null);
   const [loadingMore, setLoadingMore] = useState(false);
 
-  const companyId = activeCompany?.company.id;
+  const companyId = active?.company.id;
 
   const loadFeed = useCallback(
     (cursor?: string) => {
@@ -79,12 +60,12 @@ export default function InicioScreen() {
     [category, companyId, getToken]
   );
 
-  // activeCompany pasa de undefined (cargando) a null (perfil básico) o a un valor concreto.
+  // active pasa de undefined (cargando) a null (perfil básico) o a un valor concreto.
   useEffect(() => {
-    if (activeCompany === undefined) return;
+    if (active === undefined) return;
     loadFeed();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeCompany, category]);
+  }, [active, category]);
 
   const items = useMemo(() => {
     if (!feed) return [];
@@ -103,7 +84,7 @@ export default function InicioScreen() {
   }
 
   function onPublish() {
-    if (!activeCompany) {
+    if (!active) {
       showAlert('Creá tu empresa', 'Necesitás una empresa activa para publicar en el muro.', [
         { text: 'Cancelar', style: 'cancel' },
         { text: 'Crear empresa', onPress: () => router.push('/empresa/crear') },
@@ -114,29 +95,22 @@ export default function InicioScreen() {
       showAlert('Empresa bloqueada', 'Tu empresa está bloqueada y no puede publicar en el muro.');
       return;
     }
-    router.push({ pathname: '/publicacion/crear', params: { companyId: activeCompany.company.id } });
+    router.push({ pathname: '/publicacion/crear', params: { companyId: active.company.id } });
   }
 
   const error = companyError ?? feedError;
   const onRetry = () => (companyError ? reloadCompany() : loadFeed());
-  const loadingInitial = activeCompany === undefined || (!feed && !error);
+  const loadingInitial = active === undefined || (!feed && !error);
 
   return (
     <View style={[styles.screen, { backgroundColor: theme.screenBackground }]}>
-      <ProfileTopBar
-        avatar={MOCK_PROFILE.avatarUri}
-        companyLogo={MOCK_PROFILE.companyLogoUri}
-        hasUnread={MOCK_PROFILE.unreadNotifications}
-        subtitle={activeCompany?.company.name ?? 'Muro General'}
-      />
-
       <View style={styles.titleRow}>
         <View style={styles.titleText}>
           <ThemedText type="subtitle" style={{ fontSize: 22, lineHeight: 28, color: theme.textPrimary }}>
             Muro General
           </ThemedText>
           <ThemedText type="small" style={{ color: theme.textMuted }}>
-            {activeCompany ? 'Publicaciones de todo el club' : 'Requerimientos disponibles para tu perfil'}
+            {active ? 'Publicaciones de todo el club' : 'Requerimientos disponibles para tu perfil'}
           </ThemedText>
         </View>
         <View style={styles.titleActions}>
@@ -161,7 +135,7 @@ export default function InicioScreen() {
         </View>
       </View>
 
-      {activeCompany !== undefined && activeCompany && <CategoryPills industries={catalog} selected={category} onSelect={setCategory} />}
+      {active !== undefined && active && <CategoryPills industries={catalog} selected={category} onSelect={setCategory} />}
 
       {error && (
         <Pressable onPress={onRetry} accessibilityRole="button" accessibilityLabel="Reintentar">
@@ -199,7 +173,7 @@ export default function InicioScreen() {
         />
       )}
 
-      {activeCompany !== undefined && activeCompany && (
+      {active !== undefined && active && (
         <Pressable
           accessibilityRole="button"
           accessibilityLabel={blocked ? 'Publicar (empresa bloqueada)' : 'Publicar'}

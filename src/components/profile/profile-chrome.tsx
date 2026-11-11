@@ -1,10 +1,15 @@
 import { Image } from 'expo-image';
+import { SymbolView } from 'expo-symbols';
+import { router, type Href } from 'expo-router';
 import { ImageSourcePropType, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+
+import { useMemo } from 'react';
 
 import { ThemedText } from '@/components/themed-text';
 import { ProfileIcon, type ProfileIconName } from '@/components/profile/profile-icons';
 import { Spacing } from '@/constants/theme';
+import { useActiveCompany } from '@/hooks/use-active-company';
 import { useTheme } from '@/hooks/use-theme';
 
 type ProfileChromeProps = {
@@ -13,10 +18,12 @@ type ProfileChromeProps = {
   hasUnread: boolean;
   /** Subtítulo bajo "BizAInet" (p. ej. "Mi Perfil", "Mis Empresas"). */
   subtitle?: string;
+  /** Si se pasa, el subtítulo se vuelve tocable (abre el selector de empresa activa, T2.5). */
+  onPressSubtitle?: () => void;
 };
 
 /** Header fijo compartido: marca BizAInet + PRO, subtítulo, notificaciones y avatar. */
-export function ProfileTopBar({ avatar, hasUnread, subtitle = 'Mi Perfil' }: ProfileChromeProps) {
+export function ProfileTopBar({ avatar, hasUnread, subtitle = 'Mi Perfil', onPressSubtitle }: ProfileChromeProps) {
   const theme = useTheme();
 
   return (
@@ -35,7 +42,19 @@ export function ProfileTopBar({ avatar, hasUnread, subtitle = 'Mi Perfil' }: Pro
                 <ThemedText style={[styles.proLabel, { color: theme.accent }]}>PRO</ThemedText>
               </View>
             </View>
-            <ThemedText style={[styles.subtitle, { color: theme.textMuted }]}>{subtitle}</ThemedText>
+            {onPressSubtitle ? (
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel={`Empresa activa: ${subtitle}. Tocá para cambiar de empresa.`}
+                onPress={onPressSubtitle}
+                hitSlop={{ top: 12, bottom: 12, left: 8, right: 8 }}
+                style={styles.subtitleButton}>
+                <ThemedText style={[styles.subtitle, { color: theme.textMuted }]}>{subtitle}</ThemedText>
+                <SymbolView tintColor={theme.textMuted} name={{ ios: 'chevron.down', android: 'expand_more', web: 'expand_more' }} size={12} />
+              </Pressable>
+            ) : (
+              <ThemedText style={[styles.subtitle, { color: theme.textMuted }]}>{subtitle}</ThemedText>
+            )}
           </View>
         </View>
 
@@ -59,18 +78,29 @@ export function ProfileTopBar({ avatar, hasUnread, subtitle = 'Mi Perfil' }: Pro
   );
 }
 
-type TabItem = { key: string; label: string; icon: ProfileIconName; dot?: boolean };
+type TabItem = { key: string; label: string; icon: ProfileIconName; dot?: boolean; href?: string };
 
+// "pago" necesita la empresa activa para armar su `href` (?companyId=), por eso se resuelve en
+// el componente en vez de quedar fijo acá — sin empresa activa todavía (cargando o sin empresas)
+// se deja sin `href` a propósito: el tab se ve pero no navega.
 const PROFILE_TABS: TabItem[] = [
-  { key: 'perfil', label: 'Perfil', icon: 'person' },
-  { key: 'invitaciones', label: 'Invitaciones', icon: 'mail-plus' },
+  { key: 'perfil', label: 'Perfil', icon: 'person', href: '/perfil' },
+  { key: 'invitaciones', label: 'Invitaciones', icon: 'mail-plus', href: '/perfil/invitaciones' },
   { key: 'pago', label: 'Pago', icon: 'card' },
-  { key: 'notif', label: 'Notif.', icon: 'bell-outline', dot: true },
+  { key: 'notif', label: 'Notif.', icon: 'bell-outline', dot: true, href: '/perfil/notificaciones' },
 ];
 
 /** Pestañas horizontales bajo el header. "Perfil" es la activa. */
 export function ProfileTabs({ activeKey = 'perfil' }: { activeKey?: string }) {
   const theme = useTheme();
+  const { active } = useActiveCompany();
+
+  const tabs = useMemo(() => {
+    if (!active) return PROFILE_TABS;
+    return PROFILE_TABS.map((tab) =>
+      tab.key === 'pago' ? { ...tab, href: `/empresa/pagos?companyId=${active.company.id}` } : tab
+    );
+  }, [active]);
 
   return (
     <ScrollView
@@ -78,14 +108,20 @@ export function ProfileTabs({ activeKey = 'perfil' }: { activeKey?: string }) {
       showsHorizontalScrollIndicator={false}
       contentContainerStyle={styles.tabsContent}
       style={[styles.tabsWrap, { borderBottomColor: theme.surfaceBorder }]}>
-      {PROFILE_TABS.map((tab) => {
+      {tabs.map((tab) => {
         const active = tab.key === activeKey;
+        const href = tab.href;
         return (
           <Pressable
             key={tab.key}
             accessibilityRole="tab"
             accessibilityState={{ selected: active }}
             accessibilityLabel={tab.label}
+            disabled={!href}
+            // ponytail: `href` narrows a `Href | undefined` dentro del ternario pero el closure
+            // de la arrow function lo pierde (expo-router tipa rutas como union literal) — cast
+            // puntual en vez de re-tipar todo TabItem.
+            onPress={href ? () => router.push(href as Href) : undefined}
             style={[
               styles.tab,
               active && { backgroundColor: theme.accentSoft, borderColor: theme.accent },
@@ -150,6 +186,12 @@ const styles = StyleSheet.create({
   subtitle: {
     fontSize: 11,
     fontWeight: '500',
+  },
+  subtitleButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.half,
+    minHeight: 20,
   },
   actions: {
     flexDirection: 'row',

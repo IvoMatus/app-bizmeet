@@ -11,6 +11,7 @@ export type Company = {
   roleBadge: { label: string; icon: CompanyIconName };
   /** Solo el titular (rol ADMINISTRADOR) puede editar la empresa o gestionar su equipo. */
   isTitular: boolean;
+  estado: 'ACTIVA' | 'PENDIENTE_PAGO' | 'BLOQUEADA';
 };
 
 /** Mapea la respuesta real de GET /companies/mine a lo que `CompanyCard` necesita. */
@@ -25,5 +26,6 @@ export function toCompany({ company, rol }: MyCompany): Company {
     verified: company.verified,
     roleBadge: isTitular ? { label: 'Titular · Admin', icon: 'titular-badge' } : { label: 'Invitado', icon: 'role-badge' },
     isTitular,
+    estado: company.estado,
   };
 }

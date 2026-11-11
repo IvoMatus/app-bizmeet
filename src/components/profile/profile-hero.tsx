@@ -50,7 +50,7 @@ export function ProfileAvatar({
           accessibilityLabel="Cambiar fotografía"
           onPress={onCameraPress}
           style={[styles.cameraButton, { backgroundColor: theme.accent, borderColor: theme.surface }]}>
-          <SymbolView name="camera.fill" tintColor={theme.background} size={14} />
+          <SymbolView name={{ ios: 'camera.fill', android: 'photo_camera', web: 'photo_camera' }} tintColor={theme.background} size={14} />
         </Pressable>
       )}
     </View>
@@ -86,7 +86,7 @@ export function ProfileHeroCard({
           styles.editButton,
           { backgroundColor: theme.buttonDark, opacity: pressed ? 0.85 : 1 },
         ]}>
-        <SymbolView name="pencil" tintColor={theme.onButtonDark} size={14} />
+        <SymbolView name={{ ios: 'pencil', android: 'edit', web: 'edit' }} tintColor={theme.onButtonDark} size={14} />
         <ThemedText style={[styles.editLabel, { color: theme.onButtonDark }]}>Editar Perfil</ThemedText>
       </Pressable>
     </View>

@@ -1,19 +1,19 @@
-import { StyleSheet } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { StyleSheet, View } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Spacing } from '@/constants/theme';
 
-/** Página vacía de un destino de la barra inferior: solo título, sin contenido todavía. */
+/** Página vacía de un destino de la barra inferior: solo título, sin contenido todavía.
+ * El topbar compartido (ver app-tabs.tsx) ya cubre el safe-area superior. */
 export function TabPlaceholderScreen({ title }: { title: string }) {
   return (
     <ThemedView style={styles.screen}>
-      <SafeAreaView edges={['top']} style={styles.header}>
+      <View style={styles.header}>
         <ThemedText type="subtitle" accessibilityRole="header">
           {title}
         </ThemedText>
-      </SafeAreaView>
+      </View>
     </ThemedView>
   );
 }

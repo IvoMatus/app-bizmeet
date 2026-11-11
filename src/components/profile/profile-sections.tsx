@@ -28,7 +28,7 @@ export function IdentitySection({ profile }: { profile: ProfileData }) {
       <InfoRow
         icon="pin"
         label="País y Residencia Fiscal"
-        value={`🇲🇽 ${profile.residence.detail}`}
+        value={profile.residence.detail}
         trailing={<StatusPill label={profile.residence.countryCode} />}
       />
       <InfoRow

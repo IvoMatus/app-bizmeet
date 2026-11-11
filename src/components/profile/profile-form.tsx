@@ -26,7 +26,7 @@ export function EditTopBar({ avatar, onBack }: { avatar: ImageSourcePropType; on
     <SafeAreaView edges={['top']} style={{ backgroundColor: theme.navBackground }}>
       <View style={[styles.topBar, { borderBottomColor: theme.surfaceBorder }]}>
         <Pressable accessibilityRole="button" accessibilityLabel="Volver" onPress={onBack} style={styles.backButton}>
-          <SymbolView name="chevron.left" tintColor={theme.textPrimary} size={18} />
+          <SymbolView name={{ ios: 'chevron.left', android: 'chevron_left', web: 'chevron_left' }} tintColor={theme.textPrimary} size={18} />
         </Pressable>
         <View style={styles.titleBlock}>
           <ThemedText style={[styles.eyebrow, { color: theme.eyebrow }]}>BizAInet Core</ThemedText>
@@ -66,7 +66,7 @@ export function PhotoCard({
             accessibilityLabel="Cambiar fotografía"
             onPress={onUpload}
             style={[styles.cameraButton, { backgroundColor: theme.accent, borderColor: theme.surface }]}>
-            <SymbolView name="camera.fill" tintColor={theme.background} size={12} />
+            <SymbolView name={{ ios: 'camera.fill', android: 'photo_camera', web: 'photo_camera' }} tintColor={theme.background} size={12} />
           </Pressable>
         </View>
         <View style={styles.photoText}>
@@ -78,11 +78,11 @@ export function PhotoCard({
               accessibilityRole="button"
               onPress={onUpload}
               style={[styles.secondaryButton, { backgroundColor: theme.accentSoft }]}>
-              <SymbolView name="square.and.arrow.up" tintColor={theme.accent} size={12} />
+              <SymbolView name={{ ios: 'square.and.arrow.up', android: 'upload', web: 'upload' }} tintColor={theme.accent} size={12} />
               <ThemedText style={[styles.secondaryLabel, { color: theme.accent }]}>Subir imagen</ThemedText>
             </Pressable>
             <Pressable accessibilityRole="button" onPress={onRemove} style={styles.textButton}>
-              <SymbolView name="trash" tintColor={theme.error} size={12} />
+              <SymbolView name={{ ios: 'trash', android: 'delete', web: 'delete' }} tintColor={theme.error} size={12} />
               <ThemedText style={[styles.secondaryLabel, { color: theme.error }]}>Eliminar</ThemedText>
             </Pressable>
           </View>
@@ -196,7 +196,7 @@ export function SelectField({ label, value, required }: { label: string; value: 
         <ThemedText style={[styles.input, { color: theme.textPrimary, paddingVertical: Spacing.two + Spacing.half }]}>
           {value}
         </ThemedText>
-        <SymbolView name="chevron.down" tintColor={theme.textMuted} size={12} />
+        <SymbolView name={{ ios: 'chevron.down', android: 'expand_more', web: 'expand_more' }} tintColor={theme.textMuted} size={12} />
       </View>
     </Pressable>
   );
@@ -216,7 +216,7 @@ export function PasswordField({ mask, strengthLabel, level = 4 }: { mask: string
       </View>
       <View style={[styles.inputWrap, { backgroundColor: theme.surfaceInset, borderColor: theme.surfaceBorder }]}>
         <ThemedText style={[styles.input, styles.mono, { color: theme.textPrimary }]}>{mask}</ThemedText>
-        <SymbolView name="eye" tintColor={theme.textMuted} size={16} />
+        <SymbolView name={{ ios: 'eye', android: 'visibility', web: 'visibility' }} tintColor={theme.textMuted} size={16} />
       </View>
       <View style={styles.strengthBar}>
         {[0, 1, 2, 3].map((i) => (
@@ -267,7 +267,7 @@ export function InfoNote({ text }: { text: string }) {
 
   return (
     <View style={styles.note}>
-      <SymbolView name="info.circle" tintColor={theme.textMuted} size={12} />
+      <SymbolView name={{ ios: 'info.circle', android: 'info', web: 'info' }} tintColor={theme.textMuted} size={12} />
       <ThemedText style={[styles.helperSmall, { color: theme.textMuted, flex: 1 }]}>{text}</ThemedText>
     </View>
   );
@@ -282,7 +282,7 @@ export function SaveButton({ label, onPress }: { label: string; onPress?: () => 
       accessibilityRole="button"
       onPress={onPress}
       style={({ pressed }) => [styles.saveButton, { backgroundColor: theme.accent, opacity: pressed ? 0.85 : 1 }]}>
-      <SymbolView name="checkmark" tintColor={theme.background} size={14} />
+      <SymbolView name={{ ios: 'checkmark', android: 'check', web: 'check' }} tintColor={theme.background} size={14} />
       <ThemedText style={[styles.saveLabel, { color: theme.background }]}>{label}</ThemedText>
     </Pressable>
   );
@@ -294,7 +294,7 @@ export function DiscardButton({ label, onPress }: { label: string; onPress?: () 
 
   return (
     <Pressable accessibilityRole="button" onPress={onPress} style={styles.discardButton}>
-      <SymbolView name="xmark" tintColor={theme.textMuted} size={12} />
+      <SymbolView name={{ ios: 'xmark', android: 'close', web: 'close' }} tintColor={theme.textMuted} size={12} />
       <ThemedText style={[styles.secondaryLabel, { color: theme.textMuted }]}>{label}</ThemedText>
     </Pressable>
   );
@@ -318,7 +318,7 @@ export function CurpField({ value, badgeLabel }: { value: string; badgeLabel: st
           accessibilityRole="button"
           accessibilityLabel="Re-validar con RENAPO"
           style={[styles.revalidate, { backgroundColor: theme.accentSoft, borderColor: theme.accent }]}>
-          <SymbolView name="arrow.clockwise" tintColor={theme.accent} size={16} />
+          <SymbolView name={{ ios: 'arrow.clockwise', android: 'refresh', web: 'refresh' }} tintColor={theme.accent} size={16} />
         </Pressable>
       </View>
     </View>

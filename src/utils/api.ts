@@ -82,6 +82,7 @@ export type CompanyView = {
   plan: { type: 'BASICO' | 'EMPRESA' | 'PREMIUM' };
   verified: boolean;
 };
+  estado: 'ACTIVA' | 'PENDIENTE_PAGO' | 'BLOQUEADA';
 
 export type MyCompany = { company: CompanyView; rol: 'ADMINISTRADOR' | 'INVITADO' };
 
@@ -108,6 +109,7 @@ export type CompanyDetail = {
   verified: boolean;
   documentos: CompanyDocument[];
 };
+  estado: 'ACTIVA' | 'PENDIENTE_PAGO' | 'BLOQUEADA';
 
 /** Trae el detalle de una empresa por id. */
 export async function fetchCompany(id: string, token: string): Promise<CompanyDetail> {
@@ -123,14 +125,20 @@ export async function fetchCompany(id: string, token: string): Promise<CompanyDe
 
 export type CompanyContext = {
   contexto: { tipoEmpresa: string; plan: unknown; rol: string; bloqueada: boolean };
+  /** Estado real de la empresa (T2.3, campo nuevo a nivel raíz). `contexto.bloqueada` es otra
+   * cosa (deriva de reglas de negocio existentes) — no asumir que son sinónimos; con
+   * `SKIP_STRIPE=true` esto no cambia nada en dev, pero cuando Stripe esté activo
+   * `estado: 'PENDIENTE_PAGO'` implica `contexto.plan === 'PERFIL_BASICO'` aunque el plan
+   * elegido (guardado en `company.plan`) sea otro. */
+  estado: 'ACTIVA' | 'PENDIENTE_PAGO' | 'BLOQUEADA';
   alcance: unknown;
   /** Período de los cupos mensuales ('YYYY-MM') con el que se calcularon `derechos`. */
   periodo: string;
   derechos: Record<string, { permitida: boolean; motivo?: string; saldo: number | null }>;
 };
 
-/** GET /companies/:id/context — incluye `contexto.bloqueada`, fuente real para "empresa
- * bloqueada no publica" (en vez de un campo `estado` aparte). */
+/** GET /companies/:id/context — incluye `estado` a nivel raíz (T2.3) y `contexto.bloqueada`
+ * (campo aparte, no confundir: ver comentario de `CompanyContext`). */
 export async function fetchCompanyContext(companyId: string, token: string): Promise<CompanyContext> {
   const response = await fetch(`${API_URL}/companies/${companyId}/context`, {
     headers: { Authorization: `Bearer ${token}` },
