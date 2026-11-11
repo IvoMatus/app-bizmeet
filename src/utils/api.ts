@@ -82,8 +82,8 @@ export type CompanyView = {
   formaJuridica: 'JURIDICA' | 'NATURAL' | null;
   plan: { type: 'EMPRENDIMIENTO' | 'EMPRESA' | 'PREMIUM' };
   verified: boolean;
-};
   estado: 'ACTIVA' | 'PENDIENTE_PAGO' | 'BLOQUEADA';
+};
 
 export type MyCompany = { company: CompanyView; rol: 'ADMINISTRADOR' | 'INVITADO' };
 
@@ -109,8 +109,8 @@ export type CompanyDetail = {
   plan: CompanyPlanDetail;
   verified: boolean;
   documentos: CompanyDocument[];
-};
   estado: 'ACTIVA' | 'PENDIENTE_PAGO' | 'BLOQUEADA';
+};
 
 /** Trae el detalle de una empresa por id. */
 export async function fetchCompany(id: string, token: string): Promise<CompanyDetail> {
@@ -125,13 +125,13 @@ export async function fetchCompany(id: string, token: string): Promise<CompanyDe
 }
 
 export type CompanyContext = {
-  contexto: { tipoEmpresa: string; plan: unknown; rol: string; bloqueada: boolean };
   /** Estado real de la empresa (T2.3, campo nuevo a nivel raíz). `contexto.bloqueada` es otra
    * cosa (deriva de reglas de negocio existentes) — no asumir que son sinónimos; con
    * `SKIP_STRIPE=true` esto no cambia nada en dev, pero cuando Stripe esté activo
    * `estado: 'PENDIENTE_PAGO'` implica `contexto.plan === 'PERFIL_BASICO'` aunque el plan
    * elegido (guardado en `company.plan`) sea otro. */
   estado: 'ACTIVA' | 'PENDIENTE_PAGO' | 'BLOQUEADA';
+  contexto: { tipoEmpresa: string; plan: unknown; rol: string; bloqueada: boolean };
   alcance: unknown;
   /** Período de los cupos mensuales ('YYYY-MM') con el que se calcularon `derechos`. */
   periodo: string;
