@@ -23,9 +23,31 @@ let cached: { token: string; expiresAt: number } | null = null;
 let inFlight: Promise<string | null> | null = null;
 let consecutive401s = 0;
 
+/**
+ * En arranque en frío, `getClerkInstance()` devuelve el singleton de siempre pero recién creado
+ * — `loaded` todavía es `false` mientras rehidrata la sesión desde el storage nativo, y en esa
+ * ventana `.session` es `undefined` (no `null`). `refreshToken()` leía la sesión sin esperar
+ * esto, así que el primer fetch después de un reload de bundle devolvía null sin tirar error (el
+ * Muro mostraba una vez "No se pudo obtener la sesión", y el retry manual ya encontraba a Clerk
+ * cargado). Fix en el lugar compartido — todos los call-sites pasan por `getAuthToken()`.
+ */
+function waitForClerkLoaded(clerk: ReturnType<typeof getClerkInstance>): Promise<void> {
+  if (clerk.loaded) return Promise.resolve();
+  return new Promise((resolve) => {
+    const unsubscribe = clerk.addListener(() => {
+      if (clerk.loaded) {
+        unsubscribe();
+        resolve();
+      }
+    });
+  });
+}
+
 async function refreshToken(): Promise<string | null> {
   try {
-    const token = await getClerkInstance().session?.getToken({ skipCache: true });
+    const clerk = getClerkInstance();
+    await waitForClerkLoaded(clerk);
+    const token = await clerk.session?.getToken({ skipCache: true });
     if (!token) return null;
     cached = { token, expiresAt: Date.now() + TOKEN_TTL_MS };
     return token;
