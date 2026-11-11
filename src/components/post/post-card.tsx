@@ -1,7 +1,5 @@
-import { useAuth } from '@clerk/expo';
 import { router } from 'expo-router';
 import { SymbolView } from 'expo-symbols';
-import { useEffect, useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 
 import { POST_TYPE_LABEL, timeAgo } from '@/components/post/post-data';
@@ -9,33 +7,7 @@ import { rubroNombre } from '@/components/post/use-rubros-catalog';
 import { ThemedText } from '@/components/themed-text';
 import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
-import { fetchCompany, type PostSinDetalleView, type PostView, type Rubro } from '@/utils/api';
-
-/** Cache de nombre de empresa por id — evita refetchear por cada card del mismo autor. */
-const companyNameCache = new Map<string, string>();
-
-function useCompanyName(companyId: string) {
-  const { getToken } = useAuth();
-  const [name, setName] = useState<string | null>(companyNameCache.get(companyId) ?? null);
-
-  useEffect(() => {
-    if (companyNameCache.has(companyId)) return;
-    getToken()
-      .then((token) => {
-        if (!token) throw new Error('No se pudo obtener la sesión.');
-        return fetchCompany(companyId, token);
-      })
-      .then((company) => {
-        companyNameCache.set(companyId, company.name);
-        setName(company.name);
-      })
-      .catch(() => {
-        // ponytail: si la empresa no carga, la card muestra el id crudo — sin fallback inventado.
-      });
-  }, [companyId, getToken]);
-
-  return name;
-}
+import type { PostSinDetalleView, PostView, Rubro } from '@/utils/api';
 
 /** Colores de badge por tipo, reusando los tokens offer/seek ya definidos en el tema. */
 function useTypeBadgeColors(tipo: PostView['tipo']) {
@@ -67,7 +39,7 @@ function IndustryBadge({ label }: { label: string }) {
  * adjuntos (solo indicador, sin URL firmada todavía) y barra de interacciones estática. */
 export function PostCard({ post, rubros }: { post: PostView; rubros: Rubro[] | null }) {
   const theme = useTheme();
-  const companyName = useCompanyName(post.companyId);
+  const companyName = post.empresa.name;
 
   return (
     <Pressable
@@ -84,7 +56,7 @@ export function PostCard({ post, rubros }: { post: PostView; rubros: Rubro[] | n
         </View>
         <View style={styles.headerText}>
           <ThemedText type="smallBold" style={{ color: theme.textPrimary }}>
-            {companyName ?? 'Cargando empresa…'}
+            {companyName}
           </ThemedText>
           <ThemedText type="small" style={{ color: theme.textMuted }}>
             {timeAgo(post.createdAt)}
