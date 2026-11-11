@@ -5,7 +5,7 @@
 
 import '@/global.css';
 
-import { Platform } from 'react-native';
+import { Platform, type TextStyle } from 'react-native';
 
 export const Colors = {
   light: {
@@ -145,3 +145,26 @@ export const Spacing = {
 
 export const BottomTabInset = Platform.select({ ios: 50, android: 80 }) ?? 0;
 export const MaxContentWidth = 800;
+
+/**
+ * `@expo-google-fonts/inter` empaqueta cada peso como su propia `fontFamily` estática
+ * (`Inter_700Bold`, no "Inter" + `fontWeight: 700`) — a diferencia de una fuente variable,
+ * Android no la sintetiza a partir de un solo archivo cuando ve un `fontWeight` suelto. Este
+ * mapa centraliza peso→familia para que `ThemedText` lo resuelva una sola vez (ver
+ * `interFontFamily`), en vez de que cada pantalla declare su propio `fontFamily` a mano.
+ */
+export const InterWeight: Record<string, string> = {
+  '400': 'Inter_400Regular',
+  normal: 'Inter_400Regular',
+  '500': 'Inter_500Medium',
+  '600': 'Inter_600SemiBold',
+  '700': 'Inter_700Bold',
+  bold: 'Inter_700Bold',
+  '800': 'Inter_800ExtraBold',
+};
+
+/** Resuelve la `fontFamily` de Inter para un `fontWeight` dado (número o string). Sin peso o
+ * peso no mapeado: cae a Medium, el peso "neutro" del resto de la escala (`default`/`small`). */
+export function interFontFamily(weight?: TextStyle['fontWeight']): string {
+  return InterWeight[String(weight ?? '500')] ?? InterWeight['500'];
+}

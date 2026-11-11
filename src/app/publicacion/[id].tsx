@@ -169,7 +169,9 @@ export default function PublicacionDetalleScreen() {
           </Pressable>
 
           <View style={[styles.card, styles.descriptionCard, { backgroundColor: theme.cardElevated, borderColor: theme.surfaceBorder }]}>
-            <ThemedText style={[styles.title, { color: theme.textPrimary }]}>{post.titulo}</ThemedText>
+            <ThemedText type="h3" style={{ color: theme.textPrimary }}>
+              {post.titulo}
+            </ThemedText>
             <View style={styles.chipsRow}>
               {post.rubros.map((codigo) => (
                 <View key={codigo} style={[styles.chip, { backgroundColor: theme.surfaceInset }]}>
@@ -179,7 +181,9 @@ export default function PublicacionDetalleScreen() {
                 </View>
               ))}
             </View>
-            <ThemedText style={{ color: theme.textMuted }}>{post.descripcion}</ThemedText>
+            <ThemedText type="body" style={{ color: theme.textMuted }}>
+              {post.descripcion}
+            </ThemedText>
           </View>
 
           <View style={[styles.card, styles.reactionsCard, { backgroundColor: theme.cardElevated, borderColor: theme.surfaceBorder }]}>

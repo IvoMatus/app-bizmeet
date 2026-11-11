@@ -1,5 +1,7 @@
 import { ClerkProvider, useAuth } from '@clerk/expo';
 import { tokenCache } from '@clerk/expo/token-cache';
+import { Inter_400Regular, Inter_500Medium, Inter_600SemiBold, Inter_700Bold, Inter_800ExtraBold } from '@expo-google-fonts/inter';
+import { useFonts } from 'expo-font';
 import { DarkTheme, DefaultTheme, router, Stack, ThemeProvider, useSegments } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { useEffect } from 'react';
@@ -43,6 +45,19 @@ function AuthGuard() {
 
 export default function RootLayout() {
   const colorScheme = useColorScheme();
+  // Mantiene el splash (preventAutoHideAsync arriba) hasta que Inter cargue — AnimatedSplashOverlay
+  // recién monta y dispara hideAsync cuando este componente deja de devolver null.
+  const [fontsLoaded, fontsError] = useFonts({
+    Inter_400Regular,
+    Inter_500Medium,
+    Inter_600SemiBold,
+    Inter_700Bold,
+    Inter_800ExtraBold,
+  });
+
+  if (fontsError) console.warn('[fonts][diag] Inter no pudo cargar, se usa la fuente del sistema', fontsError);
+  if (!fontsLoaded && !fontsError) return null;
+
   return (
     <ClerkProvider publishableKey={publishableKey} tokenCache={tokenCache}>
       <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
