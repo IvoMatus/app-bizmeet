@@ -17,9 +17,12 @@ import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
-import { createPost, fetchPostQuota, type PostQuotaView, type Rubro } from '@/utils/api';
+import { createPost, fetchPostQuota, uploadPostMedia, type AdjuntoView, type PostQuotaView, type Rubro } from '@/utils/api';
 
 const MAX_PHOTOS = 3;
+
+/** Foto local en el picker: `key` es `null` mientras se sube a `POST /posts/media`. */
+type PendingPhoto = { uri: string; key: string | null };
 
 type CreatePostForm = {
   title: string;
@@ -189,27 +192,56 @@ function IndustrySelector({
   );
 }
 
-function PhotoPicker({ photos, onChange }: { photos: string[]; onChange: (photos: string[]) => void }) {
+function PhotoPicker({
+  photos,
+  onChange,
+  companyId,
+}: {
+  photos: PendingPhoto[];
+  onChange: (photos: PendingPhoto[]) => void;
+  companyId: string;
+}) {
   const theme = useTheme();
+  const { getToken } = useAuth();
+  const [uploading, setUploading] = useState(false);
 
   async function addPhoto() {
-    if (photos.length >= MAX_PHOTOS) return;
+    if (photos.length >= MAX_PHOTOS || uploading) return;
     const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (!permission.granted) {
       showAlert('Permiso requerido', 'Necesitamos acceso a tus fotos para subir imágenes a la publicación.');
       return;
     }
     const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], quality: 0.8 });
-    if (!result.canceled) {
-      onChange([...photos, result.assets[0].uri]);
+    if (result.canceled) return;
+
+    const asset = result.assets[0];
+    const next = [...photos, { uri: asset.uri, key: null }];
+    onChange(next);
+    setUploading(true);
+    try {
+      const token = await getToken();
+      if (!token) throw new Error('No se pudo obtener la sesión.');
+      const adjunto = await uploadPostMedia(companyId, asset.uri, asset.mimeType ?? 'image/jpeg', token);
+      onChange(next.map((p) => (p.uri === asset.uri ? { ...p, key: adjunto.key } : p)));
+    } catch (e) {
+      onChange(photos);
+      showAlert('No se pudo subir la foto', (e as Error).message);
+    } finally {
+      setUploading(false);
     }
   }
 
   return (
     <View style={styles.photoGrid}>
-      {photos.map((uri, index) => (
+      {photos.map(({ uri, key }, index) => (
         <View key={uri} style={styles.photoSlot}>
           <Image source={{ uri }} style={styles.photoImage} />
+          {key === null && (
+            <View style={[styles.photoImage, styles.photoUploadingOverlay]}>
+              <ActivityIndicator color="#fff" />
+            </View>
+          )}
           {index === 0 && (
             <View style={[styles.mainBadge, { backgroundColor: theme.accent }]}>
               <ThemedText type="small" style={{ color: theme.screenBackground, fontSize: 10 }}>
@@ -224,8 +256,13 @@ function PhotoPicker({ photos, onChange }: { photos: string[]; onChange: (photos
           accessibilityRole="button"
           accessibilityLabel="Agregar foto"
           onPress={addPhoto}
+          disabled={uploading}
           style={[styles.photoSlot, styles.photoEmpty, { borderColor: theme.surfaceBorder }]}>
-          <SymbolView tintColor={theme.textMuted} name={{ ios: 'camera', android: 'photo_camera', web: 'camera' }} size={22} />
+          {uploading ? (
+            <ActivityIndicator color={theme.textMuted} />
+          ) : (
+            <SymbolView tintColor={theme.textMuted} name={{ ios: 'camera', android: 'photo_camera', web: 'camera' }} size={22} />
+          )}
         </Pressable>
       )}
     </View>
@@ -241,8 +278,9 @@ export default function CrearPublicacionScreen() {
     defaultValues: { title: '', description: '', industries: [] },
   });
   const [selectedType, setSelectedType] = useState<PostTypeChip>(POST_TYPE_CHIPS[0]);
-  const [photos, setPhotos] = useState<string[]>([]);
+  const [photos, setPhotos] = useState<PendingPhoto[]>([]);
   const [submitting, setSubmitting] = useState(false);
+  const photosUploading = photos.some((p) => p.key === null);
 
   const { quota, error: quotaError, reload: reloadQuota } = useQuota(companyId);
   const { rubros, error: rubrosError, reload: reloadRubros } = useRubrosCatalog();
@@ -250,14 +288,14 @@ export default function CrearPublicacionScreen() {
 
   const typeQuota = quota?.cupos[selectedType.tipo];
   const outOfQuota = typeQuota ? !typeQuota.permitida || typeQuota.saldo <= 0 : false;
-  const canPublish = !outOfQuota && !!quota && !quotaError && !blocked;
+  const canPublish = !outOfQuota && !!quota && !quotaError && !blocked && !photosUploading;
 
   function onSubmit(data: CreatePostForm & { industries: string[] }) {
     if (!canPublish || submitting) return;
     setSubmitting(true);
-    // TODO: subida de fotos/video — no hay endpoint de media para publicaciones todavía
-    // (solo existe el de foto de perfil); se publica el texto y se agregan adjuntos cuando
-    // el backend lo soporte.
+    const adjuntos: AdjuntoView[] = photos
+      .filter((p): p is PendingPhoto & { key: string } => p.key !== null)
+      .map((p) => ({ tipo: 'IMAGEN', key: p.key }));
     getToken()
       .then((token) => {
         if (!token) throw new Error('No se pudo obtener la sesión.');
@@ -269,6 +307,7 @@ export default function CrearPublicacionScreen() {
             rubros: data.industries,
             titulo: data.title,
             descripcion: data.description,
+            adjuntos,
           },
           token
         );
@@ -323,7 +362,7 @@ export default function CrearPublicacionScreen() {
           <ThemedText type="small" style={{ color: theme.textMuted }}>
             Fotos (máx. {MAX_PHOTOS})
           </ThemedText>
-          <PhotoPicker photos={photos} onChange={setPhotos} />
+          <PhotoPicker photos={photos} onChange={setPhotos} companyId={companyId} />
 
           <ThemedText type="smallBold">Especificaciones</ThemedText>
           <FormInput control={control} name="title" label="Título*" placeholder="Ej. Ofrezco servicio de auditoría" rules={{ required: 'Requerido' }} />
@@ -347,7 +386,17 @@ export default function CrearPublicacionScreen() {
 
         <View style={styles.footer}>
           <PrimaryButton
-            label={submitting ? 'Publicando…' : blocked ? 'Empresa bloqueada' : outOfQuota ? 'Sin cupo disponible' : 'Publicar'}
+            label={
+              submitting
+                ? 'Publicando…'
+                : blocked
+                  ? 'Empresa bloqueada'
+                  : outOfQuota
+                    ? 'Sin cupo disponible'
+                    : photosUploading
+                      ? 'Subiendo fotos…'
+                      : 'Publicar'
+            }
             onPress={handleSubmit(onSubmit)}
             disabled={!canPublish || submitting}
           />
@@ -429,6 +478,13 @@ const styles = StyleSheet.create({
   photoImage: {
     width: '100%',
     height: '100%',
+  },
+  photoUploadingOverlay: {
+    position: 'absolute',
+    top: 0,
+    backgroundColor: 'rgba(0,0,0,0.35)',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   photoEmpty: {
     borderWidth: 1,

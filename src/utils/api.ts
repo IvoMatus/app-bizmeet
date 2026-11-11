@@ -299,23 +299,62 @@ export async function fetchRubros(token: string): Promise<Rubro[]> {
   return response.json();
 }
 
-/** Uploads the profile photo picked in step 1. The backend user profile must already exist. */
-export async function uploadProfilePhoto(clerkUserId: string, uri: string, token: string, mimeType?: string): Promise<void> {
-  const formData = new FormData();
-  // React Native's fetch accepts this shape for a file part, even though it isn't a real Blob.
-  formData.append('file', {
-    uri,
-    name: uri.split('/').pop() ?? 'photo.jpg',
-    type: mimeType ?? 'image/jpeg',
-  } as unknown as Blob);
-
-  const response = await fetch(`${API_URL}/users/${clerkUserId}/photo`, {
-    method: 'POST',
+/** POST /posts/media — multipart (campo "file" + companyId); JPG/PNG/WebP ≤10MB, MP4/MOV ≤50MB. */
+export async function uploadPostMedia(companyId: string, uri: string, mimeType: string, token: string): Promise<AdjuntoView> {
+  // Mismo motivo que uploadProfilePhoto: fetch/Blob no es confiable sobre file:// en Expo 57+.
+  const { File, UploadType } = await import('expo-file-system');
+  const file = new File(uri);
+  const { status, body } = await file.upload(`${API_URL}/posts/media`, {
+    httpMethod: 'POST',
+    uploadType: UploadType.MULTIPART,
+    fieldName: 'file',
+    mimeType,
+    parameters: { companyId },
     headers: { Authorization: `Bearer ${token}` },
-    body: formData,
   });
-  if (!response.ok) {
-    const body = await response.json().catch(() => null);
-    throw new Error(body?.message ?? `No se pudo subir la foto de perfil (${response.status}).`);
+  let parsed: (AdjuntoView & { url?: string; message?: string }) | null;
+  try {
+    parsed = JSON.parse(body);
+  } catch {
+    parsed = null;
   }
+  if (status < 200 || status >= 300 || !parsed) {
+    throw new Error(parsed?.message ?? `No se pudo subir el archivo (${status}).`);
+  }
+  return { tipo: parsed.tipo, key: parsed.key };
+}
+
+/** Respuesta de subir la foto de perfil. El backend puede devolver la URL final en Spaces o body vacío. */
+export type UploadProfilePhotoResult = { fotoPerfilUrl?: string };
+
+/** Sube/reemplaza la foto de perfil (DO Spaces del lado backend). El perfil del usuario debe existir ya. */
+export async function uploadProfilePhoto(
+  clerkUserId: string,
+  uri: string,
+  token: string,
+  mimeType?: string,
+): Promise<UploadProfilePhotoResult> {
+  // `fetch(uri).blob()` sobre un archivo local (file:// o content://) no es confiable con el
+  // fetch nuevo de Expo (SDK 54+): en algunos dispositivos devuelve el texto "File not found"
+  // en vez del contenido real, sin tirar error. `File.upload` de expo-file-system lee el
+  // archivo nativamente y hace el multipart él mismo, sin pasar por fetch/Blob.
+  const { File, UploadType } = await import('expo-file-system');
+  const file = new File(uri);
+  const { status, body } = await file.upload(`${API_URL}/users/${clerkUserId}/photo`, {
+    httpMethod: 'POST',
+    uploadType: UploadType.MULTIPART,
+    fieldName: 'file',
+    mimeType: mimeType ?? 'image/jpeg',
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  let parsed: UploadProfilePhotoResult & { message?: string };
+  try {
+    parsed = JSON.parse(body);
+  } catch {
+    parsed = {};
+  }
+  if (status < 200 || status >= 300) {
+    throw new Error(parsed.message ?? `No se pudo subir la foto de perfil (${status}).`);
+  }
+  return parsed;
 }

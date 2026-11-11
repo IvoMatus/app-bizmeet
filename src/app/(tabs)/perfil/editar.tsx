@@ -1,6 +1,9 @@
-import { useState } from 'react';
+import { useAuth, useUser } from '@clerk/expo';
+import * as ImagePicker from 'expo-image-picker';
+import { useEffect, useState } from 'react';
 import { router } from 'expo-router';
-import { ScrollView, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, ScrollView, StyleSheet, View } from 'react-native';
+import type { ImageSourcePropType } from 'react-native';
 
 import {
   CurpField,
@@ -17,22 +20,78 @@ import {
 } from '@/components/profile/profile-form';
 import { MOCK_EDIT_PROFILE, MOCK_PROFILE, type EditProfileForm } from '@/components/profile/profile-data';
 import { StatusPill } from '@/components/profile/profile-primitives';
+import { showAlert } from '@/components/ui/app-alert';
 import { Spacing } from '@/constants/theme';
 import { ThemedText } from '@/components/themed-text';
 import { useTheme } from '@/hooks/use-theme';
+import { fetchUserProfile, uploadProfilePhoto } from '@/utils/api';
 
 export default function EditarPerfilScreen() {
   const theme = useTheme();
+  const { getToken } = useAuth();
+  const { user } = useUser();
   const [form, setForm] = useState<EditProfileForm>(MOCK_EDIT_PROFILE);
+  const [avatar, setAvatar] = useState<ImageSourcePropType>(MOCK_PROFILE.avatarUri);
+  const [uploading, setUploading] = useState(false);
+  const [photoError, setPhotoError] = useState<string | null>(null);
   const set = <K extends keyof EditProfileForm>(key: K) => (value: EditProfileForm[K]) =>
     setForm((prev) => ({ ...prev, [key]: value }));
 
+  useEffect(() => {
+    if (!user) return;
+    getToken()
+      .then((token) => (token ? fetchUserProfile(user.id, token) : null))
+      .then((profile) => {
+        if (profile?.fotoPerfilUrl) setAvatar({ uri: profile.fotoPerfilUrl });
+      })
+      .catch(() => {
+        // ponytail: si falla, se queda con el avatar mock/placeholder; no bloquea la edición.
+      });
+  }, [user, getToken]);
+
+  async function pickAndUploadPhoto() {
+    setPhotoError(null);
+    try {
+      if (!user) throw new Error('La sesión todavía no cargó. Esperá un segundo y volvé a intentar.');
+
+      const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (!permission.granted) {
+        showAlert('Permiso requerido', 'Necesitamos acceso a tus fotos para cambiar tu foto de perfil.');
+        return;
+      }
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ['images'],
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.8,
+      });
+      if (result.canceled) return;
+
+      const asset = result.assets[0];
+      // Preview inmediato con el archivo local: la URL remota tarda en bajar de la red
+      // y hasta que no termina de cargar, el <Image> se ve igual que antes (parece que "no cambió nada").
+      setAvatar({ uri: asset.uri });
+      setUploading(true);
+      const token = await getToken();
+      if (!token) throw new Error('No se pudo obtener la sesión.');
+      const uploaded = await uploadProfilePhoto(user.id, asset.uri, token, asset.mimeType);
+      if (uploaded.fotoPerfilUrl) setAvatar({ uri: uploaded.fotoPerfilUrl });
+    } catch (e) {
+      console.error('[editar-perfil] pickAndUploadPhoto failed', e);
+      setPhotoError(e instanceof Error ? e.message : 'No se pudo subir la foto de perfil.');
+    } finally {
+      setUploading(false);
+    }
+  }
+
   return (
     <View style={[styles.screen, { backgroundColor: theme.screenBackground }]}>
-      <EditTopBar avatar={MOCK_PROFILE.avatarUri} onBack={() => router.back()} />
+      <EditTopBar avatar={avatar} onBack={() => router.back()} />
 
       <ScrollView contentContainerStyle={styles.content}>
-        <PhotoCard avatar={MOCK_PROFILE.avatarUri} />
+        <PhotoCard avatar={avatar} onUpload={uploading ? undefined : pickAndUploadPhoto} />
+        {uploading && <ActivityIndicator color={theme.accent} />}
+        {photoError && <ThemedText style={{ color: theme.error, textAlign: 'center' }}>{photoError}</ThemedText>}
 
         <FormSection icon="person" eyebrow="Identidad corporativa" title="Datos Personales">
           <FormField label="Nombre(s)" required value={form.firstName} onChangeText={set('firstName')} />
