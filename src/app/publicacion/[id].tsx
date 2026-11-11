@@ -190,7 +190,7 @@ export default function PublicacionDetalleScreen() {
             {/* TODO T3.3: likes/comentarios reales — el backend hoy no expone contadores. */}
             <Pressable accessibilityRole="button" accessibilityLabel="Me gusta (próximamente)" disabled accessibilityState={{ disabled: true }} style={styles.reactionButton}>
               <SymbolView tintColor={theme.textMuted} name={{ ios: 'heart', android: 'favorite_border', web: 'favorite' }} size={18} />
-              <ThemedText type="small" style={{ color: theme.textMuted }}>
+              <ThemedText type="small" numberOfLines={1} style={{ color: theme.textMuted }}>
                 Me gusta
               </ThemedText>
             </Pressable>
@@ -201,13 +201,14 @@ export default function PublicacionDetalleScreen() {
               disabled
               style={styles.reactionButton}>
               <SymbolView tintColor={theme.textMuted} name={{ ios: 'bubble.right', android: 'chat_bubble_outline', web: 'chat_bubble' }} size={18} />
-              <ThemedText type="small" style={{ color: theme.textMuted }}>
-                Comentar (próximamente)
+              {/* "(próximamente)" vive en el accessibilityLabel — visible queda corto, igual que "Me gusta", para no desbordar la fila con Inter (más ancha que Roboto). */}
+              <ThemedText type="small" numberOfLines={1} style={{ color: theme.textMuted }}>
+                Comentar
               </ThemedText>
             </Pressable>
             <Pressable accessibilityRole="button" accessibilityLabel="Difundir" style={styles.reactionButton} onPress={() => {}}>
               <SymbolView tintColor={theme.textMuted} name={{ ios: 'square.and.arrow.up', android: 'share', web: 'share' }} size={18} />
-              <ThemedText type="small" style={{ color: theme.textMuted }}>
+              <ThemedText type="small" numberOfLines={1} style={{ color: theme.textMuted }}>
                 Difundir
               </ThemedText>
             </Pressable>
@@ -304,11 +305,13 @@ const styles = StyleSheet.create({
   },
   reactionsCard: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
+    gap: Spacing.two,
   },
   reactionButton: {
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
     gap: Spacing.one,
     minHeight: 44,
   },
