@@ -3,6 +3,8 @@ import { Pressable, StyleSheet, View } from 'react-native';
 
 import { CompanyIcon } from '@/components/company/company-icons';
 import type { Company } from '@/components/company/company-data';
+import { ProfileIcon } from '@/components/profile/profile-icons';
+import { showAlert } from '@/components/ui/app-alert';
 import { ThemedText } from '@/components/themed-text';
 import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
@@ -68,6 +70,19 @@ export function CompanyCard({ company }: { company: Company }) {
         <ThemedText style={[styles.detailsLabel, { color: theme.accent }]}>Ver detalles de empresa</ThemedText>
         <CompanyIcon name="arrow-right" color={theme.accent} width={12} height={12} />
       </Pressable>
+
+      {/* Visible para cualquier miembro, no solo el titular: Vista Pagos filtra por rol adentro
+          (RN-PAGOS — toda persona ve al menos sus propias compras). */}
+      <View style={styles.actionsRow}>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={`Ver pagos de ${company.name}`}
+          onPress={() => router.push(`/empresa/pagos?companyId=${company.id}`)}
+          style={({ pressed }) => [styles.secondaryButton, { backgroundColor: theme.surfaceInset, opacity: pressed ? 0.85 : 1 }]}>
+          <ProfileIcon name="card" color={theme.textMuted} width={14} height={11} />
+          <ThemedText style={[styles.secondaryLabel, { color: theme.textMuted }]}>Ver pagos</ThemedText>
+        </Pressable>
+      </View>
 
       {company.isTitular && (
         <View style={styles.actionsRow}>
