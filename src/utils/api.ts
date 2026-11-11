@@ -21,19 +21,41 @@ if (!g.__bizmeetFetchPatched) {
     if (isOurApi) {
       reportAuthOutcome(response.status);
     }
-    // ponytail: diagnóstico temporal — loguea el body real de cualquier respuesta no-ok de
-    // nuestra API sin consumir el stream que usa el código real (clona antes de leer). Sacar
-    // una vez confirmada la causa del "JSON Parse error"; no corre en release (`__DEV__` es
-    // `false`).
-    if (__DEV__ && isOurApi && !response.ok) {
+    // ponytail: diagnóstico temporal — loguea el body real de cualquier respuesta no-ok, O un
+    // 2xx con body vacío (el caso que de verdad hace explotar `response.json()` en el camino
+    // feliz, que el chequeo `!response.ok` de arriba no cubre) — sin consumir el stream que usa
+    // el código real (clona antes de leer). Sacar una vez confirmada la causa del "JSON Parse
+    // error"; no corre en release (`__DEV__` es `false`).
+    if (__DEV__ && isOurApi) {
       response
         .clone()
         .text()
-        .then((text: string) => console.warn('[api][diag] respuesta no-ok', url, response.status, JSON.stringify(text)))
+        .then((text: string) => {
+          if (!response.ok) {
+            console.warn('[api][diag] respuesta no-ok', url, response.status, JSON.stringify(text));
+          } else if (text.length === 0) {
+            console.warn('[api][diag] respuesta 2xx con body VACÍO — acá es donde explota response.json()', url, response.status);
+          }
+        })
         .catch((e: unknown) => console.warn('[api][diag] no se pudo clonar/leer el body', url, response.status, e));
     }
     return response;
   }) as typeof globalThis.fetch;
+}
+
+// ponytail: diagnóstico temporal — patch sobre `Response.prototype.json` para capturar el
+// stack trace real en el momento exacto en que explota, sin importar cuál de los ~15 call-sites
+// de `response.json()` en este archivo sea. Sacar junto con el resto de los logs de diagnóstico.
+const gj = globalThis as typeof globalThis & { __bizmeetJsonPatched?: boolean };
+if (__DEV__ && !gj.__bizmeetJsonPatched) {
+  gj.__bizmeetJsonPatched = true;
+  const originalJson = Response.prototype.json;
+  Response.prototype.json = function (this: Response, ...args: Parameters<typeof originalJson>) {
+    return originalJson.apply(this, args).catch((err: Error) => {
+      console.warn('[api][diag] response.json() reventó', this.url, this.status, err.message, err.stack);
+      throw err;
+    });
+  };
 }
 
 export type CreateUserProfileInput = {
