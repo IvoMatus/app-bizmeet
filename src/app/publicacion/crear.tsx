@@ -1,11 +1,12 @@
-import { router, useLocalSearchParams, useNavigation } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { SymbolView } from 'expo-symbols';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useController, useForm, useFormState, type Control } from 'react-hook-form';
 
 import { useAuthToken } from '@/hooks/use-auth-token';
+import { useDiscardGuard } from '@/hooks/use-discard-guard';
 
 import { AttachmentDropzone } from '@/components/post/attachment-dropzone';
 import { AttachmentThumbnail } from '@/components/post/attachment-thumbnail';
@@ -29,47 +30,6 @@ type CreatePostForm = {
   title: string;
   description: string;
 };
-
-/**
- * Guard de salida: si hay progreso real (algún campo tocado o una foto ya subida) e intentan
- * salir de la pantalla —header, gesto nativo de volver, back de Android, cualquier remoción que
- * dispare `beforeRemove`—, intercepta con un confirm en vez de perder la publicación a medio
- * hacer. Sin progreso, deja salir sin preguntar.
- */
-function useDiscardGuard(hasUnsavedChanges: boolean) {
-  const navigation = useNavigation();
-  const hasUnsavedChangesRef = useRef(hasUnsavedChanges);
-  const allowExitRef = useRef(false);
-
-  useEffect(() => {
-    hasUnsavedChangesRef.current = hasUnsavedChanges;
-  }, [hasUnsavedChanges]);
-
-  useEffect(
-    () =>
-      navigation.addListener('beforeRemove', (e) => {
-        if (allowExitRef.current || !hasUnsavedChangesRef.current) return;
-        e.preventDefault();
-        showAlert('¿Descartar publicación?', 'Perderás los cambios no guardados.', [
-          { text: 'Seguir editando', style: 'cancel' },
-          {
-            text: 'Descartar',
-            style: 'destructive',
-            onPress: () => {
-              allowExitRef.current = true;
-              navigation.dispatch(e.data.action);
-            },
-          },
-        ]);
-      }),
-    [navigation]
-  );
-
-  /** Para salidas propias (ej. publicación creada con éxito) que no deben disparar el confirm. */
-  return () => {
-    allowExitRef.current = true;
-  };
-}
 
 /** RN-PUB-03: saldo por tipo, siempre contra el backend — sin valor fijo en el componente. */
 function useQuota(companyId: string) {
@@ -323,7 +283,10 @@ export default function CrearPublicacionScreen() {
   );
   const [submitting, setSubmitting] = useState(false);
   const { isDirty: formIsDirty } = useFormState({ control });
-  const allowExit = useDiscardGuard(formIsDirty || attachments.length > 0);
+  const allowExit = useDiscardGuard(formIsDirty || attachments.length > 0, {
+    title: '¿Descartar publicación?',
+    message: 'Perderás los cambios no guardados.',
+  });
 
   const { quota, error: quotaError, reload: reloadQuota } = useQuota(companyId);
   const { rubros, error: rubrosError, reload: reloadRubros } = useRubrosCatalog();

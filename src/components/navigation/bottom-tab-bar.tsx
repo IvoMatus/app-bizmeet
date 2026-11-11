@@ -6,6 +6,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { ProfileIcon, type ProfileIconName } from '@/components/profile/profile-icons';
 import { ThemedText } from '@/components/themed-text';
 import { Spacing } from '@/constants/theme';
+import { confirmExitIfNeeded } from '@/hooks/use-discard-guard';
 import { useTheme } from '@/hooks/use-theme';
 
 type NavItem = { key: string; label: string; href: Href; icon?: ProfileIconName };
@@ -62,7 +63,11 @@ export function BottomTabBar({ activeKey, avatar, companyLogo, onNavigate = rout
               accessibilityRole="tab"
               accessibilityLabel={item.label}
               accessibilityState={{ selected: active }}
-              onPress={() => onNavigate(item.href)}
+              // confirmExitIfNeeded: cubre el caso que ni `navigate` ni `dismissTo` resuelven —
+              // tocar otra tab mientras hay cambios sin guardar en una pantalla anidada dentro de
+              // (tabs) (ver perfil/editar.tsx) no remueve nada, solo cambia el foco del Tabs
+              // navigator, así que `beforeRemove` nunca se dispara ahí (ver use-discard-guard.ts).
+              onPress={() => confirmExitIfNeeded(() => onNavigate(item.href))}
               style={styles.item}>
               {item.key === 'company' ? (
                 <View style={[styles.circle, { backgroundColor: theme.buttonDark }]}>
