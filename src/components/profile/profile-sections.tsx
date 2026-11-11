@@ -42,10 +42,9 @@ export function IdentitySection({ profile }: { profile: ProfileData }) {
   );
 }
 
-/** "SEGURIDAD Y ACCESO": correo verificado, contraseña y nivel de robustez. */
+/** "SEGURIDAD Y ACCESO": correo verificado. Contraseña/robustez/2FA se ocultan a propósito — son
+ * de Clerk, no de api-bizmeet (decisión confirmada, misma que editar.tsx). */
 export function SecuritySection({ profile }: { profile: ProfileData }) {
-  const theme = useTheme();
-
   return (
     <SectionCard eyebrow="Seguridad y acceso" title="Credenciales de la Cuenta">
       <InfoRow
@@ -54,30 +53,6 @@ export function SecuritySection({ profile }: { profile: ProfileData }) {
         value={profile.email}
         trailing={<StatusPill label="Verificado" variant="success" icon="mail-check" />}
       />
-      <View style={[styles.passwordBox, { backgroundColor: theme.surfaceInset, borderColor: theme.surfaceBorder }]}>
-        <View style={styles.passwordHeader}>
-          <ThemedText style={[styles.label, { color: theme.textMuted }]}>Contraseña</ThemedText>
-          <ThemedText style={[styles.hint, { color: theme.textMuted }]}>{profile.passwordChangedLabel}</ThemedText>
-        </View>
-        <View style={styles.passwordRow}>
-          <ProfileIcon name="lock" color={theme.accent} width={16} height={16} />
-          <ThemedText style={[styles.mono, { color: theme.textPrimary }]}>{profile.passwordMask}</ThemedText>
-          <Pressable accessibilityRole="button" accessibilityLabel="Actualizar contraseña" style={styles.linkButton}>
-            <ThemedText style={[styles.link, { color: theme.accent }]}>Actualizar</ThemedText>
-          </Pressable>
-        </View>
-        <View style={[styles.divider, { backgroundColor: theme.surfaceBorder }]} />
-        <View style={styles.strengthRow}>
-          <ProfileIcon name="shield" color={theme.success} width={16} height={16} />
-          <ThemedText style={[styles.hint, { color: theme.textMuted, flexShrink: 1 }]}>
-            Nivel:{' '}
-            <ThemedText style={[styles.hint, { color: theme.success, fontWeight: '600' }]}>
-              {profile.passwordStrengthLabel}
-            </ThemedText>{' '}
-            (8+ car., mayús., símbolos)
-          </ThemedText>
-        </View>
-      </View>
     </SectionCard>
   );
 }
@@ -137,28 +112,6 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '500',
   },
-  passwordBox: {
-    padding: Spacing.two + Spacing.half,
-    borderRadius: 12,
-    borderWidth: 1,
-    gap: Spacing.two,
-  },
-  passwordHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  passwordRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.two,
-  },
-  mono: {
-    flex: 1,
-    fontFamily: 'monospace',
-    fontSize: 14,
-    letterSpacing: 2,
-  },
   linkButton: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -169,14 +122,6 @@ const styles = StyleSheet.create({
   link: {
     fontSize: 13,
     fontWeight: '600',
-  },
-  divider: {
-    height: 1,
-  },
-  strengthRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.two,
   },
   kycHeader: {
     flexDirection: 'row',

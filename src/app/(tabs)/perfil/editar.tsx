@@ -208,8 +208,8 @@ export default function EditarPerfilScreen() {
           </FormSection>
 
           {/* ponytail: contraseña/robustez/2FA son de Clerk, no de api-bizmeet — se ocultan en vez
-              de mostrar datos inventados. Pendiente de confirmar con Composer si conviene
-              integrarlos contra el flujo propio de Clerk en vez de quedar ocultos. */}
+              de mostrar datos inventados (decisión confirmada; integrarlos contra el flujo propio
+              de Clerk queda como mejora aparte si hace falta). */}
           <FormSection icon="shield" eyebrow="Seguridad y acceso" title="Credenciales Corporativas">
             <FormField
               label="Correo Electrónico Institucional"

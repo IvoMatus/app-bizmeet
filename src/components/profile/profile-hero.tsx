@@ -73,11 +73,12 @@ export function ProfileHeroCard({
       <ProfileAvatar source={profile.avatarUri} size={80} verified />
       <View style={styles.heroText}>
         <ThemedText style={[styles.name, { color: theme.textPrimary }]}>{profile.fullName}</ThemedText>
-        <ThemedText style={[styles.role, { color: theme.textMuted }]}>{profile.role}</ThemedText>
+        {/* Cargo / posición ejecutiva: no existe en el modelo de User — se oculta en vez de
+            mostrar "—" (decisión confirmada, misma que editar.tsx). */}
+        {!!profile.role && <ThemedText style={[styles.role, { color: theme.textMuted }]}>{profile.role}</ThemedText>}
       </View>
       <View style={styles.pills}>
         <StatusPill label={profile.membership} />
-        <StatusPill label={profile.aiVerifiedScore} variant="success" icon="ia-sparkle" />
       </View>
       <Pressable
         accessibilityRole="button"

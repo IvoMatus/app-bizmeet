@@ -10,6 +10,9 @@ const NO_DATA = '—';
 // hasta que haya más de una opción real y convenga traerlo de un catálogo del backend.
 const COUNTRY_LABELS: Record<string, string> = { MX: 'México' };
 const STATE_LABELS: Record<string, string> = { CDMX: 'Ciudad de México' };
+// Único valor confirmado del contrato (`experiencia: "PERFIL_BASICO" | ...`) — el resto del
+// enum no está documentado todavía; sin mapa, se muestra el código crudo (fallback abajo).
+const EXPERIENCE_LABELS: Record<string, string> = { PERFIL_BASICO: 'Perfil Básico' };
 
 const birthDateFormatter = new Intl.DateTimeFormat('es-MX', { day: 'numeric', month: 'long', year: 'numeric' });
 
@@ -29,9 +32,10 @@ function calculateAge(iso: string): number {
 
 export type ProfileData = {
   fullName: string;
+  /** Cargo / posición ejecutiva: no existe en el modelo de User — vacío a propósito, el hero lo
+   * oculta en vez de mostrar "—" (ver profile-hero.tsx). */
   role: string;
   membership: string;
-  aiVerifiedScore: string;
   birthDateLabel: string;
   ageLabel: string;
   contactLanguage: string;
@@ -40,9 +44,6 @@ export type ProfileData = {
   phone: string;
   curp: string;
   email: string;
-  passwordChangedLabel: string;
-  passwordMask: string;
-  passwordStrengthLabel: string;
   kycDocumentName: string;
   kycSummary: string;
   kycAccuracy: string;
@@ -53,8 +54,10 @@ export type ProfileData = {
 
 /**
  * Arma la vista Perfil del usuario logueado con lo que ya devuelve api-bizmeet (nombre, foto,
- * celular, fecha de nacimiento + edad calculada, idiomas, residencia, CURP) + correo de Clerk.
- * Cargo, membresía, seguridad y KYC todavía no tienen fuente propia y quedan en "—".
+ * celular, fecha de nacimiento + edad calculada, idiomas, residencia, CURP, experiencia) + correo
+ * de Clerk. Cargo y KYC todavía no tienen fuente propia (KYC queda en "—"; cargo vacío, ver
+ * `role`). Contraseña/robustez/2FA se sacaron del todo del Perfil — son de Clerk, no de
+ * api-bizmeet (misma decisión que en editar.tsx, ya confirmada).
  */
 export function buildProfileData(api: UserProfileView, clerk: { email?: string; imageUrl: string }): ProfileData {
   const idiomas = api.idiomas ?? [];
@@ -63,9 +66,8 @@ export function buildProfileData(api: UserProfileView, clerk: { email?: string; 
 
   return {
     fullName: [api.nombre, api.apellidoPaterno, api.apellidoMaterno].filter(Boolean).join(' '),
-    role: NO_DATA,
-    membership: NO_DATA,
-    aiVerifiedScore: NO_DATA,
+    role: '',
+    membership: EXPERIENCE_LABELS[api.experiencia] ?? api.experiencia,
     birthDateLabel: api.fechaNacimiento ? formatBirthDate(api.fechaNacimiento) : NO_DATA,
     ageLabel: api.fechaNacimiento ? `${calculateAge(api.fechaNacimiento)} años` : NO_DATA,
     contactLanguage: idiomas[0] ?? NO_DATA,
@@ -78,9 +80,6 @@ export function buildProfileData(api: UserProfileView, clerk: { email?: string; 
     phone: api.celular || NO_DATA,
     curp: api.curp || NO_DATA,
     email: clerk.email ?? NO_DATA,
-    passwordChangedLabel: NO_DATA,
-    passwordMask: '••••••••••',
-    passwordStrengthLabel: NO_DATA,
     kycDocumentName: NO_DATA,
     kycSummary: NO_DATA,
     kycAccuracy: '',
