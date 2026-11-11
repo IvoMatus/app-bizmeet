@@ -1,21 +1,35 @@
-// TODO(backend): el módulo de roles e invitaciones está en desarrollo en paralelo en
-// api-bizmeet — confirmar contrato con el equipo de backend antes de reemplazar estos
-// mocks por un fetch real (GET /companies/:id/team, POST /companies/:id/invitations, etc.).
+import type { CompanyInvitationView, MiembroView, RolEmpresa } from '@/utils/api';
 
-export type RoleOption = { label: string; value: string };
+/** Roles reales de empresa (ver `api.ts`/`permission-engine.ts`). El Figma original mockeaba
+ * roles de negocio (Comercial/Operativo/Financiero/Observador) que el backend no tiene. */
+export type RoleOption = { label: string; value: RolEmpresa };
 
 export const ROLE_OPTIONS: RoleOption[] = [
-  { label: 'Contacto Comercial (Ventas y Negociación)', value: 'COMERCIAL' },
-  { label: 'Contacto Operativo (Logística y Soporte)', value: 'OPERATIVO' },
-  { label: 'Contacto Financiero (Pagos y Facturación)', value: 'FINANCIERO' },
-  { label: 'Observador (Solo lectura)', value: 'OBSERVADOR' },
+  { label: 'Administrador', value: 'ADMINISTRADOR' },
+  { label: 'Invitado (colaborador)', value: 'INVITADO' },
 ];
+
+export const ROLE_LABEL: Record<RolEmpresa, string> = {
+  ADMINISTRADOR: 'Administrador',
+  INVITADO: 'Invitado',
+};
+
+/** ponytail: catálogo estático de cupos por plan — no hay endpoint que lo exponga hoy, solo se
+ * infiere indirectamente al tope del 409 en POST invitations. Mismos valores que
+ * `plan-catalog.ts` en api-bizmeet; actualizar ambos si cambia la matriz de planes. */
+const MAX_CONTACTS_BY_PLAN: Record<string, number> = {
+  EMPRENDIMIENTO: 3,
+  EMPRESA: 5,
+  PREMIUM: 10,
+};
+
+export function maxContactsForPlan(planCode: string | null | undefined): number {
+  return (planCode ? MAX_CONTACTS_BY_PLAN[planCode] : undefined) ?? 0;
+}
 
 export type Owner = {
   name: string;
   title: string;
-  email: string;
-  phoneVerified: boolean;
 };
 
 export type ConfirmedMember = {
@@ -23,7 +37,6 @@ export type ConfirmedMember = {
   status: 'confirmed';
   name: string;
   role: string;
-  email: string;
 };
 
 export type PendingMember = {
@@ -43,25 +56,40 @@ export type TeamQuota = {
 export type TeamData = {
   companyName: string;
   quota: TeamQuota;
-  owner: Owner;
+  /** null si todavía no hay ningún Administrador identificable (no debería pasar en la práctica). */
+  owner: Owner | null;
   members: TeamMember[];
 };
 
-export const MOCK_TEAM: TeamData = {
-  companyName: 'Andes Capital SpA',
-  quota: { planLabel: 'Empresa', totalSlots: 8 },
-  owner: {
-    name: 'Rodrigo Fuentes',
-    title: 'Director General',
-    email: 'rodrigo.fuentes@andescapital.cl',
-    phoneVerified: true,
-  },
-  members: [
-    { id: 'm1', status: 'confirmed', name: 'Camila Rojas', role: 'Contacto Comercial', email: 'camila.rojas@andescapital.cl' },
-    { id: 'm2', status: 'confirmed', name: 'Diego Araya', role: 'Contacto Financiero', email: 'diego.araya@andescapital.cl' },
-    { id: 'm3', status: 'pending', email: 'pendiente@andescapital.cl', role: 'Contacto Operativo' },
-  ],
-};
+/** Arma el `TeamData` de la pantalla a partir de miembros activos + invitaciones vigentes
+ * (GET /companies/:id/members y GET /companies/:id/invitations). El backend no distingue un
+ * "Titular" dedicado: se toma el primer Administrador como referencia. Tampoco expone `email`
+ * de los miembros activos — se omite en vez de inventarlo. */
+export function buildTeamData(
+  companyName: string,
+  planCode: string | null | undefined,
+  planLabel: string,
+  miembros: MiembroView[],
+  invitaciones: CompanyInvitationView[],
+): TeamData {
+  const admins = miembros.filter((m) => m.rol === 'ADMINISTRADOR');
+  const owner: Owner | null = admins[0] ? { name: admins[0].nombre ?? admins[0].userId, title: ROLE_LABEL.ADMINISTRADOR } : null;
+
+  const confirmed: ConfirmedMember[] = miembros
+    .filter((m) => !owner || m.userId !== admins[0]?.userId)
+    .map((m) => ({ id: m.userId, status: 'confirmed', name: m.nombre ?? 'Sin nombre registrado', role: ROLE_LABEL[m.rol] }));
+
+  const pending: PendingMember[] = invitaciones
+    .filter((i) => i.estado === 'PENDIENTE')
+    .map((i) => ({ id: i.id, status: 'pending', email: i.correo, role: ROLE_LABEL[i.rol] }));
+
+  return {
+    companyName,
+    quota: { planLabel, totalSlots: maxContactsForPlan(planCode) },
+    owner,
+    members: [...confirmed, ...pending],
+  };
+}
 
 export function activeCount(members: TeamMember[]) {
   return members.filter((m) => m.status === 'confirmed').length;

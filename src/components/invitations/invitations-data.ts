@@ -1,52 +1,36 @@
-// TODO(backend): mock — el módulo de roles e invitaciones se está desarrollando en paralelo
-// en api-bizmeet. Reemplazar por GET /users/me/invitations y GET /users/me/companies cuando
-// el contrato esté confirmado con backend.
+import type { MyCompany, MyInvitationView, RolEmpresa } from '@/utils/api';
 
+/** Invitación pendiente recibida por el usuario (GET /invitations/mine). El mock original del
+ * Figma traía industry/location/verified/invitedByName/invitedByRole/message/privileges — nada
+ * de eso existe en el backend hoy, así que la card quedó con los campos reales. */
 export type PendingInvitation = {
   id: string;
   companyName: string;
-  industry: string;
-  location: string;
-  verified: boolean;
-  proposedRole: string;
-  invitedByName: string;
-  invitedByRole: string;
-  message: string;
-  privileges: string[];
+  proposedRole: RolEmpresa;
+  venceEn: string;
 };
 
+export function toPendingInvitation(v: MyInvitationView): PendingInvitation {
+  return { id: v.id, companyName: v.companyName ?? 'Empresa', proposedRole: v.rol, venceEn: v.venceEn };
+}
+
+/** Empresa a la que el usuario está vinculado (GET /companies/mine). Sin `invitedByName` —
+ * tampoco existe en el backend. */
 export type LinkedCompany = {
   id: string;
   companyName: string;
   kind: 'titular' | 'invitado';
-  role: string;
+  role: RolEmpresa;
   planLabel: string;
-  invitedByName?: string;
 };
 
-export const MOCK_PENDING_INVITATIONS: PendingInvitation[] = [
-  {
-    id: 'inv1',
-    companyName: 'Pacífico Logística S.A.',
-    industry: 'Transporte y Logística',
-    location: 'Valparaíso, Chile',
-    verified: true,
-    proposedRole: 'Contacto Comercial',
-    invitedByName: 'Fernanda Castro',
-    invitedByRole: 'Directora Comercial',
-    message: 'Nos encantaría contar contigo como enlace comercial para coordinar las próximas negociaciones del club.',
-    privileges: ['Ver oportunidades del muro', 'Contactar empresas del club', 'Representar a la empresa en reuniones'],
-  },
-];
-
-export const MOCK_LINKED_COMPANIES: LinkedCompany[] = [
-  { id: 'c1', companyName: 'Andes Capital SpA', kind: 'titular', role: 'Director General', planLabel: 'Empresa' },
-  {
-    id: 'c2',
-    companyName: 'Nortec Minería Ltda.',
-    kind: 'invitado',
-    role: 'Contacto Financiero',
-    planLabel: 'Premium',
-    invitedByName: 'Mauricio Lira',
-  },
-];
+export function toLinkedCompany(v: MyCompany): LinkedCompany {
+  return {
+    id: v.company.id,
+    companyName: v.company.name,
+    kind: v.rol === 'ADMINISTRADOR' ? 'titular' : 'invitado',
+    role: v.rol,
+    // `company.plan` es el código del plan en texto plano (confirmado con backend-dev).
+    planLabel: v.company.plan as unknown as string,
+  };
+}

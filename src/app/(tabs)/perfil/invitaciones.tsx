@@ -1,4 +1,5 @@
-import { useCallback, useState } from 'react';
+import { useAuth } from '@clerk/expo';
+import { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 
 import {
@@ -7,8 +8,8 @@ import {
   PendingInvitationCard,
 } from '@/components/invitations/invitations-sections';
 import {
-  MOCK_LINKED_COMPANIES,
-  MOCK_PENDING_INVITATIONS,
+  toLinkedCompany,
+  toPendingInvitation,
   type LinkedCompany,
   type PendingInvitation,
 } from '@/components/invitations/invitations-data';
@@ -17,6 +18,7 @@ import { showAlert } from '@/components/ui/app-alert';
 import { ThemedText } from '@/components/themed-text';
 import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
+import { acceptMyInvitation, fetchMyCompanies, fetchMyInvitations, rejectMyInvitation } from '@/utils/api';
 
 type State = { invitations: PendingInvitation[]; companies: LinkedCompany[] };
 
@@ -24,25 +26,57 @@ type State = { invitations: PendingInvitation[]; companies: LinkedCompany[] };
  * header y ProfileTabs con la pantalla de Perfil (ver decisión en perfil/_layout.tsx). */
 export default function InvitacionesScreen() {
   const theme = useTheme();
-  // TODO(backend): mock — ver invitations-data.ts; sin fetch real el estado de error es
-  // inalcanzable hoy, se deja el flujo listo para cuando exista el endpoint.
-  const [state, setState] = useState<State | null>(() => ({
-    invitations: MOCK_PENDING_INVITATIONS,
-    companies: MOCK_LINKED_COMPANIES,
-  }));
+  const { getToken } = useAuth();
+  const [state, setState] = useState<State | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const load = useCallback(() => {
-    setState({ invitations: MOCK_PENDING_INVITATIONS, companies: MOCK_LINKED_COMPANIES });
-    setError(null);
-  }, []);
+    getToken()
+      .then(async (token) => {
+        if (!token) throw new Error('No se pudo obtener la sesión.');
+        const [invitations, companies] = await Promise.all([fetchMyInvitations(token), fetchMyCompanies(token)]);
+        setState({ invitations: invitations.map(toPendingInvitation), companies: companies.map(toLinkedCompany) });
+        setError(null);
+      })
+      .catch((e: Error) => setError(e.message));
+  }, [getToken]);
+
+  useEffect(() => {
+    load();
+  }, [load]);
 
   const handleAccept = (invitation: PendingInvitation) =>
-    showAlert('Invitación aceptada', `Ahora eres parte de ${invitation.companyName}.`);
+    getToken()
+      .then((token) => {
+        if (!token) throw new Error('No se pudo obtener la sesión.');
+        return acceptMyInvitation(invitation.id, token);
+      })
+      .then(() => {
+        showAlert('Invitación aceptada', `Ahora eres parte de ${invitation.companyName}.`);
+        load();
+      })
+      .catch((e: Error) => showAlert('No se pudo aceptar la invitación', e.message));
+
   const handleReject = (invitation: PendingInvitation) =>
-    showAlert('Invitación rechazada', `Rechazaste la invitación de ${invitation.companyName}.`);
+    getToken()
+      .then((token) => {
+        if (!token) throw new Error('No se pudo obtener la sesión.');
+        return rejectMyInvitation(invitation.id, token);
+      })
+      .then(() => {
+        showAlert('Invitación rechazada', `Rechazaste la invitación de ${invitation.companyName}.`);
+        load();
+      })
+      .catch((e: Error) => showAlert('No se pudo rechazar la invitación', e.message));
+
+  // No existe hoy un endpoint para que un INVITADO se quite a sí mismo de una empresa
+  // (`PATCH/DELETE /companies/:id/members/:userId` exige que quien actúa sea Administrador) —
+  // se avisa en vez de simular una acción que el backend rechazaría.
   const handleRevoke = (company: LinkedCompany) =>
-    showAlert('Membresía revocada', `Saliste de ${company.companyName}.`);
+    showAlert(
+      'Todavía no disponible',
+      `Por ahora, para salir de ${company.companyName} pedile a un Administrador que te quite del equipo.`,
+    );
 
   return (
     <View style={[styles.screen, { backgroundColor: theme.screenBackground }]}>

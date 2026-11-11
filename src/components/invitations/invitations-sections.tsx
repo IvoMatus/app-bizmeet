@@ -8,7 +8,13 @@ import type { LinkedCompany, PendingInvitation } from '@/components/invitations/
 import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 
-/** Card destacada de una invitación pendiente: empresa, cargo propuesto, mensaje y permisos. */
+const ROLE_LABEL = { ADMINISTRADOR: 'Administrador', INVITADO: 'Invitado' } as const;
+
+/**
+ * Card de una invitación pendiente: empresa, rol propuesto y vencimiento (`GET /invitations/mine`).
+ * El mock original del Figma traía industry/location/verified/invitadoPor/mensaje/privilegios —
+ * ninguno existe en el backend hoy, así que se muestran solo los campos reales.
+ */
 export function PendingInvitationCard({
   invitation,
   onAccept,
@@ -19,6 +25,8 @@ export function PendingInvitationCard({
   onReject: (invitation: PendingInvitation) => void;
 }) {
   const theme = useTheme();
+  const venceEn = new Date(invitation.venceEn);
+  const diasRestantes = Math.max(0, Math.ceil((venceEn.getTime() - Date.now()) / (24 * 60 * 60 * 1000)));
 
   return (
     <View style={[styles.card, { backgroundColor: theme.surface, borderColor: theme.accent }]}>
@@ -27,50 +35,20 @@ export function PendingInvitationCard({
           <ProfileIcon name="network" color={theme.accent} width={16} height={16} />
         </View>
         <View style={styles.flex1}>
-          <View style={styles.nameRow}>
-            <ThemedText type="smallBold" themeColor="textPrimary" numberOfLines={1} style={styles.flex1}>
-              {invitation.companyName}
-            </ThemedText>
-            {invitation.verified && <ProfileIcon name="verified" color={theme.success} width={12} height={12} />}
-          </View>
+          <ThemedText type="smallBold" themeColor="textPrimary" numberOfLines={1}>
+            {invitation.companyName}
+          </ThemedText>
           <ThemedText type="small" themeColor="textMuted">
-            {invitation.industry} · {invitation.location}
+            Vence en {diasRestantes} día{diasRestantes === 1 ? '' : 's'}
           </ThemedText>
         </View>
       </View>
 
-      <StatusPill label="INVITACIÓN VIP" variant="accent" />
-
       <View style={styles.roleRow}>
         <ProfileIcon name="rosette" color={theme.accent} width={14} height={14} />
         <ThemedText type="smallBold" themeColor="textPrimary">
-          {invitation.proposedRole}
+          Rol propuesto: {ROLE_LABEL[invitation.proposedRole]}
         </ThemedText>
-      </View>
-
-      <ThemedText type="small" themeColor="textMuted">
-        Invitado por <ThemedText type="smallBold" themeColor="textPrimary">{invitation.invitedByName}</ThemedText> (
-        {invitation.invitedByRole})
-      </ThemedText>
-
-      <View style={[styles.quoteBlock, { backgroundColor: theme.surfaceInset }]}>
-        <ThemedText type="small" themeColor="textMuted" style={styles.italic}>
-          &ldquo;{invitation.message}&rdquo;
-        </ThemedText>
-      </View>
-
-      <View>
-        <ThemedText type="small" style={[styles.eyebrow, { color: theme.eyebrow }]}>
-          PRIVILEGIOS Y PERMISOS
-        </ThemedText>
-        {invitation.privileges.map((privilege) => (
-          <View key={privilege} style={styles.privilegeRow}>
-            <View style={[styles.bullet, { backgroundColor: theme.accent }]} />
-            <ThemedText type="small" themeColor="textPrimary" style={styles.flex1}>
-              {privilege}
-            </ThemedText>
-          </View>
-        ))}
       </View>
 
       <Pressable
@@ -122,14 +100,8 @@ export function LinkedCompanyCard({ company, onRevoke }: { company: LinkedCompan
           {isTitular ? 'Rol ejecutivo' : 'Rol colaborativo'} • Vigente • Plan {company.planLabel}
         </ThemedText>
         <ThemedText type="small" themeColor="textPrimary">
-          {company.role}
-          {isTitular ? ' (Admin Principal)' : ''}
+          {ROLE_LABEL[company.role]}
         </ThemedText>
-        {!isTitular && company.invitedByName && (
-          <ThemedText type="small" themeColor="textMuted">
-            Invitado formalmente por <ThemedText type="smallBold" themeColor="textPrimary">{company.invitedByName}</ThemedText>
-          </ThemedText>
-        )}
       </View>
 
       {isTitular ? (

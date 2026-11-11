@@ -3,7 +3,7 @@ import { useForm } from 'react-hook-form';
 import { Pressable, StyleSheet, View } from 'react-native';
 
 import { ProfileIcon } from '@/components/profile/profile-icons';
-import { SectionCard, StatusPill } from '@/components/profile/profile-primitives';
+import { SectionCard } from '@/components/profile/profile-primitives';
 import { ThemedText } from '@/components/themed-text';
 import { showAlert } from '@/components/ui/app-alert';
 import { FormInput } from '@/components/ui/form-input';
@@ -75,14 +75,26 @@ export function QuotaCard({
 type InviteFormValues = { email: string; role: string };
 
 /** Acordeón "Invitar nuevo contacto", ya expandido por defecto. */
-export function InviteFormCard({ disabled, disabledReason }: { disabled: boolean; disabledReason?: string }) {
+export function InviteFormCard({
+  disabled,
+  disabledReason,
+  onInvite,
+}: {
+  disabled: boolean;
+  disabledReason?: string;
+  onInvite: (correo: string, rol: 'ADMINISTRADOR' | 'INVITADO') => Promise<void>;
+}) {
   const theme = useTheme();
   const { control, handleSubmit, reset } = useForm<InviteFormValues>({ defaultValues: { email: '', role: '' } });
 
-  const onSubmit = handleSubmit((values) => {
-    // ponytail: mock — sin backend de invitaciones todavía, solo confirma en UI (ver team-data.ts).
-    showAlert('Invitación enviada', `Se envió la invitación a ${values.email}.`);
-    reset();
+  const onSubmit = handleSubmit(async (values) => {
+    try {
+      await onInvite(values.email, values.role as 'ADMINISTRADOR' | 'INVITADO');
+      showAlert('Invitación enviada', `Se envió la invitación a ${values.email}.`);
+      reset();
+    } catch (e) {
+      showAlert('No se pudo invitar', (e as Error).message);
+    }
   });
 
   return (
@@ -137,7 +149,12 @@ export function InviteFormCard({ disabled, disabledReason }: { disabled: boolean
   );
 }
 
-/** Card destacada del titular responsable: creador/propietario, firma digital, email y móvil. */
+/**
+ * Card del Administrador de referencia. El backend no distingue un "Titular" dedicado — puede
+ * haber varios `ADMINISTRADOR` — así que esto muestra el primero como referencia, sin los datos
+ * ficticios del mock original (verificación biométrica, firma digital SAT/RUT, móvil verificado:
+ * ninguno existe en `GET /companies/:id/members`).
+ */
 export function OwnerCard({ owner }: { owner: Owner }) {
   const theme = useTheme();
 
@@ -145,22 +162,13 @@ export function OwnerCard({ owner }: { owner: Owner }) {
     <View>
       <View style={styles.sectionHeaderRow}>
         <ThemedText type="small" style={[styles.eyebrow, { color: theme.eyebrow }]}>
-          TITULAR RESPONSABLE
+          ADMINISTRADOR
         </ThemedText>
-        <StatusPill label="Verificación Biométrica 100%" variant="accent" />
       </View>
 
-      {/* ponytail: el verde "Propietario"/"CREADOR & TITULAR BASE" del Figma (#10b981) se
-          normalizó a theme.success en vez de agregar un segundo verde al theme — ver comentario
-          en constants/theme.ts. */}
       <View style={[styles.ownerCard, { borderColor: theme.success, backgroundColor: theme.surface }]}>
         <View style={[styles.ownerTopBar, { backgroundColor: theme.success }]} />
         <View style={styles.ownerContent}>
-          <View style={styles.badgeRow}>
-            <StatusPill label="CREADOR & TITULAR BASE" variant="success" />
-            <StatusPill label="Propietario" variant="success" />
-          </View>
-
           <View style={styles.ownerHeaderRow}>
             <View style={[styles.avatar, { backgroundColor: theme.accentSoft }]}>
               <ProfileIcon name="person" color={theme.accent} width={18} height={18} />
@@ -172,28 +180,7 @@ export function OwnerCard({ owner }: { owner: Owner }) {
               <ThemedText type="small" themeColor="accent">
                 {owner.title}
               </ThemedText>
-              <ThemedText type="small" themeColor="textMuted">
-                Firma digital vinculada a SAT/RUT
-              </ThemedText>
             </View>
-          </View>
-
-          <View style={[styles.divider, { backgroundColor: theme.surfaceBorder }]} />
-
-          <View style={styles.ownerRow}>
-            <ProfileIcon name="at" color={theme.textMuted} width={14} height={14} />
-            <ThemedText type="small" themeColor="textMuted" style={styles.flex1} numberOfLines={1}>
-              {owner.email}
-            </ThemedText>
-          </View>
-          <View style={styles.ownerRow}>
-            <ProfileIcon name="phone" color={theme.textMuted} width={12} height={14} />
-            <ThemedText type="small" themeColor="textMuted" style={styles.flex1}>
-              Móvil Verificado
-            </ThemedText>
-            {owner.phoneVerified && (
-              <SymbolView name={{ ios: 'checkmark.circle.fill', android: 'check_circle', web: 'check_circle' }} tintColor={theme.success} size={16} />
-            )}
           </View>
         </View>
       </View>
@@ -230,9 +217,6 @@ export function MemberCard({
             </ThemedText>
             <ThemedText type="small" themeColor="accent">
               {member.role}
-            </ThemedText>
-            <ThemedText type="small" themeColor="textMuted" numberOfLines={1}>
-              {member.email}
             </ThemedText>
           </View>
           <Pressable

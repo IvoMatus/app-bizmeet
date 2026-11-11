@@ -324,6 +324,150 @@ export async function uploadPostMedia(companyId: string, uri: string, mimeType: 
   return { tipo: parsed.tipo, key: parsed.key };
 }
 
+// --- Equipo e Invitaciones (T2.2, módulos `membership`/`invitation` de api-bizmeet) ---
+
+/** Rol real de empresa. El backend NO tiene roles de negocio (Comercial/Operativo/etc.),
+ * solo estos dos — ver `permission-engine.ts` en api-bizmeet. */
+export type RolEmpresa = 'ADMINISTRADOR' | 'INVITADO';
+
+/** GET /companies/:id/members. Ojo: no trae `email` — el backend no lo expone en esta vista. */
+export type MiembroView = { userId: string; rol: RolEmpresa; nombre: string | null };
+
+export async function fetchCompanyMembers(companyId: string, token: string): Promise<MiembroView[]> {
+  const response = await fetch(`${API_URL}/companies/${companyId}/members`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (!response.ok) {
+    const body = await response.json().catch(() => null);
+    throw new Error(body?.message ?? `No se pudo cargar el equipo (${response.status}).`);
+  }
+  return response.json();
+}
+
+export async function updateCompanyMemberRole(
+  companyId: string,
+  userId: string,
+  rol: RolEmpresa,
+  token: string,
+): Promise<void> {
+  const response = await fetch(`${API_URL}/companies/${companyId}/members/${userId}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+    body: JSON.stringify({ rol }),
+  });
+  if (!response.ok) {
+    const body = await response.json().catch(() => null);
+    throw new Error(body?.message ?? `No se pudo cambiar el rol (${response.status}).`);
+  }
+}
+
+export async function removeCompanyMember(companyId: string, userId: string, token: string): Promise<void> {
+  const response = await fetch(`${API_URL}/companies/${companyId}/members/${userId}`, {
+    method: 'DELETE',
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (!response.ok) {
+    const body = await response.json().catch(() => null);
+    throw new Error(body?.message ?? `No se pudo quitar al colaborador (${response.status}).`);
+  }
+}
+
+export type EstadoInvitacion = 'PENDIENTE' | 'ACEPTADA' | 'RECHAZADA' | 'CANCELADA';
+
+/** GET /companies/:id/invitations — vigentes de la empresa (solo Administrador). */
+export type CompanyInvitationView = {
+  id: string;
+  companyId: string;
+  correo: string;
+  rol: RolEmpresa;
+  invitadaPor: string;
+  estado: EstadoInvitacion;
+  venceEn: string;
+};
+
+export async function fetchCompanyInvitations(companyId: string, token: string): Promise<CompanyInvitationView[]> {
+  const response = await fetch(`${API_URL}/companies/${companyId}/invitations`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (!response.ok) {
+    const body = await response.json().catch(() => null);
+    throw new Error(body?.message ?? `No se pudieron cargar las invitaciones (${response.status}).`);
+  }
+  return response.json();
+}
+
+/** POST /companies/:id/invitations — 409 si la empresa llegó al límite de contactos del plan. */
+export async function inviteCompanyMember(
+  companyId: string,
+  correo: string,
+  rol: RolEmpresa,
+  token: string,
+): Promise<CompanyInvitationView> {
+  const response = await fetch(`${API_URL}/companies/${companyId}/invitations`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+    body: JSON.stringify({ correo, rol }),
+  });
+  if (!response.ok) {
+    const body = await response.json().catch(() => null);
+    throw new Error(body?.message ?? `No se pudo enviar la invitación (${response.status}).`);
+  }
+  return response.json();
+}
+
+export async function cancelCompanyInvitation(companyId: string, invitationId: string, token: string): Promise<void> {
+  const response = await fetch(`${API_URL}/companies/${companyId}/invitations/${invitationId}`, {
+    method: 'DELETE',
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (!response.ok) {
+    const body = await response.json().catch(() => null);
+    throw new Error(body?.message ?? `No se pudo cancelar la invitación (${response.status}).`);
+  }
+}
+
+/** GET /invitations/mine — invitaciones recibidas por cualquiera de mis correos verificados. */
+export type MyInvitationView = {
+  id: string;
+  companyId: string;
+  companyName: string | null;
+  rol: RolEmpresa;
+  venceEn: string;
+};
+
+export async function fetchMyInvitations(token: string): Promise<MyInvitationView[]> {
+  const response = await fetch(`${API_URL}/invitations/mine`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (!response.ok) {
+    const body = await response.json().catch(() => null);
+    throw new Error(body?.message ?? `No se pudieron cargar tus invitaciones (${response.status}).`);
+  }
+  return response.json();
+}
+
+export async function acceptMyInvitation(invitationId: string, token: string): Promise<void> {
+  const response = await fetch(`${API_URL}/invitations/${invitationId}/accept`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (!response.ok) {
+    const body = await response.json().catch(() => null);
+    throw new Error(body?.message ?? `No se pudo aceptar la invitación (${response.status}).`);
+  }
+}
+
+export async function rejectMyInvitation(invitationId: string, token: string): Promise<void> {
+  const response = await fetch(`${API_URL}/invitations/${invitationId}/reject`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (!response.ok) {
+    const body = await response.json().catch(() => null);
+    throw new Error(body?.message ?? `No se pudo rechazar la invitación (${response.status}).`);
+  }
+}
+
 /** Respuesta de subir la foto de perfil. El backend puede devolver la URL final en Spaces o body vacío. */
 export type UploadProfilePhotoResult = { fotoPerfilUrl?: string };
 

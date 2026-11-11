@@ -1,5 +1,6 @@
+import { useAuth } from '@clerk/expo';
 import { router, useLocalSearchParams } from 'expo-router';
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -12,27 +13,60 @@ import {
   QuotaCard,
   SafeguardCard,
 } from '@/components/team/team-sections';
-import { activeCount, MOCK_TEAM, pendingCount, type PendingMember, type TeamData } from '@/components/team/team-data';
+import {
+  activeCount,
+  buildTeamData,
+  pendingCount,
+  ROLE_LABEL,
+  type ConfirmedMember,
+  type PendingMember,
+  type TeamData,
+} from '@/components/team/team-data';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
+import {
+  cancelCompanyInvitation,
+  fetchCompany,
+  fetchCompanyInvitations,
+  fetchCompanyMembers,
+  inviteCompanyMember,
+  removeCompanyMember,
+  updateCompanyMemberRole,
+  type RolEmpresa,
+} from '@/utils/api';
 
 /** Vista Equipo — "Equipo y Contactos" (Figma 2006:5286). Recibe el id de empresa por query,
  * igual que `/empresa/[id]`. */
 export default function EquipoScreen() {
   const theme = useTheme();
-  useLocalSearchParams<{ companyId: string }>();
-  // TODO(backend): sustituir por GET /companies/:id/team cuando el endpoint esté listo (el
-  // módulo de roles e invitaciones se está desarrollando en paralelo) — por ahora se carga el
-  // mock de entrada, sin fetch real, por lo que el estado de error es inalcanzable hoy.
-  const [team, setTeam] = useState<TeamData | null>(() => MOCK_TEAM);
+  const { getToken } = useAuth();
+  const { companyId } = useLocalSearchParams<{ companyId: string }>();
+  const [team, setTeam] = useState<TeamData | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const load = useCallback(() => {
-    setTeam(MOCK_TEAM);
-    setError(null);
-  }, []);
+    getToken()
+      .then(async (token) => {
+        if (!token) throw new Error('No se pudo obtener la sesión.');
+        const [company, miembros, invitaciones] = await Promise.all([
+          fetchCompany(companyId, token),
+          fetchCompanyMembers(companyId, token),
+          fetchCompanyInvitations(companyId, token),
+        ]);
+        // `company.plan` es el código de plan en texto plano (confirmado con backend-dev);
+        // `CompanyDetail.plan` en api.ts todavía lo tipa como objeto — fix aparte pendiente.
+        const planCode = company.plan as unknown as string;
+        setTeam(buildTeamData(company.name, planCode, planCode, miembros, invitaciones));
+        setError(null);
+      })
+      .catch((e: Error) => setError(e.message));
+  }, [getToken, companyId]);
+
+  useEffect(() => {
+    load();
+  }, [load]);
 
   if (error && !team) {
     return (
@@ -63,10 +97,51 @@ export default function EquipoScreen() {
   const free = team.quota.totalSlots - active - pending;
   const atLimit = free <= 0;
 
+  /** Ejecuta `action` con el token de sesión y recarga el equipo al terminar. Deja que el
+   * caller decida si muestra éxito o deja que el error se propague (p.ej. `InviteFormCard`
+   * ya muestra su propio alert de éxito, así que ahí no usamos `withTokenAlert`). */
+  const withToken = async (action: (token: string) => Promise<void>) => {
+    const token = await getToken();
+    if (!token) throw new Error('No se pudo obtener la sesión.');
+    await action(token);
+    load();
+  };
+
+  const withTokenAlert = (action: (token: string) => Promise<void>, failTitle: string) =>
+    withToken(action).catch((e: Error) => showAlert(failTitle, e.message));
+
+  const handleInvite = (correo: string, rol: RolEmpresa) => withToken((token) => inviteCompanyMember(companyId, correo, rol, token).then(() => undefined));
+
   const handleResend = (member: PendingMember) =>
-    showAlert('Invitación reenviada', `Se reenvió la invitación a ${member.email}.`);
+    withTokenAlert(
+      async (token) => {
+        await cancelCompanyInvitation(companyId, member.id, token);
+        await inviteCompanyMember(companyId, member.email, member.role === ROLE_LABEL.ADMINISTRADOR ? 'ADMINISTRADOR' : 'INVITADO', token);
+      },
+      'No se pudo reenviar la invitación',
+    );
+
   const handleCancel = (member: PendingMember) =>
-    showAlert('Invitación cancelada', `Se canceló la invitación a ${member.email}.`);
+    withTokenAlert((token) => cancelCompanyInvitation(companyId, member.id, token), 'No se pudo cancelar la invitación');
+
+  const handleRemove = (member: ConfirmedMember) =>
+    withTokenAlert((token) => removeCompanyMember(companyId, member.id, token), 'No se pudo quitar al colaborador');
+
+  const handleChangeRole = (member: ConfirmedMember) => {
+    const currentIsAdmin = member.role === ROLE_LABEL.ADMINISTRADOR;
+    showAlert(member.name, '¿Qué querés hacer con este colaborador?', [
+      {
+        text: currentIsAdmin ? 'Hacer Invitado' : 'Hacer Administrador',
+        onPress: () =>
+          withTokenAlert(
+            (token) => updateCompanyMemberRole(companyId, member.id, currentIsAdmin ? 'INVITADO' : 'ADMINISTRADOR', token),
+            'No se pudo cambiar el rol',
+          ),
+      },
+      { text: 'Quitar del equipo', style: 'destructive', onPress: () => handleRemove(member) },
+      { text: 'Cancelar', style: 'cancel' },
+    ]);
+  };
 
   return (
     <ThemedView type="screenBackground" style={styles.flex}>
@@ -103,9 +178,10 @@ export default function EquipoScreen() {
           <InviteFormCard
             disabled={atLimit}
             disabledReason="Alcanzaste el límite de cupos de tu plan. Libera un cupo o mejora tu plan para invitar a más colaboradores."
+            onInvite={handleInvite}
           />
 
-          <OwnerCard owner={team.owner} />
+          {team.owner && <OwnerCard owner={team.owner} />}
 
           <View style={styles.sectionHeaderRow}>
             <ThemedText type="small" style={[styles.eyebrow, { color: theme.eyebrow }]}>
@@ -122,7 +198,13 @@ export default function EquipoScreen() {
             </ThemedText>
           ) : (
             team.members.map((member) => (
-              <MemberCard key={member.id} member={member} onResend={handleResend} onCancel={handleCancel} />
+              <MemberCard
+                key={member.id}
+                member={member}
+                onResend={handleResend}
+                onCancel={handleCancel}
+                onChangeRole={handleChangeRole}
+              />
             ))
           )}
 
