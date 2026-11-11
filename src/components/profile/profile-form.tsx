@@ -17,6 +17,7 @@ import { ProfileIcon } from '@/components/profile/profile-icons';
 import { StatusPill, SectionCard } from '@/components/profile/profile-primitives';
 import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
+import { withStableCacheKey } from '@/utils/image';
 
 /** Header fijo de Editar Perfil: volver, eyebrow, título y avatar. */
 export function EditTopBar({ avatar, onBack }: { avatar: ImageSourcePropType; onBack?: () => void }) {
@@ -32,7 +33,7 @@ export function EditTopBar({ avatar, onBack }: { avatar: ImageSourcePropType; on
           <ThemedText style={[styles.eyebrow, { color: theme.eyebrow }]}>BizAInet Core</ThemedText>
           <ThemedText style={[styles.title, { color: theme.textPrimary }]}>Editar Perfil</ThemedText>
         </View>
-        <Image source={avatar} style={[styles.avatar, { borderColor: theme.accent }]} contentFit="cover" />
+        <Image source={withStableCacheKey(avatar)} style={[styles.avatar, { borderColor: theme.accent }]} contentFit="cover" />
       </View>
     </SafeAreaView>
   );
@@ -56,7 +57,7 @@ export function PhotoCard({
       <View style={styles.photoRow}>
         <View style={{ width: avatarSize, height: avatarSize }}>
           <Image
-            source={avatar}
+            source={withStableCacheKey(avatar)}
             accessibilityLabel="Fotografía de perfil"
             style={[styles.photoAvatar, { borderColor: theme.accent }]}
             contentFit="cover"

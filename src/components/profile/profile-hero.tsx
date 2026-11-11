@@ -8,6 +8,7 @@ import { StatusPill } from '@/components/profile/profile-primitives';
 import { ProfileData } from '@/components/profile/profile-data';
 import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
+import { withStableCacheKey } from '@/utils/image';
 
 /** Avatar circular con anillo de acento. `verified` agrega el badge verde; `onCameraPress` el botón de cámara. */
 export function ProfileAvatar({
@@ -27,7 +28,7 @@ export function ProfileAvatar({
   return (
     <View style={{ width: size, height: size }}>
       <Image
-        source={source}
+        source={withStableCacheKey(source)}
         accessibilityLabel="Foto de perfil"
         style={[
           styles.avatar,

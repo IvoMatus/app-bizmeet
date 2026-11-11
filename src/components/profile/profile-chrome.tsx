@@ -11,6 +11,7 @@ import { ProfileIcon, type ProfileIconName } from '@/components/profile/profile-
 import { Spacing } from '@/constants/theme';
 import { useActiveCompany } from '@/hooks/use-active-company';
 import { useTheme } from '@/hooks/use-theme';
+import { withStableCacheKey } from '@/utils/image';
 
 type ProfileChromeProps = {
   avatar: ImageSourcePropType;
@@ -67,7 +68,7 @@ export function ProfileTopBar({ avatar, hasUnread, subtitle = 'Mi Perfil', onPre
             {hasUnread && <View style={[styles.dot, { backgroundColor: theme.accent }]} />}
           </Pressable>
           <Image
-            source={avatar}
+            source={withStableCacheKey(avatar)}
             accessibilityLabel="Foto de perfil"
             style={[styles.topAvatar, { borderColor: theme.accent }]}
             contentFit="cover"
