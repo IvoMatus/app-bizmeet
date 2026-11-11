@@ -24,10 +24,25 @@ type BottomTabBarProps = {
   activeKey?: string;
   avatar: ImageSourcePropType;
   companyLogo: number;
+  /**
+   * Cómo navegar al tocar un ítem. Default `router.navigate`: dentro de (tabs) (ver
+   * app-tabs.tsx) el destino vive en el mismo navigator de tabs, y `navigate` ya hace el
+   * JUMP_TO correcto sin tocar el stack.
+   *
+   * Desde una pantalla fuera de (tabs) (ver RootBottomTabBar en el root `_layout.tsx`) el
+   * destino está en otra rama del Stack raíz: ahí hay que pasar `router.dismissTo` en su lugar.
+   * `navigate` resuelve ese salto con un StackRouter 'NAVIGATE' que, si la ruta destino ya
+   * existe más abajo en el stack, la reordena al tope SIN remover la pantalla actual del
+   * array de rutas — como ninguna ruta se remueve, `beforeRemove`/`usePreventRemove` (el guard
+   * de "descartar publicación" de publicacion/crear) nunca se dispara, y la navegación lo
+   * saltea. `dismissTo` dispara un 'POP_TO' real: descarta las pantallas hasta la de destino,
+   * lo cual sí pasa por `beforeRemove` en cada una — igual que el back nativo.
+   */
+  onNavigate?: (href: Href) => void;
 };
 
 /** Barra inferior compartida de 6 destinos. "Empresa" usa el logo y "Perfil" el avatar. */
-export function BottomTabBar({ activeKey, avatar, companyLogo }: BottomTabBarProps) {
+export function BottomTabBar({ activeKey, avatar, companyLogo, onNavigate = router.navigate }: BottomTabBarProps) {
   const theme = useTheme();
 
   return (
@@ -47,7 +62,7 @@ export function BottomTabBar({ activeKey, avatar, companyLogo }: BottomTabBarPro
               accessibilityRole="tab"
               accessibilityLabel={item.label}
               accessibilityState={{ selected: active }}
-              onPress={() => router.navigate(item.href)}
+              onPress={() => onNavigate(item.href)}
               style={styles.item}>
               {item.key === 'company' ? (
                 <View style={[styles.circle, { backgroundColor: theme.buttonDark }]}>

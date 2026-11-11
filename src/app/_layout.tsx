@@ -61,7 +61,18 @@ function RootBottomTabBar() {
   const activeKey = CHILD_ROUTE_TAB_KEY[segments.join('/')];
   if (!activeKey) return null;
 
-  return <BottomTabBar activeKey={activeKey} avatar={avatar} companyLogo={MOCK_PROFILE.companyLogoUri} />;
+  return (
+    <BottomTabBar
+      activeKey={activeKey}
+      avatar={avatar}
+      companyLogo={MOCK_PROFILE.companyLogoUri}
+      // dismissTo (no navigate): el destino está en otra rama del Stack raíz — ver el porqué
+      // en el comment de `onNavigate` en bottom-tab-bar.tsx. Esto es lo que hace que CUALQUIER
+      // guard de salida en esta rama (no solo el de publicacion/crear) se respete al tocar la
+      // barra, igual que con el back nativo.
+      onNavigate={router.dismissTo}
+    />
+  );
 }
 
 export default function RootLayout() {
