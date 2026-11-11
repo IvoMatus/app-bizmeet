@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { AccessibilityInfo, findNodeHandle, Modal, Pressable, StyleSheet, View, type Text } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
@@ -36,11 +36,18 @@ export function AppAlertHost() {
   // RN's <Modal> — unlike the native Alert.alert this replaced — doesn't move
   // VoiceOver/TalkBack focus to its content by itself, so without this a screen
   // reader user gets no signal that an error/alert just appeared.
-  useEffect(() => {
-    if (!state) return;
+  //
+  // Esto NO va en un `useEffect([state])`: ese efecto corre apenas se commitea el nuevo
+  // `state`, pero `<Modal>` monta su contenido en una superficie nativa separada — en Android
+  // en particular, el diálogo nativo puede no estar listo todavía en ese momento, así que
+  // `findNodeHandle(titleRef.current)` devuelve un tag de una vista que todavía no existe (o ya
+  // no) del lado nativo, y `setAccessibilityFocus` lo descarta con
+  // "Cannot find view with tag #N". `onLayout` sí garantiza que la vista del título ya se
+  // montó y tiene medidas reales — es la señal correcta para pedirle foco.
+  const focusTitle = useCallback(() => {
     const tag = findNodeHandle(titleRef.current);
     if (tag) AccessibilityInfo.setAccessibilityFocus(tag);
-  }, [state]);
+  }, []);
 
   if (!state) return null;
 
@@ -56,6 +63,7 @@ export function AppAlertHost() {
         >
           <ThemedText
             ref={titleRef}
+            onLayout={focusTitle}
             style={[styles.title, { color: theme.textPrimary }]}
             accessibilityRole="alert"
           >
