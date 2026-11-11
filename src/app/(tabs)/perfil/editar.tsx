@@ -1,8 +1,8 @@
 import { useUser } from '@clerk/expo';
 import * as ImagePicker from 'expo-image-picker';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { router } from 'expo-router';
-import { ActivityIndicator, ScrollView, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import type { ImageSourcePropType } from 'react-native';
 
 import {
@@ -12,47 +12,83 @@ import {
   FormField,
   FormSection,
   InfoNote,
-  PasswordField,
   PhotoCard,
   SaveButton,
   SelectField,
-  ToggleRow,
 } from '@/components/profile/profile-form';
 import { useAuthToken } from '@/hooks/use-auth-token';
+import { useDiscardGuard } from '@/hooks/use-discard-guard';
 
-import { MOCK_EDIT_PROFILE, MOCK_PROFILE, type EditProfileForm } from '@/components/profile/profile-data';
+import { buildEditProfileForm, MOCK_PROFILE, type EditProfileForm } from '@/components/profile/profile-data';
 import { StatusPill } from '@/components/profile/profile-primitives';
 import { showAlert } from '@/components/ui/app-alert';
 import { Spacing } from '@/constants/theme';
 import { ThemedText } from '@/components/themed-text';
 import { useTheme } from '@/hooks/use-theme';
-import { fetchUserProfile, uploadProfilePhoto } from '@/utils/api';
+import { fetchUserProfile, updateUserProfile, uploadProfilePhoto, type UpdateUserProfileInput, type UserProfileView } from '@/utils/api';
+
+/** Compara el form editado contra lo último que vino del servidor y arma el PATCH con solo lo
+ * que cambió. `pais`/`idiomas` no entran: todavía no tienen picker en el form (ver SelectField),
+ * así que nunca cambian desde la UI. */
+function buildProfilePatch(original: UserProfileView, form: EditProfileForm): UpdateUserProfileInput {
+  const patch: UpdateUserProfileInput = {};
+  if (form.firstName !== original.nombre) patch.nombre = form.firstName;
+  if (form.paternalLastName !== original.apellidoPaterno) patch.apellidoPaterno = form.paternalLastName;
+  if (form.maternalLastName !== (original.apellidoMaterno ?? '')) patch.apellidoMaterno = form.maternalLastName;
+  if (form.state !== original.estado) patch.estado = form.state;
+  if (form.municipality !== original.comuna) patch.comuna = form.municipality;
+  if (form.phone !== original.celular) patch.phoneNumber = form.phone;
+  return patch;
+}
 
 export default function EditarPerfilScreen() {
   const theme = useTheme();
   const getToken = useAuthToken();
   const { user } = useUser();
-  const [form, setForm] = useState<EditProfileForm>(MOCK_EDIT_PROFILE);
+  const email = user?.primaryEmailAddress?.emailAddress ?? '';
+
+  const [original, setOriginal] = useState<UserProfileView | null>(null);
+  const [form, setForm] = useState<EditProfileForm | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
+
   const [avatar, setAvatar] = useState<ImageSourcePropType>(MOCK_PROFILE.avatarUri);
   const [uploading, setUploading] = useState(false);
   const [photoError, setPhotoError] = useState<string | null>(null);
+
   const set = <K extends keyof EditProfileForm>(key: K) => (value: EditProfileForm[K]) =>
-    setForm((prev) => ({ ...prev, [key]: value }));
+    setForm((prev) => (prev ? { ...prev, [key]: value } : prev));
 
   // ponytail: deps en `user?.id`, no en `user` — Clerk puede emitir un objeto `user` nuevo con
   // los mismos datos, y depender de la referencia completa reabre el fetch en loop.
-  useEffect(() => {
+  const load = useCallback(() => {
     const userId = user?.id;
     if (!userId) return;
     getToken()
-      .then((token) => (token ? fetchUserProfile(userId, token) : null))
-      .then((profile) => {
-        if (profile?.fotoPerfilUrl) setAvatar({ uri: profile.fotoPerfilUrl });
+      .then((token) => {
+        setLoading(true);
+        setLoadError(null);
+        if (!token) throw new Error('No se pudo obtener la sesión.');
+        return fetchUserProfile(userId, token);
       })
-      .catch(() => {
-        // ponytail: si falla, se queda con el avatar mock/placeholder; no bloquea la edición.
-      });
-  }, [user?.id, getToken]);
+      .then((profile) => {
+        setOriginal(profile);
+        setForm(buildEditProfileForm(profile, email));
+        if (profile.fotoPerfilUrl) setAvatar({ uri: profile.fotoPerfilUrl });
+      })
+      .catch((e: Error) => setLoadError(e.message))
+      .finally(() => setLoading(false));
+  }, [user?.id, email, getToken]);
+
+  useEffect(load, [load]);
+
+  const hasUnsavedChanges = useMemo(
+    () => (original && form ? Object.keys(buildProfilePatch(original, form)).length > 0 : false),
+    [original, form],
+  );
+  const allowExit = useDiscardGuard(hasUnsavedChanges, { title: '¿Descartar modificaciones?' });
 
   async function pickAndUploadPhoto() {
     setPhotoError(null);
@@ -89,73 +125,109 @@ export default function EditarPerfilScreen() {
     }
   }
 
+  async function handleSave() {
+    const userId = user?.id;
+    if (!userId || !original || !form) return;
+    const patch = buildProfilePatch(original, form);
+    if (Object.keys(patch).length === 0) return;
+
+    setSaving(true);
+    setSaveError(null);
+    try {
+      const token = await getToken();
+      if (!token) throw new Error('No se pudo obtener la sesión.');
+      const updated = await updateUserProfile(userId, patch, token);
+      setOriginal(updated);
+      setForm(buildEditProfileForm(updated, email));
+      allowExit();
+      router.back();
+    } catch (e) {
+      setSaveError(e instanceof Error ? e.message : 'No se pudo guardar los cambios.');
+    } finally {
+      setSaving(false);
+    }
+  }
+
   return (
     <View style={[styles.screen, { backgroundColor: theme.screenBackground }]}>
       <EditTopBar avatar={avatar} onBack={() => router.back()} />
 
-      <ScrollView contentContainerStyle={styles.content}>
-        <PhotoCard avatar={avatar} onUpload={uploading ? undefined : pickAndUploadPhoto} />
-        {uploading && <ActivityIndicator color={theme.accent} />}
-        {photoError && <ThemedText style={{ color: theme.error, textAlign: 'center' }}>{photoError}</ThemedText>}
+      {loading ? (
+        <View style={styles.center}>
+          <ActivityIndicator color={theme.accent} />
+        </View>
+      ) : loadError ? (
+        <View style={styles.center}>
+          <ThemedText style={{ color: theme.textMuted, textAlign: 'center' }}>{loadError}</ThemedText>
+          <Pressable accessibilityRole="button" onPress={load} style={styles.retry}>
+            <ThemedText type="smallBold" style={{ color: theme.accent }}>
+              Reintentar
+            </ThemedText>
+          </Pressable>
+        </View>
+      ) : form ? (
+        <ScrollView contentContainerStyle={styles.content}>
+          <PhotoCard avatar={avatar} onUpload={uploading ? undefined : pickAndUploadPhoto} />
+          {uploading && <ActivityIndicator color={theme.accent} />}
+          {photoError && <ThemedText style={{ color: theme.error, textAlign: 'center' }}>{photoError}</ThemedText>}
 
-        <FormSection icon="person" eyebrow="Identidad corporativa" title="Datos Personales">
-          <FormField label="Nombre(s)" required value={form.firstName} onChangeText={set('firstName')} />
-          <View style={styles.row}>
-            <View style={styles.half}>
-              <FormField label="Primer Apellido" required value={form.paternalLastName} onChangeText={set('paternalLastName')} />
+          <FormSection icon="person" eyebrow="Identidad corporativa" title="Datos Personales">
+            <FormField label="Nombre(s)" required value={form.firstName} onChangeText={set('firstName')} />
+            <View style={styles.row}>
+              <View style={styles.half}>
+                <FormField label="Primer Apellido" required value={form.paternalLastName} onChangeText={set('paternalLastName')} />
+              </View>
+              <View style={styles.half}>
+                <FormField label="Segundo Apellido" value={form.maternalLastName} onChangeText={set('maternalLastName')} />
+              </View>
             </View>
-            <View style={styles.half}>
-              <FormField label="Segundo Apellido" value={form.maternalLastName} onChangeText={set('maternalLastName')} />
-            </View>
-          </View>
-          <FormField label="Cargo / Posición Ejecutiva" required value={form.position} onChangeText={set('position')} />
-          <FormField label="Fecha de Nacimiento" value={form.birthDate} onChangeText={set('birthDate')} />
-          <SelectField label="Idiomas Principales" value={form.languages} />
-        </FormSection>
+            <FormField label="Fecha de Nacimiento" value={form.birthDateLabel} editable={false} helper={form.ageLabel} />
+            <SelectField label="Idiomas Principales" value={form.languagesLabel} />
+          </FormSection>
 
-        <FormSection icon="pin" eyebrow="Ubicación y enlace" title="Residencia y Contacto">
-          <SelectField label="País de Residencia" required value={form.countryLabel} />
-          <View style={styles.row}>
-            <View style={styles.half}>
-              <FormField label="Estado / Entidad" value={form.state} onChangeText={set('state')} />
+          <FormSection icon="pin" eyebrow="Ubicación y enlace" title="Residencia y Contacto">
+            <SelectField label="País de Residencia" required value={form.countryLabel} />
+            <View style={styles.row}>
+              <View style={styles.half}>
+                <FormField label="Estado / Entidad" value={form.state} onChangeText={set('state')} />
+              </View>
+              <View style={styles.half}>
+                <FormField label="Alcaldía / Comuna" value={form.municipality} onChangeText={set('municipality')} />
+              </View>
             </View>
-            <View style={styles.half}>
-              <FormField label="Alcaldía / Comuna" value={form.municipality} onChangeText={set('municipality')} />
-            </View>
-          </View>
-          <FormField
-            label="Número Telefónico Directo"
-            required
-            prefix="+52"
-            keyboardType="phone-pad"
-            value={form.phone}
-            onChangeText={set('phone')}
-            badge={<StatusPill label="WhatsApp OK" variant="success" />}
+            <FormField
+              label="Número Telefónico Directo"
+              required
+              keyboardType="phone-pad"
+              value={form.phone}
+              onChangeText={set('phone')}
+              badge={<StatusPill label="WhatsApp OK" variant="success" />}
+            />
+            <CurpField value={form.curp} badgeLabel="Validado biometría" />
+            <ThemedText style={[styles.hint, { color: theme.textMuted }]}>Certificado emitido por RENAPO / BizAInet · Identity Ledger</ThemedText>
+          </FormSection>
+
+          {/* ponytail: contraseña/robustez/2FA son de Clerk, no de api-bizmeet — se ocultan en vez
+              de mostrar datos inventados. Pendiente de confirmar con Composer si conviene
+              integrarlos contra el flujo propio de Clerk en vez de quedar ocultos. */}
+          <FormSection icon="shield" eyebrow="Seguridad y acceso" title="Credenciales Corporativas">
+            <FormField
+              label="Correo Electrónico Institucional"
+              value={form.email}
+              editable={false}
+              badge={<StatusPill label="Clerk" variant="accent" />}
+            />
+            <InfoNote text="El correo y la contraseña de tu cuenta se gestionan desde tu inicio de sesión (Clerk)." />
+          </FormSection>
+
+          {saveError && <ThemedText style={{ color: theme.error, textAlign: 'center' }}>{saveError}</ThemedText>}
+          <SaveButton label={saving ? 'Guardando…' : 'Guardar Cambios'} onPress={handleSave} disabled={!hasUnsavedChanges || saving} />
+          <DiscardButton
+            label="Descartar modificaciones"
+            onPress={() => original && setForm(buildEditProfileForm(original, email))}
           />
-          <CurpField value={form.curp} badgeLabel="Validado biometría" />
-          <ThemedText style={[styles.hint, { color: theme.textMuted }]}>Certificado emitido por RENAPO / BizAInet · Identity Ledger</ThemedText>
-        </FormSection>
-
-        <FormSection icon="shield" eyebrow="Seguridad y acceso" title="Credenciales Corporativas">
-          <FormField
-            label="Correo Electrónico Institucional"
-            value={form.email}
-            editable={false}
-            badge={<StatusPill label="SSO Enterprise" variant="accent" />}
-          />
-          <InfoNote text="Para modificar tu cuenta corporativa se requiere ticket autorizado ante el departamento de TI." />
-          <PasswordField mask={form.passwordMask} strengthLabel={form.passwordStrengthLabel} />
-          <ToggleRow
-            label="Autenticación en 2 Pasos (2FA)"
-            description={form.twoFactorLabel}
-            value={form.twoFactorEnabled}
-            onValueChange={set('twoFactorEnabled')}
-          />
-        </FormSection>
-
-        <SaveButton label="Guardar Cambios" />
-        <DiscardButton label="Descartar modificaciones" onPress={() => setForm(MOCK_EDIT_PROFILE)} />
-      </ScrollView>
+        </ScrollView>
+      ) : null}
     </View>
   );
 }
@@ -163,6 +235,18 @@ export default function EditarPerfilScreen() {
 const styles = StyleSheet.create({
   screen: {
     flex: 1,
+  },
+  center: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: Spacing.three,
+    padding: Spacing.four,
+  },
+  retry: {
+    minHeight: 44,
+    paddingHorizontal: Spacing.three,
+    justifyContent: 'center',
   },
   content: {
     paddingTop: Spacing.six,

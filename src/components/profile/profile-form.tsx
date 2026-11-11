@@ -274,15 +274,20 @@ export function InfoNote({ text }: { text: string }) {
   );
 }
 
-/** Botón primario de ancho completo (acento). */
-export function SaveButton({ label, onPress }: { label: string; onPress?: () => void }) {
+/** Botón primario de ancho completo (acento). `disabled` lo atenúa y bloquea el toque. */
+export function SaveButton({ label, onPress, disabled }: { label: string; onPress?: () => void; disabled?: boolean }) {
   const theme = useTheme();
 
   return (
     <Pressable
       accessibilityRole="button"
+      accessibilityState={{ disabled }}
+      disabled={disabled}
       onPress={onPress}
-      style={({ pressed }) => [styles.saveButton, { backgroundColor: theme.accent, opacity: pressed ? 0.85 : 1 }]}>
+      style={({ pressed }) => [
+        styles.saveButton,
+        { backgroundColor: theme.accent, opacity: disabled ? 0.5 : pressed ? 0.85 : 1 },
+      ]}>
       <SymbolView name={{ ios: 'checkmark', android: 'check', web: 'check' }} tintColor={theme.background} size={14} />
       <ThemedText style={[styles.saveLabel, { color: theme.background }]}>{label}</ThemedText>
     </Pressable>
