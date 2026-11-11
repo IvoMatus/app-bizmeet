@@ -6,7 +6,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { useAuthToken } from '@/hooks/use-auth-token';
 
-import { PostAttachments } from '@/components/post/post-attachments';
+import { PostAttachmentGallery } from '@/components/post/post-attachment-gallery';
 import { POST_TYPE_LABEL, timeAgo } from '@/components/post/post-data';
 import { rubroNombre, useRubrosCatalog } from '@/components/post/use-rubros-catalog';
 import { ThemedText } from '@/components/themed-text';
@@ -143,7 +143,7 @@ export default function PublicacionDetalleScreen() {
 
         <ScrollView contentContainerStyle={styles.content}>
           {/* RN-PUB-06: el perfil básico no ve adjuntos de requerimientos — viene vacío, no es error. */}
-          <PostAttachments adjuntos={post.adjuntos} size={150} />
+          <PostAttachmentGallery adjuntos={post.adjuntos} />
 
           <Pressable
             accessibilityRole="button"
