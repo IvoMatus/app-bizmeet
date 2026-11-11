@@ -1,9 +1,10 @@
-import { useAuth } from '@clerk/expo';
 import { router } from 'expo-router';
 import { SymbolView } from 'expo-symbols';
 import { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, FlatList, Pressable, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+
+import { useAuthToken } from '@/hooks/use-auth-token';
 
 import { POST_TYPE_LABEL, timeAgo } from '@/components/post/post-data';
 import { rubroNombre, useRubrosCatalog } from '@/components/post/use-rubros-catalog';
@@ -88,7 +89,7 @@ function MyPostCard({ post, rubros }: { post: PostView; rubros: Rubro[] | null }
 
 export default function MisPublicacionesScreen() {
   const theme = useTheme();
-  const { getToken } = useAuth();
+  const getToken = useAuthToken();
   const [companyId, setCompanyId] = useState<string | null>(null);
   const [posts, setPosts] = useState<PostView[] | null>(null);
   const [postsError, setPostsError] = useState<string | null>(null);

@@ -1,6 +1,7 @@
-import { useAuth } from '@clerk/expo';
 import { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+
+import { useAuthToken } from '@/hooks/use-auth-token';
 
 import { toAppNotification, unreadCount, type AppNotification } from '@/components/notifications/notifications-data';
 import { NotificationCard } from '@/components/notifications/notifications-sections';
@@ -19,7 +20,7 @@ import { fetchNotifications } from '@/utils/api';
  */
 export default function NotificacionesScreen() {
   const theme = useTheme();
-  const { getToken } = useAuth();
+  const getToken = useAuthToken();
   const [notifications, setNotifications] = useState<AppNotification[] | null>(null);
   const [nextCursor, setNextCursor] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);

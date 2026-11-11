@@ -1,6 +1,8 @@
-import { useAuth, useSignUp } from '@clerk/expo';
+import { useSignUp } from '@clerk/expo';
 import { router } from 'expo-router';
 import { useState } from 'react';
+
+import { useAuthToken } from '@/hooks/use-auth-token';
 
 import { AuthScreenShell } from '@/components/register/auth-screen-shell';
 import { OtpVerificationStep } from '@/components/register/otp-verification-step';
@@ -13,7 +15,7 @@ import { useRegisterForm } from './_layout';
 
 export default function Step3aScreen() {
   const { signUp } = useSignUp();
-  const { getToken } = useAuth();
+  const getToken = useAuthToken();
   const { personalData } = useRegisterForm();
   const [submitting, setSubmitting] = useState(false);
 

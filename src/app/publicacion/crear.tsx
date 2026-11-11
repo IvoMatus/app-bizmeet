@@ -1,10 +1,11 @@
-import { useAuth } from '@clerk/expo';
 import { router, useLocalSearchParams, useNavigation } from 'expo-router';
 import { SymbolView } from 'expo-symbols';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useController, useForm, useFormState, type Control } from 'react-hook-form';
+
+import { useAuthToken } from '@/hooks/use-auth-token';
 
 import { AttachmentDropzone } from '@/components/post/attachment-dropzone';
 import { AttachmentThumbnail } from '@/components/post/attachment-thumbnail';
@@ -72,7 +73,7 @@ function useDiscardGuard(hasUnsavedChanges: boolean) {
 
 /** RN-PUB-03: saldo por tipo, siempre contra el backend — sin valor fijo en el componente. */
 function useQuota(companyId: string) {
-  const { getToken } = useAuth();
+  const getToken = useAuthToken();
   const [quota, setQuota] = useState<PostQuotaView | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -310,7 +311,7 @@ function MediaSection({
 /** Crear Publicación (T3.1) — tipo, saldo del mes (RN-PUB-03), multimedia y especificaciones. */
 export default function CrearPublicacionScreen() {
   const theme = useTheme();
-  const { getToken } = useAuth();
+  const getToken = useAuthToken();
   const { companyId } = useLocalSearchParams<{ companyId: string }>();
   const { control, handleSubmit } = useForm<CreatePostForm & { industries: string[] }>({
     defaultValues: { title: '', description: '', industries: [] },

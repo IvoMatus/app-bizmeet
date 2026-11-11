@@ -1,9 +1,10 @@
-import { useAuth } from '@clerk/expo';
 import { router, useLocalSearchParams } from 'expo-router';
 import { SymbolView } from 'expo-symbols';
 import { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+
+import { useAuthToken } from '@/hooks/use-auth-token';
 
 import { PostAttachments } from '@/components/post/post-attachments';
 import { POST_TYPE_LABEL, timeAgo } from '@/components/post/post-data';
@@ -16,7 +17,7 @@ import { fetchCompany, fetchPost, type CompanyDetail, type PostView } from '@/ut
 
 export default function PublicacionDetalleScreen() {
   const theme = useTheme();
-  const { getToken } = useAuth();
+  const getToken = useAuthToken();
   const { id } = useLocalSearchParams<{ id: string }>();
   const [post, setPost] = useState<PostView | null>(null);
   const [author, setAuthor] = useState<CompanyDetail | null>(null);

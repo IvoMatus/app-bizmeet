@@ -1,8 +1,9 @@
-import { useAuth } from '@clerk/expo';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+
+import { useAuthToken } from '@/hooks/use-auth-token';
 
 import { RegisterHeader } from '@/components/register/register-header';
 import { BillingSummaryCard, PaymentCard } from '@/components/payments/payments-sections';
@@ -44,7 +45,7 @@ const PAYMENTS_VIEW_OPTIONS: { value: PaymentsViewMode; label: string }[] = [
  */
 export default function PagosScreen() {
   const theme = useTheme();
-  const { getToken } = useAuth();
+  const getToken = useAuthToken();
   const { companyId } = useLocalSearchParams<{ companyId: string }>();
   const [data, setData] = useState<ScreenData | null>(null);
   const [error, setError] = useState<string | null>(null);

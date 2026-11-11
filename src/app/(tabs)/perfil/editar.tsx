@@ -1,4 +1,4 @@
-import { useAuth, useUser } from '@clerk/expo';
+import { useUser } from '@clerk/expo';
 import * as ImagePicker from 'expo-image-picker';
 import { useEffect, useState } from 'react';
 import { router } from 'expo-router';
@@ -18,6 +18,8 @@ import {
   SelectField,
   ToggleRow,
 } from '@/components/profile/profile-form';
+import { useAuthToken } from '@/hooks/use-auth-token';
+
 import { MOCK_EDIT_PROFILE, MOCK_PROFILE, type EditProfileForm } from '@/components/profile/profile-data';
 import { StatusPill } from '@/components/profile/profile-primitives';
 import { showAlert } from '@/components/ui/app-alert';
@@ -28,7 +30,7 @@ import { fetchUserProfile, uploadProfilePhoto } from '@/utils/api';
 
 export default function EditarPerfilScreen() {
   const theme = useTheme();
-  const { getToken } = useAuth();
+  const getToken = useAuthToken();
   const { user } = useUser();
   const [form, setForm] = useState<EditProfileForm>(MOCK_EDIT_PROFILE);
   const [avatar, setAvatar] = useState<ImageSourcePropType>(MOCK_PROFILE.avatarUri);

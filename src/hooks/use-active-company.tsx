@@ -1,5 +1,6 @@
-import { useAuth } from '@clerk/expo';
 import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from 'react';
+
+import { useAuthToken } from '@/hooks/use-auth-token';
 
 import { fetchCompanyContext, fetchMyCompanies, type CompanyContext, type MyCompany } from '@/utils/api';
 
@@ -30,7 +31,7 @@ const ActiveCompanyContext = createContext<ActiveCompanyState | null>(null);
  * reabrir) — agregar expo-secure-store si el usuario pide recordarla entre sesiones.
  */
 export function ActiveCompanyProvider({ children }: { children: ReactNode }) {
-  const { getToken } = useAuth();
+  const getToken = useAuthToken();
   const [companies, setCompanies] = useState<MyCompany[] | null>(null);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [context, setContext] = useState<CompanyContext | null>(null);

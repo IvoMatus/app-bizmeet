@@ -1,6 +1,7 @@
-import { useAuth } from '@clerk/expo';
 import * as ImagePicker from 'expo-image-picker';
 import { useCallback, useState } from 'react';
+
+import { useAuthToken } from '@/hooks/use-auth-token';
 
 import { showAlert } from '@/components/ui/app-alert';
 import { uploadPostMedia } from '@/utils/api';
@@ -21,7 +22,7 @@ export type PostAttachment = {
  * borra la foto de la UI — queda con `status: 'error'` para mostrar retry, en vez de desaparecer.
  */
 export function usePostAttachments(companyId: string, max: number) {
-  const { getToken } = useAuth();
+  const getToken = useAuthToken();
   const [attachments, setAttachments] = useState<PostAttachment[]>([]);
 
   const upload = useCallback(

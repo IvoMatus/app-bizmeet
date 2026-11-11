@@ -1,5 +1,6 @@
-import { useAuth } from '@clerk/expo';
 import { useCallback, useEffect, useState } from 'react';
+
+import { useAuthToken } from '@/hooks/use-auth-token';
 
 import { fetchRubros, type Rubro } from '@/utils/api';
 
@@ -25,7 +26,7 @@ function load(token: string): Promise<Rubro[]> {
 
 /** Catálogo de rubros/sectores (PA-10): código + nombre, nunca texto libre. */
 export function useRubrosCatalog() {
-  const { getToken } = useAuth();
+  const getToken = useAuthToken();
   const [rubros, setRubros] = useState<Rubro[] | null>(cached);
   const [error, setError] = useState<string | null>(null);
 

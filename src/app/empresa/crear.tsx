@@ -1,9 +1,10 @@
-import { useAuth } from '@clerk/expo';
 import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { ScrollView, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useForm, useWatch } from 'react-hook-form';
+
+import { useAuthToken } from '@/hooks/use-auth-token';
 
 import { DiscardButton } from '@/components/profile/profile-form';
 import { PrimaryButton } from '@/components/register/primary-button';
@@ -42,7 +43,7 @@ const PLAN_OPTIONS: FormSelectOption<CreateCompanyInput['plan']>[] = [
 ];
 
 export default function CrearEmpresaScreen() {
-  const { getToken } = useAuth();
+  const getToken = useAuthToken();
   const [submitting, setSubmitting] = useState(false);
   const { control, handleSubmit, setValue } = useForm<CrearEmpresaForm>({
     defaultValues: { name: '', rfc: '', industry: '', tipo: '', formaJuridica: '', plan: '' },

@@ -1,6 +1,8 @@
-import { useAuth, useUser } from '@clerk/expo';
+import { useUser } from '@clerk/expo';
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
 import type { ImageSourcePropType } from 'react-native';
+
+import { useAuthToken } from '@/hooks/use-auth-token';
 
 import { MOCK_PROFILE } from '@/components/profile/profile-data';
 import { fetchUserProfile } from '@/utils/api';
@@ -13,7 +15,7 @@ const ProfileAvatarContext = createContext<ImageSourcePropType>(MOCK_PROFILE.ava
  * el mismo fetch en cada lugar de la app que necesita mostrar el avatar del usuario.
  */
 export function ProfileAvatarProvider({ children }: { children: ReactNode }) {
-  const { getToken } = useAuth();
+  const getToken = useAuthToken();
   const { user } = useUser();
   const [avatar, setAvatar] = useState<ImageSourcePropType>(MOCK_PROFILE.avatarUri);
 

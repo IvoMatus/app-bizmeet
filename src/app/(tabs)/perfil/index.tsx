@@ -3,6 +3,8 @@ import { ActivityIndicator, Pressable, ScrollView, StyleSheet, View } from 'reac
 import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
 
+import { useAuthToken } from '@/hooks/use-auth-token';
+
 import { ThemedText } from '@/components/themed-text';
 import { IdentitySection, KycSection, SecuritySection } from '@/components/profile/profile-sections';
 import { ProfileTabs } from '@/components/profile/profile-chrome';
@@ -14,8 +16,9 @@ import { fetchUserProfile } from '@/utils/api';
 
 export default function PerfilScreen() {
   const theme = useTheme();
-  const { signOut, getToken } = useAuth();
+  const { signOut } = useAuth();
   const { user } = useUser();
+  const getToken = useAuthToken();
   const [profile, setProfile] = useState<ProfileData | null>(null);
   const [error, setError] = useState<string | null>(null);
 

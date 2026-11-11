@@ -1,8 +1,9 @@
-import { useAuth } from '@clerk/expo';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+
+import { useAuthToken } from '@/hooks/use-auth-token';
 
 import { RegisterHeader } from '@/components/register/register-header';
 import { showAlert } from '@/components/ui/app-alert';
@@ -41,7 +42,7 @@ import {
  * igual que `/empresa/[id]`. */
 export default function EquipoScreen() {
   const theme = useTheme();
-  const { getToken } = useAuth();
+  const getToken = useAuthToken();
   const { companyId } = useLocalSearchParams<{ companyId: string }>();
   const [team, setTeam] = useState<TeamData | null>(null);
   const [error, setError] = useState<string | null>(null);

@@ -1,8 +1,9 @@
-import { useAuth } from '@clerk/expo';
 import { router, useNavigation } from 'expo-router';
 import { SymbolView } from 'expo-symbols';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, FlatList, Pressable, StyleSheet, View } from 'react-native';
+
+import { useAuthToken } from '@/hooks/use-auth-token';
 
 import { CategoryPills, GENERAL_FEED } from '@/components/post/category-pills';
 import { PostCard, PostCardBasic } from '@/components/post/post-card';
@@ -18,7 +19,7 @@ import { fetchPostsFeed, type FeedView, type PostSinDetalleView, type PostView }
 
 export default function InicioScreen() {
   const theme = useTheme();
-  const { getToken } = useAuth();
+  const getToken = useAuthToken();
   const navigation = useNavigation();
   const { active, error: companyError, reload: reloadCompany } = useActiveCompany();
   const { rubros: catalog } = useRubrosCatalog();

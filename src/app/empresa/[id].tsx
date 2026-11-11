@@ -1,8 +1,9 @@
-import { useAuth } from '@clerk/expo';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+
+import { useAuthToken } from '@/hooks/use-auth-token';
 
 import { PLAN_LABEL } from '@/components/company/company-card';
 import { CompanyIcon } from '@/components/company/company-icons';
@@ -44,7 +45,7 @@ function DataRow({ label, value }: { label: string; value: string }) {
 
 export default function EmpresaDetalleScreen() {
   const theme = useTheme();
-  const { getToken } = useAuth();
+  const getToken = useAuthToken();
   const { id } = useLocalSearchParams<{ id: string }>();
   const [company, setCompany] = useState<CompanyDetail | null>(null);
   const [plans, setPlans] = useState<PlanCatalogEntry[] | null>(null);

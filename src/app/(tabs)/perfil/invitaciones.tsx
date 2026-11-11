@@ -1,4 +1,3 @@
-import { useAuth } from '@clerk/expo';
 import { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 
@@ -13,6 +12,8 @@ import {
   type LinkedCompany,
   type PendingInvitation,
 } from '@/components/invitations/invitations-data';
+import { useAuthToken } from '@/hooks/use-auth-token';
+
 import { ProfileTabs } from '@/components/profile/profile-chrome';
 import { showAlert } from '@/components/ui/app-alert';
 import { ThemedText } from '@/components/themed-text';
@@ -26,7 +27,7 @@ type State = { invitations: PendingInvitation[]; companies: LinkedCompany[] };
  * header y ProfileTabs con la pantalla de Perfil (ver decisión en perfil/_layout.tsx). */
 export default function InvitacionesScreen() {
   const theme = useTheme();
-  const { getToken } = useAuth();
+  const getToken = useAuthToken();
   const [state, setState] = useState<State | null>(null);
   const [error, setError] = useState<string | null>(null);
 

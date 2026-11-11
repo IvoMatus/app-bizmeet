@@ -1,10 +1,11 @@
-import { useAuth } from '@clerk/expo';
 import * as Linking from 'expo-linking';
 import { router, useLocalSearchParams } from 'expo-router';
 import * as WebBrowser from 'expo-web-browser';
 import { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+
+import { useAuthToken } from '@/hooks/use-auth-token';
 
 import { PLAN_LABEL } from '@/components/company/company-card';
 import { CompanyIcon } from '@/components/company/company-icons';
@@ -34,7 +35,7 @@ import { fetchCompany, fetchPlans, type CompanyDetail, type PlanCatalogEntry } f
  */
 export default function PlanScreen() {
   const theme = useTheme();
-  const { getToken } = useAuth();
+  const getToken = useAuthToken();
   const { companyId } = useLocalSearchParams<{ companyId: string }>();
 
   const [company, setCompany] = useState<CompanyDetail | null>(null);
