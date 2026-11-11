@@ -6,9 +6,9 @@ import { BottomTabBar } from '@/components/navigation/bottom-tab-bar';
 import { ProfileTopBar } from '@/components/profile/profile-chrome';
 import { MOCK_PROFILE } from '@/components/profile/profile-data';
 import { useActiveCompany } from '@/hooks/use-active-company';
-import { ProfileAvatarProvider, useProfileAvatar } from '@/hooks/use-profile-avatar';
+import { useProfileAvatar } from '@/hooks/use-profile-avatar';
 
-function AppTabsInner() {
+export default function AppTabs() {
   const avatar = useProfileAvatar();
   const { companies } = useActiveCompany();
   const [switcherOpen, setSwitcherOpen] = useState(false);
@@ -61,13 +61,5 @@ function AppTabsInner() {
       </Tabs>
       <CompanySwitcherSheet visible={switcherOpen} onClose={() => setSwitcherOpen(false)} />
     </>
-  );
-}
-
-export default function AppTabs() {
-  return (
-    <ProfileAvatarProvider>
-      <AppTabsInner />
-    </ProfileAvatarProvider>
   );
 }

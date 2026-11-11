@@ -372,7 +372,9 @@ export default function CrearPublicacionScreen() {
 
   return (
     <ThemedView type="screenBackground" style={styles.flex}>
-      <SafeAreaView style={styles.flex}>
+      {/* edges top-only: la BottomTabBar global (ver root _layout.tsx) ya pone su propio inset
+          inferior — pedirle el suyo también acá duplicaría el espacio debajo de "Publicar". */}
+      <SafeAreaView style={styles.flex} edges={['top']}>
         <View style={styles.header}>
           <View>
             <ThemedText type="small" style={{ color: theme.accent, fontWeight: '700' }}>
