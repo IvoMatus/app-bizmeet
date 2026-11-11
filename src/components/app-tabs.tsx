@@ -34,12 +34,8 @@ export default function AppTabs() {
         }}
         tabBar={({ state }) => {
           const activeRoute = state.routes[state.index];
-          // "editar" cuelga del Stack interno de la tab "perfil" (ver perfil/_layout.tsx) y es
-          // pantalla de edición a pantalla completa: oculta el nav bar, como antes de unificarla.
-          const nestedRoute = (activeRoute.state as { routes?: { name: string }[]; index?: number } | undefined)
-            ?.routes?.[(activeRoute.state as { index?: number } | undefined)?.index ?? 0];
-          if (activeRoute.name === 'perfil' && nestedRoute?.name === 'editar') return null;
-
+          // "editar" cuelga del Stack interno de la tab "perfil" (ver perfil/_layout.tsx) y por
+          // pedido del usuario también lleva esta barra, con "Perfil" activa — sin excepción.
           return (
             <BottomTabBar
               activeKey={activeRoute.name}
