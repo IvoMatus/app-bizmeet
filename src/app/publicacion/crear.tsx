@@ -1,28 +1,28 @@
 import { useAuth } from '@clerk/expo';
-import * as ImagePicker from 'expo-image-picker';
 import { router, useLocalSearchParams } from 'expo-router';
 import { SymbolView } from 'expo-symbols';
 import { useCallback, useEffect, useState } from 'react';
-import { ActivityIndicator, Image, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useController, useForm, type Control } from 'react-hook-form';
 
+import { AttachmentDropzone } from '@/components/post/attachment-dropzone';
+import { AttachmentThumbnail } from '@/components/post/attachment-thumbnail';
 import { POST_TYPE_CHIPS, type PostTypeChip } from '@/components/post/post-data';
 import { useCompanyBlocked } from '@/components/post/use-company-blocked';
+import { usePostAttachments } from '@/components/post/use-post-attachments';
 import { useRubrosCatalog } from '@/components/post/use-rubros-catalog';
 import { PrimaryButton } from '@/components/register/primary-button';
 import { showAlert } from '@/components/ui/app-alert';
 import { FormInput } from '@/components/ui/form-input';
+import { SegmentedControl } from '@/components/ui/segmented-control';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
-import { createPost, fetchPostQuota, uploadPostMedia, type AdjuntoView, type PostQuotaView, type Rubro } from '@/utils/api';
+import { createPost, fetchPostQuota, type AdjuntoView, type PostQuotaView, type Rubro } from '@/utils/api';
 
 const MAX_PHOTOS = 3;
-
-/** Foto local en el picker: `key` es `null` mientras se sube a `POST /posts/media`. */
-type PendingPhoto = { uri: string; key: string | null };
 
 type CreatePostForm = {
   title: string;
@@ -192,78 +192,75 @@ function IndustrySelector({
   );
 }
 
-function PhotoPicker({
-  photos,
-  onChange,
-  companyId,
+type MediaTab = 'FOTOS' | 'VIDEO';
+
+/** Sección "Activos Multimedia" (Figma 2043:1204): tabs Fotos/Video, dropzone + miniaturas.
+ * El tab "Video" queda deshabilitado con badge "Próximamente" — el picker completo (MP4/MOV
+ * ≤50MB, `tipo: 'VIDEO'` en `uploadPostMedia`) ya está soportado por la API, pero no entra en
+ * el alcance de este ticket. */
+function MediaSection({
+  attachments,
+  add,
+  remove,
+  retry,
+  doneCount,
 }: {
-  photos: PendingPhoto[];
-  onChange: (photos: PendingPhoto[]) => void;
-  companyId: string;
+  attachments: ReturnType<typeof usePostAttachments>['attachments'];
+  add: () => void;
+  remove: (uri: string) => void;
+  retry: (uri: string) => void;
+  doneCount: number;
 }) {
   const theme = useTheme();
-  const { getToken } = useAuth();
-  const [uploading, setUploading] = useState(false);
-
-  async function addPhoto() {
-    if (photos.length >= MAX_PHOTOS || uploading) return;
-    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (!permission.granted) {
-      showAlert('Permiso requerido', 'Necesitamos acceso a tus fotos para subir imágenes a la publicación.');
-      return;
-    }
-    const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], quality: 0.8 });
-    if (result.canceled) return;
-
-    const asset = result.assets[0];
-    const next = [...photos, { uri: asset.uri, key: null }];
-    onChange(next);
-    setUploading(true);
-    try {
-      const token = await getToken();
-      if (!token) throw new Error('No se pudo obtener la sesión.');
-      const adjunto = await uploadPostMedia(companyId, asset.uri, asset.mimeType ?? 'image/jpeg', token);
-      onChange(next.map((p) => (p.uri === asset.uri ? { ...p, key: adjunto.key } : p)));
-    } catch (e) {
-      onChange(photos);
-      showAlert('No se pudo subir la foto', (e as Error).message);
-    } finally {
-      setUploading(false);
-    }
-  }
+  const [mediaTab, setMediaTab] = useState<MediaTab>('FOTOS');
 
   return (
-    <View style={styles.photoGrid}>
-      {photos.map(({ uri, key }, index) => (
-        <View key={uri} style={styles.photoSlot}>
-          <Image source={{ uri }} style={styles.photoImage} />
-          {key === null && (
-            <View style={[styles.photoImage, styles.photoUploadingOverlay]}>
-              <ActivityIndicator color="#fff" />
-            </View>
-          )}
-          {index === 0 && (
-            <View style={[styles.mainBadge, { backgroundColor: theme.accent }]}>
-              <ThemedText type="small" style={{ color: theme.screenBackground, fontSize: 10 }}>
-                Principal
-              </ThemedText>
-            </View>
-          )}
+    <View style={styles.field}>
+      <View style={styles.mediaHeader}>
+        <View style={styles.mediaHeaderLeft}>
+          <SymbolView tintColor={theme.textPrimary} name={{ ios: 'photo.on.rectangle', android: 'photo_library', web: 'photo_library' }} size={18} />
+          <ThemedText type="smallBold">Activos Multimedia</ThemedText>
         </View>
-      ))}
-      {photos.length < MAX_PHOTOS && (
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Agregar foto"
-          onPress={addPhoto}
-          disabled={uploading}
-          style={[styles.photoSlot, styles.photoEmpty, { borderColor: theme.surfaceBorder }]}>
-          {uploading ? (
-            <ActivityIndicator color={theme.textMuted} />
-          ) : (
-            <SymbolView tintColor={theme.textMuted} name={{ ios: 'camera', android: 'photo_camera', web: 'camera' }} size={22} />
+        <View style={[styles.loadedBadge, { backgroundColor: theme.successSurface }]}>
+          <ThemedText type="small" style={{ color: theme.eyebrow, fontWeight: '700' }}>
+            {doneCount}/{MAX_PHOTOS} Cargado
+          </ThemedText>
+        </View>
+      </View>
+
+      <SegmentedControl
+        accessibilityLabel="Tipo de adjunto multimedia"
+        value={mediaTab}
+        onChange={setMediaTab}
+        options={[
+          { value: 'FOTOS', label: `Fotos (máx. ${MAX_PHOTOS})` },
+          { value: 'VIDEO', label: 'Video (máx. 1)', badge: 'Próximamente' },
+        ]}
+      />
+
+      {mediaTab === 'FOTOS' ? (
+        <>
+          {attachments.length < MAX_PHOTOS && <AttachmentDropzone onPress={add} />}
+          {attachments.length > 0 && (
+            <View style={styles.photoGrid}>
+              {attachments.map((attachment, index) => (
+                <AttachmentThumbnail
+                  key={attachment.uri}
+                  attachment={attachment}
+                  isMain={index === 0}
+                  onRemove={() => remove(attachment.uri)}
+                  onRetry={() => retry(attachment.uri)}
+                />
+              ))}
+            </View>
           )}
-        </Pressable>
+        </>
+      ) : (
+        <View style={[styles.videoPlaceholder, { backgroundColor: theme.cardElevated, borderColor: theme.surfaceBorder }]}>
+          <ThemedText type="small" style={{ color: theme.textMuted, textAlign: 'center' }}>
+            La carga de video estará disponible próximamente.
+          </ThemedText>
+        </View>
       )}
     </View>
   );
@@ -278,9 +275,11 @@ export default function CrearPublicacionScreen() {
     defaultValues: { title: '', description: '', industries: [] },
   });
   const [selectedType, setSelectedType] = useState<PostTypeChip>(POST_TYPE_CHIPS[0]);
-  const [photos, setPhotos] = useState<PendingPhoto[]>([]);
+  const { attachments, add: addPhoto, remove: removePhoto, retry: retryPhoto, uploading: photosUploading } = usePostAttachments(
+    companyId,
+    MAX_PHOTOS
+  );
   const [submitting, setSubmitting] = useState(false);
-  const photosUploading = photos.some((p) => p.key === null);
 
   const { quota, error: quotaError, reload: reloadQuota } = useQuota(companyId);
   const { rubros, error: rubrosError, reload: reloadRubros } = useRubrosCatalog();
@@ -293,9 +292,9 @@ export default function CrearPublicacionScreen() {
   function onSubmit(data: CreatePostForm & { industries: string[] }) {
     if (!canPublish || submitting) return;
     setSubmitting(true);
-    const adjuntos: AdjuntoView[] = photos
-      .filter((p): p is PendingPhoto & { key: string } => p.key !== null)
-      .map((p) => ({ tipo: 'IMAGEN', key: p.key }));
+    const adjuntos: AdjuntoView[] = attachments
+      .filter((a): a is typeof a & { key: string } => a.status === 'done' && a.key !== null)
+      .map((a) => ({ tipo: 'IMAGEN', key: a.key }));
     getToken()
       .then((token) => {
         if (!token) throw new Error('No se pudo obtener la sesión.');
@@ -358,11 +357,13 @@ export default function CrearPublicacionScreen() {
           <TypeSelector selected={selectedType} onSelect={setSelectedType} />
           <QuotaBadge chip={selectedType} quota={quota} error={quotaError} onRetry={reloadQuota} />
 
-          <ThemedText type="smallBold">Activos Multimedia</ThemedText>
-          <ThemedText type="small" style={{ color: theme.textMuted }}>
-            Fotos (máx. {MAX_PHOTOS})
-          </ThemedText>
-          <PhotoPicker photos={photos} onChange={setPhotos} companyId={companyId} />
+          <MediaSection
+            attachments={attachments}
+            add={addPhoto}
+            remove={removePhoto}
+            retry={retryPhoto}
+            doneCount={attachments.filter((a) => a.status === 'done').length}
+          />
 
           <ThemedText type="smallBold">Especificaciones</ThemedText>
           <FormInput control={control} name="title" label="Título*" placeholder="Ej. Ofrezco servicio de auditoría" rules={{ required: 'Requerido' }} />
@@ -463,43 +464,35 @@ const styles = StyleSheet.create({
     padding: Spacing.two,
     marginBottom: Spacing.three,
   },
+  mediaHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginTop: Spacing.two,
+  },
+  mediaHeaderLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.one,
+  },
+  loadedBadge: {
+    paddingHorizontal: Spacing.two,
+    paddingVertical: Spacing.half,
+    borderRadius: 999,
+  },
   photoGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: Spacing.two,
-    marginBottom: Spacing.three,
+    marginTop: Spacing.two,
   },
-  photoSlot: {
-    width: 80,
-    height: 80,
-    borderRadius: Spacing.two,
-    overflow: 'hidden',
-  },
-  photoImage: {
-    width: '100%',
-    height: '100%',
-  },
-  photoUploadingOverlay: {
-    position: 'absolute',
-    top: 0,
-    backgroundColor: 'rgba(0,0,0,0.35)',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  photoEmpty: {
+  videoPlaceholder: {
+    minHeight: 100,
     borderWidth: 1,
-    borderStyle: 'dashed',
+    borderRadius: Spacing.two,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  mainBadge: {
-    position: 'absolute',
-    bottom: 2,
-    left: 2,
-    right: 2,
-    borderRadius: 4,
-    paddingVertical: 2,
-    alignItems: 'center',
+    padding: Spacing.three,
   },
   footer: {
     padding: Spacing.three,
