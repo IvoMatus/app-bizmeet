@@ -19,21 +19,27 @@ export default function PerfilScreen() {
   const [profile, setProfile] = useState<ProfileData | null>(null);
   const [error, setError] = useState<string | null>(null);
 
+  const userId = user?.id;
+  const email = user?.primaryEmailAddress?.emailAddress;
+  const imageUrl = user?.imageUrl;
+
   // La foto de perfil viaja como URL firmada (vence a los 15 min), así que no basta con
   // pedirla una vez: las pestañas de Expo Router quedan montadas al cambiar de tab, por eso
   // se refresca en cada foco en vez de solo en el mount.
+  // ponytail: deps en campos primitivos de `user`, no en el objeto — Clerk puede emitir un
+  // `user` nuevo con los mismos datos, y como la pantalla sigue montada entre tabs, depender de
+  // la referencia completa reabre el fetch en loop sin esperar un foco real.
   useFocusEffect(
     useCallback(() => {
-      if (!user) return;
-      const email = user.primaryEmailAddress?.emailAddress;
+      if (!userId) return;
       getToken()
         .then((token) => {
           if (!token) throw new Error('No se pudo obtener la sesión.');
-          return fetchUserProfile(user.id, token);
+          return fetchUserProfile(userId, token);
         })
-        .then((api) => setProfile(buildProfileData(api, { email, imageUrl: user.imageUrl })))
+        .then((api) => setProfile(buildProfileData(api, { email, imageUrl: imageUrl ?? '' })))
         .catch((e: Error) => setError(e.message));
-    }, [user, getToken]),
+    }, [userId, email, imageUrl, getToken]),
   );
 
   if (!profile) {

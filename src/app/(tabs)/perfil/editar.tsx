@@ -37,17 +37,20 @@ export default function EditarPerfilScreen() {
   const set = <K extends keyof EditProfileForm>(key: K) => (value: EditProfileForm[K]) =>
     setForm((prev) => ({ ...prev, [key]: value }));
 
+  // ponytail: deps en `user?.id`, no en `user` — Clerk puede emitir un objeto `user` nuevo con
+  // los mismos datos, y depender de la referencia completa reabre el fetch en loop.
   useEffect(() => {
-    if (!user) return;
+    const userId = user?.id;
+    if (!userId) return;
     getToken()
-      .then((token) => (token ? fetchUserProfile(user.id, token) : null))
+      .then((token) => (token ? fetchUserProfile(userId, token) : null))
       .then((profile) => {
         if (profile?.fotoPerfilUrl) setAvatar({ uri: profile.fotoPerfilUrl });
       })
       .catch(() => {
         // ponytail: si falla, se queda con el avatar mock/placeholder; no bloquea la edición.
       });
-  }, [user, getToken]);
+  }, [user?.id, getToken]);
 
   async function pickAndUploadPhoto() {
     setPhotoError(null);

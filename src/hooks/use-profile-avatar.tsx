@@ -17,17 +17,22 @@ export function ProfileAvatarProvider({ children }: { children: ReactNode }) {
   const { user } = useUser();
   const [avatar, setAvatar] = useState<ImageSourcePropType>(MOCK_PROFILE.avatarUri);
 
+  // ponytail: deps en `user?.id`, no en `user` — Clerk puede emitir un objeto `user` nuevo con
+  // los mismos datos (misma identidad), y este provider envuelve toda la app: depender de la
+  // referencia completa reabre el fetch en loop en cada emisión. El `id` es el único campo del
+  // que depende la llamada.
   useEffect(() => {
-    if (!user) return;
+    const userId = user?.id;
+    if (!userId) return;
     getToken()
-      .then((token) => (token ? fetchUserProfile(user.id, token) : null))
+      .then((token) => (token ? fetchUserProfile(userId, token) : null))
       .then((profile) => {
         if (profile?.fotoPerfilUrl) setAvatar({ uri: profile.fotoPerfilUrl });
       })
       .catch(() => {
         // ponytail: si falla, se queda con el avatar mock; no bloquea la navegación.
       });
-  }, [user, getToken]);
+  }, [user?.id, getToken]);
 
   return <ProfileAvatarContext.Provider value={avatar}>{children}</ProfileAvatarContext.Provider>;
 }
