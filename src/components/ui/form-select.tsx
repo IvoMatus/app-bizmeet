@@ -76,35 +76,45 @@ export function FormSelect<
         </ThemedView>
       </Pressable>
 
-      <Modal visible={open} transparent animationType="fade" onRequestClose={() => setOpen(false)}>
-        <Pressable style={styles.backdrop} onPress={() => setOpen(false)}>
-          <Pressable onPress={() => {}}>
-            <SafeAreaView
-              edges={['bottom']}
-              style={[styles.sheet, { backgroundColor: theme.card, borderColor: theme.border }]}>
-              <FlatList
-                data={options}
-                keyExtractor={(item) => String(item.value)}
-                renderItem={({ item }) => (
-                  <Pressable
-                    onPress={() => {
-                      field.onChange(item.value);
-                      setOpen(false);
-                    }}
-                    style={styles.option}
-                    accessibilityRole="radio"
-                    accessibilityState={{ selected: item.value === field.value }}
-                    accessibilityLabel={item.label}>
-                    <ThemedText themeColor={item.value === field.value ? 'accent' : 'text'}>
-                      {item.label}
-                    </ThemedText>
-                  </Pressable>
-                )}
-              />
-            </SafeAreaView>
+      {/* ponytail: montado solo mientras `open` es true (en vez de un <Modal> siempre presente
+          que alterna `visible`) — con varios FormSelect en la misma pantalla (tipo/formaJuridica/
+          plan en Crear Empresa), un <Modal visible={false}> igual queda en el árbol con su propio
+          Dialog nativo en Android, y el fade-out de ese Dialog puede solaparse un frame con la
+          apertura del siguiente select, dejando ver contenido de fondo (el campo recién
+          actualizado) a través del backdrop semitransparente — eso es el "salto" reportado, no
+          un loop de render. Desmontar en vez de ocultar saca el fade-out (cierra al instante) y
+          garantiza que nunca haya más de un Dialog de select vivo a la vez. */}
+      {open && (
+        <Modal transparent animationType="fade" onRequestClose={() => setOpen(false)}>
+          <Pressable style={styles.backdrop} onPress={() => setOpen(false)}>
+            <Pressable onPress={() => {}}>
+              <SafeAreaView
+                edges={['bottom']}
+                style={[styles.sheet, { backgroundColor: theme.card, borderColor: theme.border }]}>
+                <FlatList
+                  data={options}
+                  keyExtractor={(item) => String(item.value)}
+                  renderItem={({ item }) => (
+                    <Pressable
+                      onPress={() => {
+                        field.onChange(item.value);
+                        setOpen(false);
+                      }}
+                      style={styles.option}
+                      accessibilityRole="radio"
+                      accessibilityState={{ selected: item.value === field.value }}
+                      accessibilityLabel={item.label}>
+                      <ThemedText themeColor={item.value === field.value ? 'accent' : 'text'}>
+                        {item.label}
+                      </ThemedText>
+                    </Pressable>
+                  )}
+                />
+              </SafeAreaView>
+            </Pressable>
           </Pressable>
-        </Pressable>
-      </Modal>
+        </Modal>
+      )}
 
       {fieldState.error?.message && (
         <ThemedText type="small" themeColor="error">
