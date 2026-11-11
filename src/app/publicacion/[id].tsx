@@ -12,14 +12,16 @@ import { rubroNombre, useRubrosCatalog } from '@/components/post/use-rubros-cata
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Spacing } from '@/constants/theme';
+import { useActiveCompany } from '@/hooks/use-active-company';
 import { useTheme } from '@/hooks/use-theme';
-import { fetchCompany, fetchPost, type CompanyDetail, type PostView } from '@/utils/api';
+import { fetchCompany, fetchPost, type CompanyDetail, type PostDetailView } from '@/utils/api';
 
 export default function PublicacionDetalleScreen() {
   const theme = useTheme();
   const getToken = useAuthToken();
   const { id } = useLocalSearchParams<{ id: string }>();
-  const [post, setPost] = useState<PostView | null>(null);
+  const { active } = useActiveCompany();
+  const [detail, setDetail] = useState<PostDetailView | null>(null);
   const [author, setAuthor] = useState<CompanyDetail | null>(null);
   const { rubros: catalog } = useRubrosCatalog();
   const [error, setError] = useState<string | null>(null);
@@ -28,17 +30,19 @@ export default function PublicacionDetalleScreen() {
     getToken()
       .then((token) => {
         if (!token) throw new Error('No se pudo obtener la sesión.');
-        return fetchPost(id, token).then(async (p) => {
-          setPost(p);
+        return fetchPost(id, token, active?.company.id).then(async (response) => {
+          setDetail(response);
           setError(null);
-          setAuthor(await fetchCompany(p.companyId, token).catch(() => null));
+          if (response.vista === 'COMPLETA') {
+            setAuthor(await fetchCompany(response.post.companyId, token).catch(() => null));
+          }
         });
       })
       .catch((e: Error) => {
-        setPost(null);
+        setDetail(null);
         setError(e.message);
       });
-  }, [getToken, id]);
+  }, [getToken, id, active]);
 
   useEffect(() => {
     load();
@@ -58,7 +62,7 @@ export default function PublicacionDetalleScreen() {
     );
   }
 
-  if (!post) {
+  if (!detail) {
     return (
       <ThemedView type="screenBackground" style={styles.flex}>
         <SafeAreaView style={styles.flex}>
@@ -67,6 +71,48 @@ export default function PublicacionDetalleScreen() {
       </ThemedView>
     );
   }
+
+  // RN-PUB-07: mismo motivo que PostCardBasic en el feed — perfil básico (sin empresa activa)
+  // solo ve título/tipo/rubros de publicaciones que no sean REQUERIMIENTO.
+  if (detail.vista === 'SIN_DETALLE') {
+    const basic = detail.post;
+    return (
+      <ThemedView type="screenBackground" style={styles.flex}>
+        <SafeAreaView style={styles.flex}>
+          <View style={styles.header}>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Volver"
+              onPress={() => router.back()}
+              style={[styles.headerButton, { backgroundColor: theme.card }]}>
+              <SymbolView tintColor={theme.textPrimary} name={{ ios: 'chevron.left', android: 'arrow_back', web: 'arrow_back' }} size={18} />
+            </Pressable>
+          </View>
+          <View style={styles.content}>
+            <View style={[styles.card, styles.descriptionCard, { backgroundColor: theme.cardElevated, borderColor: theme.surfaceBorder }]}>
+              <View style={[styles.categoryBadge, styles.ctaBadge, { backgroundColor: theme.accentSoft }]}>
+                <ThemedText type="small" style={{ color: theme.accent, fontWeight: '700' }}>
+                  {POST_TYPE_LABEL[basic.tipo]}
+                </ThemedText>
+              </View>
+              <ThemedText style={[styles.title, { color: theme.textPrimary }]}>{basic.titulo}</ThemedText>
+              <Pressable
+                accessibilityRole="link"
+                accessibilityLabel="Creá tu empresa para ver el detalle completo"
+                onPress={() => router.push('/empresa/crear')}
+                style={styles.ctaLink}>
+                <ThemedText type="small" style={{ color: theme.accent, fontWeight: '700' }}>
+                  Creá tu empresa para ver el detalle completo →
+                </ThemedText>
+              </Pressable>
+            </View>
+          </View>
+        </SafeAreaView>
+      </ThemedView>
+    );
+  }
+
+  const post = detail.post;
 
   return (
     <ThemedView type="screenBackground" style={styles.flex}>
@@ -193,6 +239,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.three,
     paddingVertical: Spacing.one,
     borderRadius: 9999,
+  },
+  ctaBadge: {
+    alignSelf: 'flex-start',
+  },
+  ctaLink: {
+    minHeight: 44,
+    justifyContent: 'center',
   },
   content: {
     gap: Spacing.three,

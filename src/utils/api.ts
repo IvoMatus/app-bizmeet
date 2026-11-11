@@ -324,13 +324,20 @@ export async function fetchPostsFeed(params: FeedParams, token: string): Promise
   return response.json();
 }
 
+/** Mismo envoltorio que `FeedView`, para un solo post en vez de una lista (RN-PUB-07). */
+export type PostDetailView =
+  | { vista: 'COMPLETA'; post: PostView }
+  | { vista: 'SIN_DETALLE'; post: PostSinDetalleView; cta: 'CREAR_EMPRESA' };
+
 /**
- * GET /posts/:id — detalle de una publicación.
- * TODO: confirmar con backend-dev — `post.controller.ts` hoy solo expone `GET /posts/feed`;
- * esta ruta todavía no existe (404 esperado hasta que se implemente).
+ * GET /posts/:id — detalle de una publicación. RN-PUB-07: la API comparte el filtro de
+ * `GET /posts/feed` — sin `companyId` (lector sin empresa activa) trata al lector como perfil
+ * básico y devuelve `vista: 'SIN_DETALLE'` para cualquier publicación que no sea REQUERIMIENTO
+ * (404 a propósito, no un bug). Mandar siempre la misma empresa activa que usa `fetchPostsFeed`.
  */
-export async function fetchPost(id: string, token: string): Promise<PostView> {
-  const response = await fetch(`${API_URL}/posts/${id}`, {
+export async function fetchPost(id: string, token: string, companyId?: string): Promise<PostDetailView> {
+  const qs = companyId ? `?companyId=${companyId}` : '';
+  const response = await fetch(`${API_URL}/posts/${id}${qs}`, {
     headers: { Authorization: `Bearer ${token}` },
   });
   if (!response.ok) {
