@@ -81,13 +81,23 @@ export type CreateUserProfileInput = {
   curp: string;
 };
 
-/** Vista Perfil que devuelve GET /users/:clerkUserId (sin CURP ni fecha de nacimiento). */
+/** Vista Perfil que devuelve GET /users/:clerkUserId (mismo shape que la respuesta del PATCH). */
 export type UserProfileView = {
   nombre: string;
   apellidoPaterno: string;
   apellidoMaterno?: string;
   fotoPerfilUrl: string | null;
   celular: string;
+  pais: string;
+  estado: string;
+  comuna: string;
+  idiomas: string[];
+  /** Solo lectura: el backend la ignora si se manda en el PATCH. */
+  curp: string;
+  /** Solo lectura, ISO 8601: la edad la calcula la app (ver `profile-data.ts`). */
+  fechaNacimiento: string;
+  /** No tipado como union estricta: el backend puede sumar valores sin avisar al front. */
+  experiencia: string;
 };
 
 /** Trae el perfil del usuario logueado desde api-bizmeet. */
@@ -98,6 +108,39 @@ export async function fetchUserProfile(clerkUserId: string, token: string): Prom
   if (!response.ok) {
     const body = await response.json().catch(() => null);
     throw new Error(body?.message ?? `No se pudo cargar el perfil (${response.status}).`);
+  }
+  return response.json();
+}
+
+/** Todo opcional: mandar solo los campos que cambiaron. El celular viaja como `phoneNumber` acá
+ * pero vuelve como `celular` en la respuesta (mismo shape que `UserProfileView`). `curp` y
+ * `fechaNacimiento` no se pueden editar — no están en este tipo a propósito. `null` o `""` en
+ * cualquier campo da 400, salvo `apellidoMaterno` que sí acepta `""`. */
+export type UpdateUserProfileInput = Partial<{
+  nombre: string;
+  apellidoPaterno: string;
+  apellidoMaterno: string;
+  pais: string;
+  estado: string;
+  comuna: string;
+  phoneNumber: string;
+  idiomas: string[];
+}>;
+
+/** PATCH /users/:clerkUserId. 403 si no es el perfil propio, 404 si no existe. */
+export async function updateUserProfile(
+  clerkUserId: string,
+  patch: UpdateUserProfileInput,
+  token: string,
+): Promise<UserProfileView> {
+  const response = await fetch(`${API_URL}/users/${clerkUserId}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+    body: JSON.stringify(patch),
+  });
+  if (!response.ok) {
+    const body = await response.json().catch(() => null);
+    throw new Error(body?.message ?? `No se pudo guardar el perfil (${response.status}).`);
   }
   return response.json();
 }
