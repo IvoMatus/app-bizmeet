@@ -27,7 +27,7 @@ export function CompanySwitcherSheet({ visible, onClose }: CompanySwitcherSheetP
           <SafeAreaView edges={['bottom']} style={[styles.sheet, { backgroundColor: theme.card, borderColor: theme.border }]}>
             <View style={styles.header}>
               <ThemedText type="smallBold" style={{ color: theme.textPrimary }}>
-                Elegí tu empresa activa
+                Elige tu empresa activa
               </ThemedText>
               <Pressable
                 accessibilityRole="button"
@@ -42,7 +42,7 @@ export function CompanySwitcherSheet({ visible, onClose }: CompanySwitcherSheetP
               {!companies && <ThemedText style={{ color: theme.textMuted, textAlign: 'center' }}>Cargando tus empresas…</ThemedText>}
 
               {companies?.length === 0 && (
-                <ThemedText style={{ color: theme.textMuted, textAlign: 'center' }}>Todavía no formás parte de ninguna empresa.</ThemedText>
+                <ThemedText style={{ color: theme.textMuted, textAlign: 'center' }}>Todavía no formas parte de ninguna empresa.</ThemedText>
               )}
 
               {companies?.map((mine) => {

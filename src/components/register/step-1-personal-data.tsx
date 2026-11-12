@@ -342,7 +342,7 @@ export function Step1PersonalData({ onSubmit }: Step1PersonalDataProps) {
       />
 
       <ThemedText type="small" themeColor="textMuted" style={styles.footer}>
-        Cifrado de grado bancario SSL 256-bit · BizAINet SafeGuard
+        Cifrado de grado bancario SSL 256-bit · BizAInet SafeGuard
       </ThemedText>
     </View>
   );

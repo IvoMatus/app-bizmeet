@@ -46,7 +46,7 @@ export function ProfileTopBar({ avatar, hasUnread, subtitle = 'Mi Perfil', onPre
             {onPressSubtitle ? (
               <Pressable
                 accessibilityRole="button"
-                accessibilityLabel={`Empresa activa: ${subtitle}. Tocá para cambiar de empresa.`}
+                accessibilityLabel={`Empresa activa: ${subtitle}. Toca para cambiar de empresa.`}
                 onPress={onPressSubtitle}
                 hitSlop={{ top: 12, bottom: 12, left: 8, right: 8 }}
                 style={styles.subtitleButton}>

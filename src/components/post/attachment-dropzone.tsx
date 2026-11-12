@@ -19,7 +19,7 @@ export function AttachmentDropzone({ onPress, disabled }: { onPress: () => void;
       style={[styles.zone, { backgroundColor: theme.cardElevated, borderColor: theme.accent, opacity: disabled ? 0.5 : 1 }]}>
       <SymbolView tintColor={theme.accent} name={{ ios: 'icloud.and.arrow.up', android: 'cloud_upload', web: 'cloud_upload' }} size={28} />
       <ThemedText type="small" style={{ color: theme.textPrimary, textAlign: 'center' }}>
-        Tocá para añadir fotos
+        Toca para agregar fotos
       </ThemedText>
       <ThemedText type="small" style={{ color: theme.textMuted, textAlign: 'center', fontSize: 11 }}>
         PNG, JPG o WEBP (hasta 10MB c/u)

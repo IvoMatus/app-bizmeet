@@ -75,7 +75,7 @@ export default function EquipoScreen() {
         <SafeAreaView style={styles.flex}>
           <RegisterHeader title="Equipo y Contactos" onBack={() => router.back()} />
           <Pressable onPress={load} style={styles.center}>
-            <ThemedText style={{ color: theme.textMuted, textAlign: 'center' }}>{error} Tocá para reintentar.</ThemedText>
+            <ThemedText style={{ color: theme.textMuted, textAlign: 'center' }}>{error} Toca para reintentar.</ThemedText>
           </Pressable>
         </SafeAreaView>
       </ThemedView>
@@ -130,7 +130,7 @@ export default function EquipoScreen() {
 
   const handleChangeRole = (member: ConfirmedMember) => {
     const currentIsAdmin = member.role === ROLE_LABEL.ADMINISTRADOR;
-    showAlert(member.name, '¿Qué querés hacer con este colaborador?', [
+    showAlert(member.name, '¿Qué quieres hacer con este colaborador?', [
       {
         text: currentIsAdmin ? 'Hacer Invitado' : 'Hacer Administrador',
         onPress: () =>

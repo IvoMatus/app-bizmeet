@@ -86,7 +86,7 @@ export default function InicioScreen() {
 
   function onPublish() {
     if (!active) {
-      showAlert('Creá tu empresa', 'Necesitás una empresa activa para publicar en el muro.', [
+      showAlert('Crea tu empresa', 'Necesitas una empresa activa para publicar en el muro.', [
         { text: 'Cancelar', style: 'cancel' },
         { text: 'Crear empresa', onPress: () => router.push('/empresa/crear') },
       ]);
@@ -141,7 +141,7 @@ export default function InicioScreen() {
       {error && (
         <Pressable onPress={onRetry} accessibilityRole="button" accessibilityLabel="Reintentar">
           <ThemedText style={{ color: theme.textMuted, textAlign: 'center', marginTop: Spacing.three }}>
-            {error} Tocá para reintentar.
+            {error} Toca para reintentar.
           </ThemedText>
         </Pressable>
       )}

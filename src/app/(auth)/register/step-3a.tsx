@@ -105,7 +105,7 @@ export default function Step3aScreen() {
         ctaLabel="Finalizar registro"
         onSubmit={handleVerify}
         submitting={submitting}
-        footer="¿No recibiste el correo? Revisa tu carpeta de spam o contacta soporte"
+        footer="¿No recibiste el correo? Revisa tu carpeta de spam o contacta a soporte"
       />
     </AuthScreenShell>
   );

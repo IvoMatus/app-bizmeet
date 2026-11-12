@@ -32,14 +32,14 @@ export default function EmpresaScreen() {
 
         {error && (
           <Pressable onPress={reload}>
-            <ThemedText style={{ color: theme.textMuted, textAlign: 'center' }}>{error} Tocá para reintentar.</ThemedText>
+            <ThemedText style={{ color: theme.textMuted, textAlign: 'center' }}>{error} Toca para reintentar.</ThemedText>
           </Pressable>
         )}
 
         {mapped === null && !error && <ActivityIndicator color={theme.accent} style={styles.loading} />}
 
         {mapped?.length === 0 && (
-          <ThemedText style={{ color: theme.textMuted, textAlign: 'center' }}>Todavía no formás parte de ninguna empresa.</ThemedText>
+          <ThemedText style={{ color: theme.textMuted, textAlign: 'center' }}>Todavía no formas parte de ninguna empresa.</ThemedText>
         )}
 
         {mapped?.map((company) => (

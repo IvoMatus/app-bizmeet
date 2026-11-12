@@ -322,7 +322,7 @@ export function CurpField({ value, badgeLabel }: { value: string; badgeLabel: st
         </View>
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel="Re-validar con RENAPO"
+          accessibilityLabel="Revalidar con RENAPO"
           style={[styles.revalidate, { backgroundColor: theme.accentSoft, borderColor: theme.accent }]}>
           <SymbolView name={{ ios: 'arrow.clockwise', android: 'refresh', web: 'refresh' }} tintColor={theme.accent} size={16} />
         </Pressable>

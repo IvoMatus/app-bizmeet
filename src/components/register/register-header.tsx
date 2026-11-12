@@ -11,7 +11,7 @@ type RegisterHeaderProps = {
 };
 
 /** Fixed back-button header shared by the registration steps and the login screen. */
-export function RegisterHeader({ onBack, title = 'Account Setup' }: RegisterHeaderProps) {
+export function RegisterHeader({ onBack, title = 'Configuración de cuenta' }: RegisterHeaderProps) {
   const theme = useTheme();
 
   return (

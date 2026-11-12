@@ -54,7 +54,7 @@ export default function PublicacionDetalleScreen() {
         <SafeAreaView style={styles.flex}>
           <Pressable onPress={load} accessibilityRole="button" accessibilityLabel="Reintentar">
             <ThemedText style={{ color: theme.textMuted, textAlign: 'center', marginTop: Spacing.five }}>
-              {error} Tocá para reintentar.
+              {error} Toca para reintentar.
             </ThemedText>
           </Pressable>
         </SafeAreaView>
@@ -98,11 +98,11 @@ export default function PublicacionDetalleScreen() {
               <ThemedText style={[styles.title, { color: theme.textPrimary }]}>{basic.titulo}</ThemedText>
               <Pressable
                 accessibilityRole="link"
-                accessibilityLabel="Creá tu empresa para ver el detalle completo"
+                accessibilityLabel="Crea tu empresa para ver el detalle completo"
                 onPress={() => router.push('/empresa/crear')}
                 style={styles.ctaLink}>
                 <ThemedText type="small" style={{ color: theme.accent, fontWeight: '700' }}>
-                  Creá tu empresa para ver el detalle completo →
+                  Crea tu empresa para ver el detalle completo →
                 </ThemedText>
               </Pressable>
             </View>

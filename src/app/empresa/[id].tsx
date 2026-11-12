@@ -76,7 +76,7 @@ export default function EmpresaDetalleScreen() {
 
         {error && (
           <Pressable onPress={load}>
-            <ThemedText style={{ color: theme.textMuted, textAlign: 'center' }}>{error} Tocá para reintentar.</ThemedText>
+            <ThemedText style={{ color: theme.textMuted, textAlign: 'center' }}>{error} Toca para reintentar.</ThemedText>
           </Pressable>
         )}
 

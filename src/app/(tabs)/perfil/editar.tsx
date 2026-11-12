@@ -93,7 +93,7 @@ export default function EditarPerfilScreen() {
   async function pickAndUploadPhoto() {
     setPhotoError(null);
     try {
-      if (!user) throw new Error('La sesión todavía no cargó. Esperá un segundo y volvé a intentar.');
+      if (!user) throw new Error('La sesión todavía no cargó. Espera un segundo y vuelve a intentarlo.');
 
       const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
       if (!permission.granted) {
@@ -142,7 +142,7 @@ export default function EditarPerfilScreen() {
       allowExit();
       router.back();
     } catch (e) {
-      setSaveError(e instanceof Error ? e.message : 'No se pudo guardar los cambios.');
+      setSaveError(e instanceof Error ? e.message : 'No se pudieron guardar los cambios.');
     } finally {
       setSaving(false);
     }

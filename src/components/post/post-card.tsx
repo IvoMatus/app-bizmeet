@@ -141,11 +141,11 @@ export function PostCardBasic({ post, rubros }: { post: PostSinDetalleView; rubr
       </ThemedText>
       <Pressable
         accessibilityRole="link"
-        accessibilityLabel="Creá tu empresa para ver el detalle completo"
+        accessibilityLabel="Crea tu empresa para ver el detalle completo"
         onPress={() => router.push('/empresa/crear')}
         style={styles.ctaRow}>
         <ThemedText type="small" style={{ color: theme.accent, fontWeight: '700' }}>
-          Creá tu empresa para ver el detalle completo →
+          Crea tu empresa para ver el detalle completo →
         </ThemedText>
       </Pressable>
     </View>

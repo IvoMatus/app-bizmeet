@@ -62,7 +62,7 @@ function QuotaBadge({ chip, quota, error, onRetry }: { chip: PostTypeChip; quota
     return (
       <Pressable onPress={onRetry} accessibilityRole="button" accessibilityLabel="Reintentar cargar saldo" style={[styles.quotaBadge, { borderColor: theme.error }]}>
         <ThemedText type="small" style={{ color: theme.error }}>
-          {error} Tocá para reintentar.
+          {error} Toca para reintentar.
         </ThemedText>
       </Pressable>
     );
@@ -163,7 +163,7 @@ function IndustrySelector({
       {error && (
         <Pressable onPress={onRetry} accessibilityRole="button" accessibilityLabel="Reintentar cargar rubros">
           <ThemedText type="small" style={{ color: theme.error }}>
-            {error} Tocá para reintentar.
+            {error} Toca para reintentar.
           </ThemedText>
         </Pressable>
       )}
@@ -393,7 +393,7 @@ export default function CrearPublicacionScreen() {
             control={control}
             name="description"
             label="Descripción*"
-            placeholder="Describí tu publicación"
+            placeholder="Describe tu publicación"
             multiline
             rows={4}
             rules={{ required: 'Requerido' }}

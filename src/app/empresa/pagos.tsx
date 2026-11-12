@@ -80,7 +80,7 @@ export default function PagosScreen() {
         <SafeAreaView style={styles.flex}>
           <RegisterHeader title="Historial de Pagos" onBack={() => router.back()} />
           <Pressable onPress={load} style={styles.center}>
-            <ThemedText style={{ color: theme.textMuted, textAlign: 'center' }}>{error} Tocá para reintentar.</ThemedText>
+            <ThemedText style={{ color: theme.textMuted, textAlign: 'center' }}>{error} Toca para reintentar.</ThemedText>
           </Pressable>
         </SafeAreaView>
       </ThemedView>

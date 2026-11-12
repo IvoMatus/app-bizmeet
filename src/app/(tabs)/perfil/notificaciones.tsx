@@ -61,7 +61,7 @@ export default function NotificacionesScreen() {
 
       {error && !notifications && (
         <Pressable onPress={() => load()} style={styles.center}>
-          <ThemedText style={{ color: theme.textMuted, textAlign: 'center' }}>{error} Tocá para reintentar.</ThemedText>
+          <ThemedText style={{ color: theme.textMuted, textAlign: 'center' }}>{error} Toca para reintentar.</ThemedText>
         </Pressable>
       )}
 
@@ -90,7 +90,7 @@ export default function NotificacionesScreen() {
 
           {notifications.length === 0 ? (
             <ThemedText type="small" themeColor="textMuted" style={styles.emptyText}>
-              No tenés notificaciones por el momento.
+              No tienes notificaciones por el momento.
             </ThemedText>
           ) : (
             notifications.map((notification) => <NotificationCard key={notification.id} notification={notification} />)

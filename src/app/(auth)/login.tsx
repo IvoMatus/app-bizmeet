@@ -55,7 +55,7 @@ export default function LoginScreen() {
   return (
     <AuthScreenShell title="Iniciar sesión" onBack={() => router.back()}>
       <ThemedText ref={headingRef} type="subtitle" accessibilityRole="header">
-        Bienvenido de vuelta
+        Bienvenido de nuevo
       </ThemedText>
       <FormInput
         control={control}

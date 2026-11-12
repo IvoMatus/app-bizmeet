@@ -67,7 +67,7 @@ export default function PlanScreen() {
       const success = url.includes('status=success');
       showAlert(
         success ? 'Suscripción activada' : 'No se completó el pago',
-        success ? 'Tu plan se actualizará en unos instantes.' : 'Podés intentar de nuevo cuando quieras.',
+        success ? 'Tu plan se actualizará en unos instantes.' : 'Puedes intentarlo de nuevo cuando quieras.',
       );
       if (success) load();
     });
@@ -81,7 +81,7 @@ export default function PlanScreen() {
         const session = await createMockCheckoutSession(companyId, plan.code);
         await WebBrowser.openAuthSessionAsync(session.url, Linking.createURL('empresa/billing-return'));
       } catch {
-        showAlert('No se pudo iniciar el pago', 'Revisá tu conexión e intentá de nuevo.');
+        showAlert('No se pudo iniciar el pago', 'Revisa tu conexión e intenta de nuevo.');
       } finally {
         setCheckoutLoadingPlan(null);
       }
@@ -96,7 +96,7 @@ export default function PlanScreen() {
 
         {error && !company && (
           <Pressable onPress={load} style={styles.center}>
-            <ThemedText style={{ color: theme.textMuted, textAlign: 'center' }}>{error} Tocá para reintentar.</ThemedText>
+            <ThemedText style={{ color: theme.textMuted, textAlign: 'center' }}>{error} Toca para reintentar.</ThemedText>
           </Pressable>
         )}
 

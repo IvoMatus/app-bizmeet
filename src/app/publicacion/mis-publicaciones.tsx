@@ -26,7 +26,7 @@ function QuotaRow({ quota, error, onRetry }: { quota: PostQuotaView | null; erro
     return (
       <Pressable onPress={onRetry} accessibilityRole="button" accessibilityLabel="Reintentar cargar cupos" style={{ paddingHorizontal: Spacing.three }}>
         <ThemedText type="small" style={{ color: theme.error }}>
-          {error} Tocá para reintentar.
+          {error} Toca para reintentar.
         </ThemedText>
       </Pressable>
     );
@@ -161,7 +161,7 @@ export default function MisPublicacionesScreen() {
         {postsError && (
           <Pressable onPress={load} accessibilityRole="button" accessibilityLabel="Reintentar">
             <ThemedText style={{ color: theme.textMuted, textAlign: 'center', marginTop: Spacing.three }}>
-              {postsError} Tocá para reintentar.
+              {postsError} Toca para reintentar.
             </ThemedText>
           </Pressable>
         )}

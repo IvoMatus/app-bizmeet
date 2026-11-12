@@ -76,7 +76,7 @@ export default function InvitacionesScreen() {
   const handleRevoke = (company: LinkedCompany) =>
     showAlert(
       'Todavía no disponible',
-      `Por ahora, para salir de ${company.companyName} pedile a un Administrador que te quite del equipo.`,
+      `Por ahora, para salir de ${company.companyName} pídele a un Administrador que te quite del equipo.`,
     );
 
   return (
@@ -85,7 +85,7 @@ export default function InvitacionesScreen() {
 
       {error && !state && (
         <Pressable onPress={load} style={styles.center}>
-          <ThemedText style={{ color: theme.textMuted, textAlign: 'center' }}>{error} Tocá para reintentar.</ThemedText>
+          <ThemedText style={{ color: theme.textMuted, textAlign: 'center' }}>{error} Toca para reintentar.</ThemedText>
         </Pressable>
       )}
 
@@ -132,7 +132,7 @@ export default function InvitacionesScreen() {
 
           {state.invitations.length === 0 ? (
             <ThemedText type="small" themeColor="textMuted" style={styles.emptyText}>
-              No tenés invitaciones pendientes por el momento.
+              No tienes invitaciones pendientes por el momento.
             </ThemedText>
           ) : (
             state.invitations.map((invitation) => (
