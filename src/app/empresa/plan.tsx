@@ -42,6 +42,13 @@ export default function PlanScreen() {
   const [plans, setPlans] = useState<PlanCatalogEntry[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [checkoutLoadingPlan, setCheckoutLoadingPlan] = useState<PlanCatalogEntry['code'] | null>(null);
+  const canChangePlan = company?.esMiembro === true && company.puedeCambiarPlan;
+
+  // Deep link a una empresa ajena (o sin permiso de cambiar plan): a la vista de esa empresa —
+  // `replace` y no `back` porque desde un deep link en frío no hay historial al que volver.
+  useEffect(() => {
+    if (company && !canChangePlan) router.replace(`/empresa/${companyId}`);
+  }, [company, canChangePlan, companyId]);
 
   const load = useCallback(() => {
     getToken()
@@ -100,9 +107,9 @@ export default function PlanScreen() {
           </Pressable>
         )}
 
-        {(!company || !plans) && !error && <ActivityIndicator color={theme.accent} style={styles.loading} />}
+        {(!company || !plans || !canChangePlan) && !error && <ActivityIndicator color={theme.accent} style={styles.loading} />}
 
-        {company && plans && (
+        {company && plans && canChangePlan && (
           <ScrollView contentContainerStyle={styles.content}>
             {plans.map((plan) => {
               const isCurrent = plan.code === company.plan && company.estado !== 'PENDIENTE_PAGO';

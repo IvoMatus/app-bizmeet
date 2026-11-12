@@ -201,22 +201,33 @@ export type CompanyView = {
 
 export type MyCompany = { company: CompanyView; rol: 'ADMINISTRADOR' | 'INVITADO' };
 
-export type CompanyDocument = { tipo: string; key: string };
+export type CompanyDocument = { tipo: string };
 
-/** Empresa tal como la devuelve api-bizmeet (GET /companies/:id), con el plan (código) y documentos
- * completos. Para precio/cupos del plan, cruzar `plan` contra el catálogo de `fetchPlans`. */
-export type CompanyDetail = {
+/** GET /companies/:id para quien NO es miembro: solo campos públicos. */
+export type CompanyDetailPublica = {
   id: string;
   name: string;
-  rfc: string;
   industry: string;
   tipo: 'CLUB' | 'CLIENTE' | 'PARTNER';
-  formaJuridica: 'JURIDICA' | 'NATURAL' | null;
   plan: CompanyPlanCode;
   verified: boolean;
-  documentos: CompanyDocument[];
-  estado: 'ACTIVA' | 'PENDIENTE_PAGO' | 'BLOQUEADA';
+  esMiembro: false;
 };
+
+/** GET /companies/:id para un miembro activo: datos fiscales, documentos y permisos. Para
+ * precio/cupos del plan, cruzar `plan` contra el catálogo de `fetchPlans`. */
+export type CompanyDetailMiembro = Omit<CompanyDetailPublica, 'esMiembro'> & {
+  esMiembro: true;
+  rol: 'ADMINISTRADOR' | 'INVITADO';
+  puedeCambiarPlan: boolean;
+  rfc: string;
+  formaJuridica: 'JURIDICA' | 'NATURAL' | null;
+  estado: 'ACTIVA' | 'PENDIENTE_PAGO' | 'BLOQUEADA';
+  documentos: CompanyDocument[];
+};
+
+/** Empresa tal como la devuelve api-bizmeet (GET /companies/:id), discriminada por `esMiembro`. */
+export type CompanyDetail = CompanyDetailPublica | CompanyDetailMiembro;
 
 /** Catálogo de un plan pagado (GET /plans, `billing.controller.ts`). Precio en USD; `cupos` son
  * los límites mensuales reales del motor de permisos (`plan-catalog.ts`). Solo trae los planes

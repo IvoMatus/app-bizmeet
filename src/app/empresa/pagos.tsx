@@ -13,10 +13,10 @@ import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
-import { fetchCompany, fetchMyCompanies, type CompanyDetail } from '@/utils/api';
+import { fetchCompany, fetchMyCompanies, type CompanyDetailMiembro } from '@/utils/api';
 
 type ScreenData = {
-  company: CompanyDetail;
+  company: CompanyDetailMiembro;
   payments: Payment[];
   /** TODO(backend): hoy no hay un permiso granular de "ver pagos de empresa" — se aproxima con
    * el rol de membership (`MyCompany.rol`, ver utils/api.ts). Cuando exista un permiso real
@@ -59,6 +59,7 @@ export default function PagosScreen() {
         return Promise.all([fetchCompany(companyId, token), fetchMyCompanies(token)]);
       })
       .then(([company, mine]) => {
+        if (!company.esMiembro) throw new Error('No formas parte de esta empresa.');
         const rol = mine.find((m) => m.company.id === companyId)?.rol;
         setData({
           company,
