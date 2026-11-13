@@ -313,6 +313,31 @@ export async function fetchMyCompanies(token: string): Promise<MyCompany[]> {
   return (await response.json()) ?? [];
 }
 
+/** Cobro de la empresa (una factura de Stripe), tal como lo devuelve GET /companies/:id/payments. */
+export type CobroView = {
+  stripeInvoiceId: string;
+  concepto: string;
+  montoCentavos: number;
+  /** Código ISO de Stripe en minúsculas ("usd", "mxn"). */
+  moneda: string;
+  /** ISO. */
+  fecha: string;
+  estado: 'PAGADO' | 'FALLIDO';
+  reciboUrl: string | null;
+};
+
+/** GET /companies/:companyId/payments — solo con VIEW_PAYMENTS (hoy, rol ADMINISTRADOR); 403 si no. */
+export async function fetchCompanyPayments(companyId: string, token: string): Promise<CobroView[]> {
+  const response = await fetch(`${API_URL}/companies/${companyId}/payments`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (!response.ok) {
+    const body = await response.json().catch(() => null);
+    throw new Error(body?.message ?? `No se pudieron cargar los pagos (${response.status}).`);
+  }
+  return (await response.json()) ?? [];
+}
+
 // --- Publicaciones (T3.1/T3.2, módulo `post` de api-bizmeet) ---
 
 export type TipoPublicacion = 'OFERTA' | 'REQUERIMIENTO' | 'CONOCIMIENTO';

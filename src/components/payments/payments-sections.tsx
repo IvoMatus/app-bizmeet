@@ -1,10 +1,11 @@
-import { StyleSheet, View } from 'react-native';
+import * as WebBrowser from 'expo-web-browser';
+import { Pressable, StyleSheet, View } from 'react-native';
 
 import { SectionCard } from '@/components/profile/profile-primitives';
 import { ThemedText } from '@/components/themed-text';
 import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
-import type { Payment, PaymentStatus } from '@/components/payments/payments-data';
+import { formatMonto, type Payment, type PaymentStatus } from '@/components/payments/payments-data';
 
 const STATUS_LABEL: Record<PaymentStatus, string> = {
   PAGADO: 'Pagado',
@@ -12,7 +13,6 @@ const STATUS_LABEL: Record<PaymentStatus, string> = {
   FALLIDO: 'Fallido',
 };
 
-const currency = new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN' });
 const dateFormatter = new Intl.DateTimeFormat('es-MX', { day: '2-digit', month: 'short', year: 'numeric' });
 
 /** Badge de estado de pago. Paleta: `success` (pagado), `warning*` (pendiente), `error*` (fallido) —
@@ -44,11 +44,14 @@ export function BillingSummaryCard({
   rfc,
   totalPagado,
   totalPendiente,
+  moneda,
 }: {
   companyName: string;
   rfc: string;
   totalPagado: number;
   totalPendiente: number;
+  /** Moneda de los cobros listados (todos los de una empresa vienen en la misma, la de Stripe). */
+  moneda: string;
 }) {
   return (
     <SectionCard eyebrow="DATOS FISCALES" title={companyName}>
@@ -56,8 +59,8 @@ export function BillingSummaryCard({
         RFC {rfc}
       </ThemedText>
       <View style={styles.summaryRow}>
-        <SummaryStat label="Pagado a la fecha" value={currency.format(totalPagado)} color="success" />
-        <SummaryStat label="Pendiente" value={currency.format(totalPendiente)} color="warningText" />
+        <SummaryStat label="Pagado a la fecha" value={formatMonto(totalPagado, moneda)} color="success" />
+        <SummaryStat label="Pendiente" value={formatMonto(totalPendiente, moneda)} color="warningText" />
       </View>
     </SectionCard>
   );
@@ -76,7 +79,7 @@ function SummaryStat({ label, value, color }: { label: string; value: string; co
   );
 }
 
-/** Tarjeta de transacción: fecha, concepto, monto, estado y folio/recibo. */
+/** Tarjeta de transacción: fecha, concepto, monto, estado y link al recibo de Stripe (si lo hay). */
 export function PaymentCard({ payment }: { payment: Payment }) {
   const theme = useTheme();
 
@@ -84,7 +87,7 @@ export function PaymentCard({ payment }: { payment: Payment }) {
     <View
       style={[styles.card, { backgroundColor: theme.surface, borderColor: theme.surfaceBorder }]}
       accessible
-      accessibilityLabel={`${payment.concepto}, ${currency.format(payment.montoMxn)}, estado ${STATUS_LABEL[payment.estado]}, ${payment.folio}`}>
+      accessibilityLabel={`${payment.concepto}, ${formatMonto(payment.monto, payment.moneda)}, estado ${STATUS_LABEL[payment.estado]}`}>
       <View style={styles.headerRow}>
         <View style={styles.flex1}>
           <ThemedText type="smallBold" themeColor="textPrimary" numberOfLines={2}>
@@ -100,11 +103,21 @@ export function PaymentCard({ payment }: { payment: Payment }) {
       <View style={[styles.divider, { backgroundColor: theme.surfaceBorder }]} />
 
       <View style={styles.footerRow}>
-        <ThemedText type="small" themeColor="textMuted" numberOfLines={1} style={styles.flex1}>
-          {payment.folio}
-        </ThemedText>
+        <View style={styles.flex1}>
+          {payment.reciboUrl && (
+            <Pressable
+              accessibilityRole="link"
+              accessibilityLabel={`Ver recibo de ${payment.concepto}`}
+              hitSlop={Spacing.two}
+              onPress={() => WebBrowser.openBrowserAsync(payment.reciboUrl!)}>
+              <ThemedText type="smallBold" themeColor="accentText">
+                Ver recibo
+              </ThemedText>
+            </Pressable>
+          )}
+        </View>
         <ThemedText type="smallBold" themeColor="textPrimary">
-          {currency.format(payment.montoMxn)}
+          {formatMonto(payment.monto, payment.moneda)}
         </ThemedText>
       </View>
     </View>

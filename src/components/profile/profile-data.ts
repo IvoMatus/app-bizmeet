@@ -49,7 +49,6 @@ export type ProfileData = {
   kycAccuracy: string;
   avatarUri: ImageSourcePropType;
   companyLogoUri: number;
-  unreadNotifications: boolean;
 };
 
 /**
@@ -85,7 +84,6 @@ export function buildProfileData(api: UserProfileView, clerk: { email?: string; 
     kycAccuracy: '',
     avatarUri: { uri: api.fotoPerfilUrl ?? clerk.imageUrl },
     companyLogoUri: MOCK_PROFILE.companyLogoUri,
-    unreadNotifications: MOCK_PROFILE.unreadNotifications,
   };
 }
 
@@ -125,11 +123,9 @@ export function buildEditProfileForm(api: UserProfileView, email: string): EditP
   };
 }
 
-/** Chrome compartido sin fuente propia todavía (fuera de alcance de este cambio): logo de la
- * empresa activa y el punto de notificaciones sin leer. Ver app-tabs.tsx, perfil/_layout.tsx y
+/** Chrome compartido sin fuente propia todavía: logo de la empresa activa. Ver app-tabs.tsx, perfil/_layout.tsx y
  * RootBottomTabBar en el root _layout.tsx. */
 export const MOCK_PROFILE = {
   avatarUri: require('../../../assets/figma/perfil/shared/avatar-alejandro.jpg') as ImageSourcePropType,
   companyLogoUri: require('../../../assets/figma/perfil/shared/empresa-activa-logo.jpg') as number,
-  unreadNotifications: true,
 };

@@ -7,22 +7,19 @@ import { useAuthToken } from '@/hooks/use-auth-token';
 
 import { RegisterHeader } from '@/components/register/register-header';
 import { BillingSummaryCard, PaymentCard } from '@/components/payments/payments-sections';
-import { fetchCompanyPayments, sortByDateDesc, totalByStatus, type Payment } from '@/components/payments/payments-data';
+import { fetchPayments, sortByDateDesc, totalByStatus, type Payment } from '@/components/payments/payments-data';
 import { SegmentedControl } from '@/components/ui/segmented-control';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
-import { fetchCompany, fetchMyCompanies, type CompanyDetailMiembro } from '@/utils/api';
+import { fetchCompany, type CompanyDetailMiembro } from '@/utils/api';
 
 type ScreenData = {
   company: CompanyDetailMiembro;
   payments: Payment[];
-  /** TODO(backend): hoy no hay un permiso granular de "ver pagos de empresa" — se aproxima con
-   * el rol de membership (`MyCompany.rol`, ver utils/api.ts). Cuando exista un permiso real
-   * (p. ej. una entrada en `CompanyContext.derechos` o un campo dedicado), conectarlo acá. Este
-   * mismo flag controla el toggle "Pagos de la empresa"/"Mis compras" de abajo — no agregar un
-   * segundo mock paralelo cuando se conecte el endpoint. */
+  /** VIEW_PAYMENTS en el motor de permisos = solo ADMINISTRADOR (mismo criterio que el 403 de
+   * GET /companies/:id/payments). Controla también el toggle "Pagos de la empresa"/"Mis compras". */
   canViewCompanyPayments: boolean;
 };
 
@@ -54,18 +51,13 @@ export default function PagosScreen() {
   const load = useCallback(() => {
     if (!companyId) return;
     getToken()
-      .then((token) => {
+      .then(async (token) => {
         if (!token) throw new Error('No se pudo obtener la sesión.');
-        return Promise.all([fetchCompany(companyId, token), fetchMyCompanies(token)]);
-      })
-      .then(([company, mine]) => {
+        const company = await fetchCompany(companyId, token);
         if (!company.esMiembro) throw new Error('No formas parte de esta empresa.');
-        const rol = mine.find((m) => m.company.id === companyId)?.rol;
-        setData({
-          company,
-          payments: fetchCompanyPayments(companyId).payments,
-          canViewCompanyPayments: rol === 'ADMINISTRADOR',
-        });
+        const canViewCompanyPayments = company.rol === 'ADMINISTRADOR';
+        const payments = await fetchPayments(companyId, token, canViewCompanyPayments);
+        setData({ company, payments, canViewCompanyPayments });
         setError(null);
       })
       .catch((e: Error) => setError(e.message));
@@ -99,8 +91,8 @@ export default function PagosScreen() {
     );
   }
 
-  // RN-PAGOS: los pagos de empresa solo los ven roles con permiso de pago (hoy, el mock
-  // `canViewCompanyPayments`); toda persona ve sus propias compras (`companyWide: false`) sin
+  // RN-PAGOS: los pagos de empresa solo los ven roles con permiso de pago
+  // (`canViewCompanyPayments`); toda persona ve sus propias compras (`companyWide: false`) sin
   // importar el rol. Con permiso, el toggle "Pagos de la empresa"/"Mis compras" decide el modo;
   // sin permiso, se fuerza "Mis compras".
   const showCompanyWide = data.canViewCompanyPayments && mode === 'empresa';
@@ -118,6 +110,7 @@ export default function PagosScreen() {
             rfc={data.company.rfc}
             totalPagado={totalByStatus(visible, 'PAGADO')}
             totalPendiente={totalByStatus(visible, 'PENDIENTE')}
+            moneda={visible[0]?.moneda ?? 'MXN'}
           />
 
           {data.canViewCompanyPayments ? (

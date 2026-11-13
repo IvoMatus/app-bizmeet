@@ -1,6 +1,4 @@
-// TODO(backend): el registro de cobros (módulo de pagos) se está desarrollando en paralelo en
-// api-bizmeet — no hay endpoint real todavía. Sustituir `MOCK_PAYMENTS`/`fetchCompanyPayments`
-// por `GET /companies/:id/payments` (o el contrato que confirme backend-dev) cuando esté listo.
+import { fetchCompanyPayments, type CobroView } from '@/utils/api';
 
 export type PaymentStatus = 'PAGADO' | 'PENDIENTE' | 'FALLIDO';
 
@@ -8,65 +6,42 @@ export type Payment = {
   id: string;
   fecha: string; // ISO
   concepto: string;
-  montoMxn: number;
+  /** En unidades de `moneda` (no centavos). */
+  monto: number;
+  /** Código ISO en mayúsculas ("USD", "MXN"), listo para `Intl.NumberFormat`. */
+  moneda: string;
   estado: PaymentStatus;
-  /** Folio/recibo fiscal, p. ej. "Folio SAT: BIZ-2024-88419X" (formato tomado del relevamiento
-   * de Figma, nodo 2036:2 — confirmar el formato exacto cuando se pueda re-extraer el nodo). */
-  folio: string;
+  /** Recibo de Stripe; null si la factura no lo trae. */
+  reciboUrl: string | null;
   /** true = cobro de la empresa (plan, cupos, etc.); false = compra propia de una persona
    * dentro del contexto de esa empresa (p. ej. un upgrade individual). */
   companyWide: boolean;
 };
 
-export type PaymentsData = {
-  payments: Payment[];
-};
+function toPayment(c: CobroView): Payment {
+  return {
+    id: c.stripeInvoiceId,
+    fecha: c.fecha,
+    concepto: c.concepto,
+    monto: c.montoCentavos / 100,
+    moneda: c.moneda.toUpperCase(),
+    estado: c.estado,
+    reciboUrl: c.reciboUrl,
+    companyWide: true,
+  };
+}
 
-export const MOCK_PAYMENTS: PaymentsData = {
-  payments: [
-    {
-      id: 'p1',
-      fecha: '2024-11-01',
-      concepto: 'Suscripción Plan Empresa — Noviembre',
-      montoMxn: 2499,
-      estado: 'PAGADO',
-      folio: 'Folio SAT: BIZ-2024-88419X',
-      companyWide: true,
-    },
-    {
-      id: 'p2',
-      fecha: '2024-10-01',
-      concepto: 'Suscripción Plan Empresa — Octubre',
-      montoMxn: 2499,
-      estado: 'PAGADO',
-      folio: 'Folio SAT: BIZ-2024-77302A',
-      companyWide: true,
-    },
-    {
-      id: 'p3',
-      fecha: '2024-09-01',
-      concepto: 'Cupo adicional de publicaciones',
-      montoMxn: 399,
-      estado: 'FALLIDO',
-      folio: 'Folio SAT: BIZ-2024-65210B',
-      companyWide: true,
-    },
-    {
-      id: 'p4',
-      fecha: '2024-11-05',
-      concepto: 'Upgrade individual a Perfil PRO',
-      montoMxn: 149,
-      estado: 'PENDIENTE',
-      folio: 'Folio SAT: BIZ-2024-90112C',
-      companyWide: false,
-    },
-  ],
-};
-
-/** ponytail: mock sincrónico (igual que `MOCK_TEAM` en team-data.ts) — se reemplaza por el
- * fetch real cuando exista el endpoint; mientras tanto no hay forma de que falle. */
-export function fetchCompanyPayments(_companyId: string): PaymentsData {
-  return MOCK_PAYMENTS;
+/**
+ * Pagos de la vista: cobros reales de la empresa (GET /companies/:id/payments, solo si el rol
+ * puede verlos — el backend responde 403 si no) + compras propias de la persona.
+ *
+ * ponytail: "Mis compras" (compras individuales, `companyWide: false`) no tiene endpoint todavía,
+ * así que hoy solo vuelven los cobros de la empresa. Cuando backend-dev publique el contrato, se
+ * suma aquí y la pantalla no cambia.
+ */
+export async function fetchPayments(companyId: string, token: string, canViewCompanyPayments: boolean): Promise<Payment[]> {
+  if (!canViewCompanyPayments) return [];
+  return (await fetchCompanyPayments(companyId, token)).map(toPayment);
 }
 
 export function sortByDateDesc(payments: Payment[]): Payment[] {
@@ -74,5 +49,10 @@ export function sortByDateDesc(payments: Payment[]): Payment[] {
 }
 
 export function totalByStatus(payments: Payment[], estado: PaymentStatus): number {
-  return payments.filter((p) => p.estado === estado).reduce((sum, p) => sum + p.montoMxn, 0);
+  return payments.filter((p) => p.estado === estado).reduce((sum, p) => sum + p.monto, 0);
+}
+
+/** Monto con su moneda real (los planes se cobran en USD). */
+export function formatMonto(monto: number, moneda: string): string {
+  return new Intl.NumberFormat('es-MX', { style: 'currency', currency: moneda }).format(monto);
 }
