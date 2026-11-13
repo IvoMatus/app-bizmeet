@@ -87,16 +87,19 @@ export default function EmpresaDetalleScreen() {
             <View style={[styles.card, { backgroundColor: theme.cardElevated, borderColor: theme.surfaceBorder }]}>
               <ThemedText style={[styles.name, { color: theme.textPrimary }]}>{company.name}</ThemedText>
               {!company.esMiembro && <ThemedText style={[styles.dataLabel, { color: theme.textMuted }]}>{company.industry}</ThemedText>}
-              <View style={styles.badgeRow}>
-                {company.verified && <Badge label="Verificado" bg={theme.seekIconSoft} fg={theme.success} />}
-                <Badge label={`Plan ${PLAN_LABEL[company.plan]}`} bg={theme.buttonDark} fg={theme.accent} />
-                {company.esMiembro && company.formaJuridica && (
-                  <Badge label={FORMA_JURIDICA_LABEL[company.formaJuridica]} bg={theme.buttonDark} fg={theme.accent} />
-                )}
-              </View>
+              {/* Sin badges (ajena y no verificada) no se renderiza la fila: el `gap` de la card dejaría un hueco. */}
+              {(company.esMiembro || company.verified) && (
+                <View style={styles.badgeRow}>
+                  {company.verified && <Badge label="Verificado" bg={theme.seekIconSoft} fg={theme.success} />}
+                  {company.esMiembro && <Badge label={`Plan ${PLAN_LABEL[company.plan]}`} bg={theme.buttonDark} fg={theme.accent} />}
+                  {company.esMiembro && company.formaJuridica && (
+                    <Badge label={FORMA_JURIDICA_LABEL[company.formaJuridica]} bg={theme.buttonDark} fg={theme.accent} />
+                  )}
+                </View>
+              )}
             </View>
 
-            {/* No miembro: sin RFC, precio, cupos, aviso de pago ni documentos (GET /companies/:id público). */}
+            {/* No miembro: sin plan, RFC, precio, cupos, aviso de pago ni documentos (GET /companies/:id público). */}
             {company.esMiembro && (
               <View style={[styles.card, { backgroundColor: theme.cardElevated, borderColor: theme.surfaceBorder }]}>
                 <ThemedText style={[styles.sectionTitle, { color: theme.textPrimary }]}>Datos Corporativos & Fiscales</ThemedText>

@@ -203,13 +203,12 @@ export type MyCompany = { company: CompanyView; rol: 'ADMINISTRADOR' | 'INVITADO
 
 export type CompanyDocument = { tipo: string };
 
-/** GET /companies/:id para quien NO es miembro: solo campos públicos. */
+/** GET /companies/:id para quien NO es miembro: solo campos públicos (el plan de otras empresas no se ve). */
 export type CompanyDetailPublica = {
   id: string;
   name: string;
   industry: string;
   tipo: 'CLUB' | 'CLIENTE' | 'PARTNER';
-  plan: CompanyPlanCode;
   verified: boolean;
   esMiembro: false;
 };
@@ -218,6 +217,7 @@ export type CompanyDetailPublica = {
  * precio/cupos del plan, cruzar `plan` contra el catálogo de `fetchPlans`. */
 export type CompanyDetailMiembro = Omit<CompanyDetailPublica, 'esMiembro'> & {
   esMiembro: true;
+  plan: CompanyPlanCode;
   rol: 'ADMINISTRADOR' | 'INVITADO';
   puedeCambiarPlan: boolean;
   rfc: string;

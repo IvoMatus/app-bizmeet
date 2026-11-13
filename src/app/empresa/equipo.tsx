@@ -56,9 +56,8 @@ export default function EquipoScreen() {
           fetchCompanyMembers(companyId, token),
           fetchCompanyInvitations(companyId, token),
         ]);
-        // `company.plan` es el código de plan en texto plano (confirmado con backend-dev);
-        // `CompanyDetail.plan` en api.ts todavía lo tipa como objeto — fix aparte pendiente.
-        const planCode = company.plan as unknown as string;
+        if (!company.esMiembro) throw new Error('No formas parte de esta empresa.');
+        const planCode = company.plan;
         setTeam(buildTeamData(company.name, planCode, planCode, miembros, invitaciones));
         setError(null);
       })
