@@ -91,7 +91,7 @@ export default function HomeScreen() {
 
           <Pressable
             style={styles.generalButton}
-            onPress={() => router.push('/(auth)/register/step-1')}>
+            onPress={() => router.push('/(auth)/register/aviso-privacidad')}>
             <View style={styles.generalButtonLeft}>
               <View style={styles.keyChip}>
                 <SvgXml xml={KEY_ICON_XML} width={14} height={14} />
