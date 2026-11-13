@@ -9,18 +9,18 @@ import { PrimaryButton } from '@/components/register/primary-button';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { showAlert } from '@/components/ui/app-alert';
+import { ChipMultiSelect } from '@/components/ui/chip-multi-select';
 import { FormDatePicker } from '@/components/ui/form-date-picker';
 import { FormInput } from '@/components/ui/form-input';
 import { FormSelect } from '@/components/ui/form-select';
+import { COUNTRIES, LANGUAGES } from '@/constants/catalogs';
 import { Spacing } from '@/constants/theme';
 import { useAccessibilityFocusOnMount } from '@/hooks/use-accessibility-focus-on-mount';
 import { useTheme } from '@/hooks/use-theme';
 
-const COUNTRIES = [{ label: 'México 🇲🇽', value: 'MX' }];
 const STATES = [{ label: 'Ciudad de México', value: 'CDMX' }];
 const CITIES = [{ label: 'Cuauhtémoc', value: 'cuauhtemoc' }];
 const COUNTRY_CODES = [{ label: '+52 🇲🇽', value: '+52' }];
-const LANGUAGES = ['Español', 'Inglés', 'Portugués'];
 
 export type PersonalDataForm = {
   nombre: string;
@@ -148,46 +148,12 @@ function DocumentPhotoPicker({ control }: { control: Control<PersonalDataForm> }
 }
 
 function LanguageChips({ control }: { control: Control<PersonalDataForm> }) {
-  const theme = useTheme();
   const { field } = useController({ control, name: 'idiomas' });
-  const selected: string[] = field.value ?? [];
-
-  const toggle = (lang: string) => {
-    field.onChange(
-      selected.includes(lang) ? selected.filter((l) => l !== lang) : [...selected, lang]
-    );
-  };
 
   return (
     <View style={styles.field}>
       <ThemedText type="smallBold">Idiomas de contacto*</ThemedText>
-      <View style={styles.chipsRow}>
-        {LANGUAGES.map((lang) => {
-          const active = selected.includes(lang);
-          return (
-            <Pressable
-              key={lang}
-              onPress={() => toggle(lang)}
-              accessibilityRole="checkbox"
-              accessibilityState={{ checked: active }}
-              accessibilityLabel={lang}
-            >
-              <ThemedView
-                style={[
-                  styles.chip,
-                  {
-                    backgroundColor: active ? theme.accent : theme.card,
-                    borderColor: active ? theme.accent : theme.border,
-                  },
-                ]}>
-                <ThemedText type="small" themeColor={active ? 'background' : 'text'}>
-                  {lang}
-                </ThemedText>
-              </ThemedView>
-            </Pressable>
-          );
-        })}
-      </View>
+      <ChipMultiSelect options={LANGUAGES} value={field.value ?? []} onChange={field.onChange} />
     </View>
   );
 }
@@ -402,17 +368,6 @@ const styles = StyleSheet.create({
     width: '100%',
     height: 120,
     borderRadius: Spacing.two,
-  },
-  chipsRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: Spacing.two,
-  },
-  chip: {
-    paddingHorizontal: Spacing.three,
-    paddingVertical: Spacing.two,
-    borderRadius: Spacing.five,
-    borderWidth: 1,
   },
   dropzone: {
     alignItems: 'center',

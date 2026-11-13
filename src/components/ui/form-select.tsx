@@ -85,35 +85,7 @@ export function FormSelect<
           un loop de render. Desmontar en vez de ocultar saca el fade-out (cierra al instante) y
           garantiza que nunca haya más de un Dialog de select vivo a la vez. */}
       {open && (
-        <Modal transparent animationType="fade" onRequestClose={() => setOpen(false)}>
-          <Pressable style={styles.backdrop} onPress={() => setOpen(false)}>
-            <Pressable onPress={() => {}}>
-              <SafeAreaView
-                edges={['bottom']}
-                style={[styles.sheet, { backgroundColor: theme.card, borderColor: theme.border }]}>
-                <FlatList
-                  data={options}
-                  keyExtractor={(item) => String(item.value)}
-                  renderItem={({ item }) => (
-                    <Pressable
-                      onPress={() => {
-                        field.onChange(item.value);
-                        setOpen(false);
-                      }}
-                      style={styles.option}
-                      accessibilityRole="radio"
-                      accessibilityState={{ selected: item.value === field.value }}
-                      accessibilityLabel={item.label}>
-                      <ThemedText themeColor={item.value === field.value ? 'accent' : 'text'}>
-                        {item.label}
-                      </ThemedText>
-                    </Pressable>
-                  )}
-                />
-              </SafeAreaView>
-            </Pressable>
-          </Pressable>
-        </Modal>
+        <OptionsSheet options={options} selected={field.value} onSelect={field.onChange} onClose={() => setOpen(false)} />
       )}
 
       {fieldState.error?.message && (
@@ -122,6 +94,50 @@ export function FormSelect<
         </ThemedText>
       )}
     </View>
+  );
+}
+
+/** Hoja inferior con la lista de opciones (radio). Montarla solo mientras está abierta — ver el
+ * comment de arriba en `FormSelect`. También la usa `SelectField` de Editar perfil (sin react-hook-form). */
+export function OptionsSheet<TValue extends string | number>({
+  options,
+  selected,
+  onSelect,
+  onClose,
+}: {
+  options: FormSelectOption<TValue>[];
+  selected: TValue | undefined;
+  onSelect: (value: TValue) => void;
+  onClose: () => void;
+}) {
+  const theme = useTheme();
+
+  return (
+    <Modal transparent animationType="fade" onRequestClose={onClose}>
+      <Pressable style={styles.backdrop} onPress={onClose}>
+        <Pressable onPress={() => {}}>
+          <SafeAreaView edges={['bottom']} style={[styles.sheet, { backgroundColor: theme.card, borderColor: theme.border }]}>
+            <FlatList
+              data={options}
+              keyExtractor={(item) => String(item.value)}
+              renderItem={({ item }) => (
+                <Pressable
+                  onPress={() => {
+                    onSelect(item.value);
+                    onClose();
+                  }}
+                  style={styles.option}
+                  accessibilityRole="radio"
+                  accessibilityState={{ selected: item.value === selected }}
+                  accessibilityLabel={item.label}>
+                  <ThemedText themeColor={item.value === selected ? 'accent' : 'text'}>{item.label}</ThemedText>
+                </Pressable>
+              )}
+            />
+          </SafeAreaView>
+        </Pressable>
+      </Pressable>
+    </Modal>
   );
 }
 

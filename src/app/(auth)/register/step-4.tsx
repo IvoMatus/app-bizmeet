@@ -12,9 +12,13 @@ export default function Step4Screen() {
       <SafeAreaView style={styles.flex}>
         <ScrollView contentContainerStyle={styles.content}>
           <Step4Success
-            // TODO: route into the company/premium enrollment flow once it exists.
-            onUpgrade={() => router.replace('/')}
-            // TODO: route into the app's authenticated home once onboarding is wired end-to-end.
+            // Muro primero y Crear Empresa encima: el "atrás" de Crear Empresa vuelve al Muro, no al registro.
+            // ponytail: "Persona Premium" (plan individual) no tiene flujo propio todavía — este CTA lleva a
+            // Crear Empresa, que es el único alta de plan pago que existe hoy.
+            onUpgrade={() => {
+              router.replace('/');
+              router.push('/empresa/crear');
+            }}
             onContinueBasic={() => router.replace('/')}
           />
         </ScrollView>

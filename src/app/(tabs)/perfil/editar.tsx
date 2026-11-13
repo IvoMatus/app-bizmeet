@@ -14,6 +14,7 @@ import {
   InfoNote,
   PhotoCard,
   SaveButton,
+  MultiSelectField,
   SelectField,
 } from '@/components/profile/profile-form';
 import { useAuthToken } from '@/hooks/use-auth-token';
@@ -22,19 +23,21 @@ import { useDiscardGuard } from '@/hooks/use-discard-guard';
 import { buildEditProfileForm, MOCK_PROFILE, type EditProfileForm } from '@/components/profile/profile-data';
 import { StatusPill } from '@/components/profile/profile-primitives';
 import { showAlert } from '@/components/ui/app-alert';
+import { COUNTRIES, LANGUAGES } from '@/constants/catalogs';
 import { Spacing } from '@/constants/theme';
 import { ThemedText } from '@/components/themed-text';
 import { useTheme } from '@/hooks/use-theme';
 import { fetchUserProfile, updateUserProfile, uploadProfilePhoto, type UpdateUserProfileInput, type UserProfileView } from '@/utils/api';
 
 /** Compara el form editado contra lo último que vino del servidor y arma el PATCH con solo lo
- * que cambió. `pais`/`idiomas` no entran: todavía no tienen picker en el form (ver SelectField),
- * así que nunca cambian desde la UI. */
+ * que cambió. */
 function buildProfilePatch(original: UserProfileView, form: EditProfileForm): UpdateUserProfileInput {
   const patch: UpdateUserProfileInput = {};
   if (form.firstName !== original.nombre) patch.nombre = form.firstName;
   if (form.paternalLastName !== original.apellidoPaterno) patch.apellidoPaterno = form.paternalLastName;
   if (form.maternalLastName !== (original.apellidoMaterno ?? '')) patch.apellidoMaterno = form.maternalLastName;
+  if (form.country !== original.pais) patch.pais = form.country;
+  if (form.languages.join('|') !== (original.idiomas ?? []).join('|')) patch.idiomas = form.languages;
   if (form.state !== original.estado) patch.estado = form.state;
   if (form.municipality !== original.comuna) patch.comuna = form.municipality;
   if (form.phone !== original.celular) patch.phoneNumber = form.phone;
@@ -130,6 +133,10 @@ export default function EditarPerfilScreen() {
     if (!userId || !original || !form) return;
     const patch = buildProfilePatch(original, form);
     if (Object.keys(patch).length === 0) return;
+    if (form.languages.length === 0) {
+      setSaveError('Elige al menos un idioma.');
+      return;
+    }
 
     setSaving(true);
     setSaveError(null);
@@ -182,11 +189,24 @@ export default function EditarPerfilScreen() {
               </View>
             </View>
             <FormField label="Fecha de Nacimiento" value={form.birthDateLabel} editable={false} helper={form.ageLabel} />
-            <SelectField label="Idiomas Principales" value={form.languagesLabel} />
+            {/* Opciones = catálogo + lo que ya tenga guardado, para no perder un valor fuera de la lista al editar. */}
+            <MultiSelectField
+              label="Idiomas Principales"
+              required
+              options={[...new Set([...LANGUAGES, ...form.languages])]}
+              value={form.languages}
+              onChange={set('languages')}
+            />
           </FormSection>
 
           <FormSection icon="pin" eyebrow="Ubicación y enlace" title="Residencia y Contacto">
-            <SelectField label="País de Residencia" required value={form.countryLabel} />
+            <SelectField
+              label="País de Residencia"
+              required
+              options={COUNTRIES.some((c) => c.value === form.country) ? COUNTRIES : [...COUNTRIES, { label: form.country, value: form.country }]}
+              value={form.country}
+              onChange={set('country')}
+            />
             <View style={styles.row}>
               <View style={styles.half}>
                 <FormField label="Estado / Entidad" value={form.state} onChangeText={set('state')} />

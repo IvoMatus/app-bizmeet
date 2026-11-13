@@ -91,31 +91,31 @@ export type EditProfileForm = {
   firstName: string;
   paternalLastName: string;
   maternalLastName: string;
-  countryLabel: string;
+  /** Código de país (`pais` en la API, p. ej. "MX"). */
+  country: string;
   state: string;
   municipality: string;
   phone: string;
-  languagesLabel: string;
+  languages: string[];
   curp: string;
   birthDateLabel: string;
   ageLabel: string;
   email: string;
 };
 
-/** Mapea el perfil real al form de Editar Perfil. `countryLabel`/`languagesLabel` quedan de solo
- * lectura acá: país e idiomas todavía no tienen picker (ver `SelectField`, sin UI interactiva) —
- * y `curp`/fecha de nacimiento tampoco se editan porque el backend los ignora si se mandan. */
+/** Mapea el perfil real al form de Editar Perfil. `curp`/fecha de nacimiento no se editan porque
+ * el backend los ignora si se mandan. */
 export function buildEditProfileForm(api: UserProfileView, email: string): EditProfileForm {
   const idiomas = api.idiomas ?? [];
   return {
     firstName: api.nombre,
     paternalLastName: api.apellidoPaterno,
     maternalLastName: api.apellidoMaterno ?? '',
-    countryLabel: COUNTRY_LABELS[api.pais] ?? api.pais,
+    country: api.pais,
     state: api.estado,
     municipality: api.comuna,
     phone: api.celular,
-    languagesLabel: idiomas.join(' / ') || NO_DATA,
+    languages: idiomas,
     curp: api.curp,
     birthDateLabel: api.fechaNacimiento ? formatBirthDate(api.fechaNacimiento) : NO_DATA,
     ageLabel: api.fechaNacimiento ? `${calculateAge(api.fechaNacimiento)} años` : NO_DATA,

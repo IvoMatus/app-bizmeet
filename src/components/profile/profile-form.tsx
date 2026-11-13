@@ -1,6 +1,6 @@
 import { Image } from 'expo-image';
 import { SymbolView } from 'expo-symbols';
-import type { ReactNode } from 'react';
+import { useState, type ReactNode } from 'react';
 import {
   Pressable,
   StyleSheet,
@@ -14,6 +14,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { ThemedText } from '@/components/themed-text';
 import { ProfileIcon } from '@/components/profile/profile-icons';
 import { StatusPill, SectionCard } from '@/components/profile/profile-primitives';
+import { ChipMultiSelect } from '@/components/ui/chip-multi-select';
+import { OptionsSheet, type FormSelectOption } from '@/components/ui/form-select';
 import { ThemedTextInput } from '@/components/ui/themed-text-input';
 import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
@@ -183,23 +185,70 @@ export function FormField({
   );
 }
 
-/** Campo tipo select: muestra el valor y un chevron. (Sin picker nativo todavía.) */
-export function SelectField({ label, value, required }: { label: string; value: string; required?: boolean }) {
+/** Campo tipo select: muestra la opción elegida y un chevron; al tocarlo abre `OptionsSheet`. */
+export function SelectField({
+  label,
+  required,
+  options,
+  value,
+  onChange,
+}: {
+  label: string;
+  required?: boolean;
+  options: FormSelectOption<string>[];
+  value: string;
+  onChange: (value: string) => void;
+}) {
   const theme = useTheme();
+  const [open, setOpen] = useState(false);
+  const selectedLabel = options.find((o) => o.value === value)?.label ?? value;
 
   return (
-    <Pressable accessibilityRole="button" accessibilityLabel={label} style={styles.field}>
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={label}
+      accessibilityValue={{ text: selectedLabel }}
+      onPress={() => setOpen(true)}
+      style={styles.field}>
       <ThemedText style={[styles.fieldLabel, { color: theme.textMuted }]}>
         {label}
         {required && <ThemedText style={{ color: theme.error }}>*</ThemedText>}
       </ThemedText>
       <View style={[styles.inputWrap, { backgroundColor: theme.surfaceInset, borderColor: theme.surfaceBorder }]}>
         <ThemedText style={[styles.input, { color: theme.textPrimary, paddingVertical: Spacing.two + Spacing.half }]}>
-          {value}
+          {selectedLabel}
         </ThemedText>
         <SymbolView name={{ ios: 'chevron.down', android: 'expand_more', web: 'expand_more' }} tintColor={theme.textMuted} size={12} />
       </View>
+      {open && <OptionsSheet options={options} selected={value} onSelect={onChange} onClose={() => setOpen(false)} />}
     </Pressable>
+  );
+}
+
+/** Selección múltiple con chips (idiomas), con el mismo label que el resto de los campos. */
+export function MultiSelectField({
+  label,
+  required,
+  options,
+  value,
+  onChange,
+}: {
+  label: string;
+  required?: boolean;
+  options: string[];
+  value: string[];
+  onChange: (value: string[]) => void;
+}) {
+  const theme = useTheme();
+
+  return (
+    <View style={styles.field}>
+      <ThemedText style={[styles.fieldLabel, { color: theme.textMuted }]}>
+        {label}
+        {required && <ThemedText style={{ color: theme.error }}>*</ThemedText>}
+      </ThemedText>
+      <ChipMultiSelect options={options} value={value} onChange={onChange} />
+    </View>
   );
 }
 
