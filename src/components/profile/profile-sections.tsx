@@ -1,11 +1,15 @@
-import { Pressable, StyleSheet, View } from 'react-native';
+import { Image } from 'expo-image';
+import { useEffect, useState } from 'react';
+import { ActivityIndicator, Pressable, StyleSheet, View } from 'react-native';
+
+import { useAuthToken } from '@/hooks/use-auth-token';
 
 import { ThemedText } from '@/components/themed-text';
-import { ProfileIcon } from '@/components/profile/profile-icons';
 import { ProfileData } from '@/components/profile/profile-data';
 import { InfoRow, SectionCard, StatusPill } from '@/components/profile/profile-primitives';
 import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
+import { identityDocumentSource, type DocumentoIdentidad } from '@/utils/api';
 
 /** "IDENTIDAD Y RESIDENCIA": fecha/idioma, país, celular. */
 export function IdentitySection({ profile }: { profile: ProfileData }) {
@@ -57,30 +61,98 @@ export function SecuritySection({ profile }: { profile: ProfileData }) {
   );
 }
 
-/** Tarjeta KYC con borde izquierdo verde, estado aprobado y documento. */
-export function KycSection({ profile }: { profile: ProfileData }) {
+const KYC_ESTADO: Record<DocumentoIdentidad['estado'], { pill: string; variant: 'warning' | 'success' | 'error'; texto: string }> = {
+  PENDIENTE_REVISION: {
+    pill: 'En revisión',
+    variant: 'warning',
+    texto: 'Un administrador está revisando tu identificación para validar tu cuenta.',
+  },
+  APROBADO: { pill: 'Validada', variant: 'success', texto: 'Tu identidad está validada.' },
+  RECHAZADO: {
+    pill: 'Rechazada',
+    variant: 'error',
+    texto: 'No pudimos validarla. Sube una foto clara y completa de tu INE, pasaporte o cédula.',
+  },
+};
+
+const fechaFormatter = new Intl.DateTimeFormat('es-MX', { day: 'numeric', month: 'long', year: 'numeric' });
+
+/** Foto de la identificación: va contra la API con Bearer (no hay URL firmada) y SIN caché en disco
+ * (`cachePolicy="none"`), porque es un documento sensible. */
+function IdentityDocumentImage({ documento }: { documento: DocumentoIdentidad }) {
   const theme = useTheme();
+  const getToken = useAuthToken();
+  const [token, setToken] = useState<string | null>(null);
+
+  useEffect(() => {
+    getToken().then(setToken).catch(() => setToken(null));
+  }, [getToken, documento.subidoEn]);
 
   return (
-    <SectionCard kyc eyebrow="KYC • Biometría digital">
+    <View style={[styles.kycImage, { backgroundColor: theme.surfaceInset, borderColor: theme.surfaceBorder }]}>
+      {token && (
+        <Image
+          source={identityDocumentSource(documento, token)}
+          cachePolicy="none"
+          contentFit="cover"
+          style={StyleSheet.absoluteFill}
+          accessibilityLabel="Foto de tu identificación oficial"
+        />
+      )}
+    </View>
+  );
+}
+
+/** Tarjeta KYC: estado real de la identificación oficial (revisión manual) y CTA para subirla o
+ * reemplazarla. El borde verde (`kyc`) solo cuando está validada. */
+export function KycSection({
+  documento,
+  onUpload,
+  uploading,
+}: {
+  documento?: DocumentoIdentidad;
+  onUpload: () => void;
+  uploading: boolean;
+}) {
+  const theme = useTheme();
+  const estado = documento ? KYC_ESTADO[documento.estado] : null;
+  const ctaLabel = !documento ? 'Subir identificación' : documento.estado === 'RECHAZADO' ? 'Subir de nuevo' : 'Reemplazar';
+
+  return (
+    <SectionCard kyc={documento?.estado === 'APROBADO'} eyebrow="KYC • Validación de identidad">
       <View style={styles.kycHeader}>
         <ThemedText style={[styles.kycTitle, { color: theme.textPrimary }]}>Identificación Oficial</ThemedText>
-        <ProfileIcon name="verified" color={theme.success} width={28} height={28} />
+        {estado && <StatusPill label={estado.pill} variant={estado.variant} />}
       </View>
       <ThemedText style={[styles.body, { color: theme.textMuted }]}>
-        {profile.kycSummary}{' '}
-        <ThemedText style={[styles.body, { color: theme.success, fontWeight: '600' }]}>{profile.kycAccuracy}</ThemedText>
+        {estado
+          ? estado.texto
+          : 'Todavía no subiste tu identificación oficial (INE, pasaporte o cédula). La necesitamos para validar tu cuenta.'}
       </ThemedText>
-      <InfoRow
-        icon="document"
-        label={profile.kycDocumentName}
-        trailing={
-          <Pressable accessibilityRole="link" accessibilityLabel="Ver documento" style={styles.linkButton}>
-            <ThemedText style={[styles.link, { color: theme.accent }]}>Ver documento</ThemedText>
-            <ProfileIcon name="external" color={theme.accent} width={14} height={14} />
-          </Pressable>
-        }
-      />
+      {documento && (
+        <>
+          <IdentityDocumentImage documento={documento} />
+          <ThemedText style={[styles.hint, { color: theme.textMuted }]}>
+            Subida el {fechaFormatter.format(new Date(documento.subidoEn))}
+          </ThemedText>
+        </>
+      )}
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={ctaLabel}
+        accessibilityState={{ disabled: uploading, busy: uploading }}
+        disabled={uploading}
+        onPress={onUpload}
+        style={[styles.kycCta, { borderColor: theme.surfaceBorder, backgroundColor: theme.surfaceInset }]}>
+        {uploading ? (
+          <ActivityIndicator color={theme.accent} />
+        ) : (
+          <ThemedText type="smallBold" themeColor="accentText">
+            {ctaLabel}
+          </ThemedText>
+        )}
+      </Pressable>
+      <ThemedText style={[styles.hint, { color: theme.textMuted }]}>JPG o PNG de hasta 10 MB.</ThemedText>
     </SectionCard>
   );
 }
@@ -112,17 +184,6 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '500',
   },
-  linkButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.half + 2,
-    minHeight: 44,
-    justifyContent: 'center',
-  },
-  link: {
-    fontSize: 13,
-    fontWeight: '600',
-  },
   kycHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -132,6 +193,19 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: '600',
     flexShrink: 1,
+  },
+  kycImage: {
+    height: 160,
+    borderRadius: 12,
+    borderWidth: 1,
+    overflow: 'hidden',
+  },
+  kycCta: {
+    minHeight: 44,
+    borderRadius: 12,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   body: {
     fontSize: 13,

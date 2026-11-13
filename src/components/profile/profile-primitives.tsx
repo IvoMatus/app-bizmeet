@@ -5,7 +5,7 @@ import { ProfileIcon, type ProfileIconName } from '@/components/profile/profile-
 import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 
-type StatusVariant = 'neutral' | 'accent' | 'success';
+type StatusVariant = 'neutral' | 'accent' | 'success' | 'warning' | 'error';
 
 /** Pill de estado: "SOCIO ACTIVO", "IA Verified", "Verificado", "WhatsApp". */
 export function StatusPill({
@@ -22,6 +22,8 @@ export function StatusPill({
     neutral: { bg: theme.surfaceInset, border: theme.surfaceBorder, fg: theme.textMuted },
     accent: { bg: theme.accentSoft, border: theme.accentSoft, fg: theme.accent },
     success: { bg: theme.successSurface, border: theme.successBorder, fg: theme.success },
+    warning: { bg: theme.warningSoft, border: theme.warningBorder, fg: theme.warningText },
+    error: { bg: theme.errorSoft, border: theme.errorBorder, fg: theme.error },
   }[variant];
   const iconColor = variant === 'success' ? theme.success : palette.fg;
 

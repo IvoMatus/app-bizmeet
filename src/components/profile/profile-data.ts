@@ -1,6 +1,6 @@
 import type { ImageSourcePropType } from 'react-native';
 
-import type { UserProfileView } from '@/utils/api';
+import type { DocumentoIdentidad, UserProfileView } from '@/utils/api';
 
 // Vista Perfil del usuario logueado (real, api-bizmeet) + mapper del form de Editar Perfil.
 
@@ -44,9 +44,8 @@ export type ProfileData = {
   phone: string;
   curp: string;
   email: string;
-  kycDocumentName: string;
-  kycSummary: string;
-  kycAccuracy: string;
+  /** Identificación oficial (tarjeta KYC); no viene si todavía no la subió. */
+  documentoIdentidad?: DocumentoIdentidad;
   avatarUri: ImageSourcePropType;
   companyLogoUri: number;
 };
@@ -79,9 +78,7 @@ export function buildProfileData(api: UserProfileView, clerk: { email?: string; 
     phone: api.celular || NO_DATA,
     curp: api.curp || NO_DATA,
     email: clerk.email ?? NO_DATA,
-    kycDocumentName: NO_DATA,
-    kycSummary: NO_DATA,
-    kycAccuracy: '',
+    documentoIdentidad: api.documentoIdentidad,
     avatarUri: { uri: api.fotoPerfilUrl ?? clerk.imageUrl },
     companyLogoUri: MOCK_PROFILE.companyLogoUri,
   };

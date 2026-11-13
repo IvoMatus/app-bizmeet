@@ -1,5 +1,6 @@
 import { useAuth, useUser } from '@clerk/expo';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import * as ImagePicker from 'expo-image-picker';
 import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
 
@@ -10,9 +11,10 @@ import { IdentitySection, KycSection, SecuritySection } from '@/components/profi
 import { ProfileTabs } from '@/components/profile/profile-chrome';
 import { ProfileHeroCard } from '@/components/profile/profile-hero';
 import { buildProfileData, type ProfileData } from '@/components/profile/profile-data';
+import { showAlert } from '@/components/ui/app-alert';
 import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
-import { fetchUserProfile } from '@/utils/api';
+import { fetchUserProfile, uploadIdentityDocument } from '@/utils/api';
 
 export default function PerfilScreen() {
   const theme = useTheme();
@@ -21,6 +23,7 @@ export default function PerfilScreen() {
   const getToken = useAuthToken();
   const [profile, setProfile] = useState<ProfileData | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [uploadingId, setUploadingId] = useState(false);
 
   const userId = user?.id;
   const email = user?.primaryEmailAddress?.emailAddress;
@@ -44,6 +47,32 @@ export default function PerfilScreen() {
         .catch((e: Error) => setError(e.message));
     }, [userId, email, imageUrl, getToken]),
   );
+
+  // Subir/reemplazar la identificación oficial (queda en revisión). Mismo flujo de permisos que la
+  // foto de perfil en Editar Perfil.
+  async function pickAndUploadIdentity() {
+    if (!userId) return;
+    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!permission.granted) {
+      showAlert('Permiso requerido', 'Necesitamos acceso a tus fotos para subir tu identificación.');
+      return;
+    }
+    const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], quality: 0.8 });
+    if (result.canceled) return;
+
+    const asset = result.assets[0];
+    setUploadingId(true);
+    try {
+      const token = await getToken();
+      if (!token) throw new Error('No se pudo obtener la sesión.');
+      const documento = await uploadIdentityDocument(userId, asset.uri, token, asset.mimeType);
+      setProfile((prev) => (prev ? { ...prev, documentoIdentidad: documento } : prev));
+    } catch (e) {
+      showAlert('No se pudo subir tu identificación', e instanceof Error ? e.message : 'Ocurrió un error inesperado.');
+    } finally {
+      setUploadingId(false);
+    }
+  }
 
   if (!profile) {
     return (
@@ -72,7 +101,7 @@ export default function PerfilScreen() {
         <ProfileHeroCard profile={profile} onEditPress={() => router.push('/perfil/editar')} />
         <IdentitySection profile={profile} />
         <SecuritySection profile={profile} />
-        <KycSection profile={profile} />
+        <KycSection documento={profile.documentoIdentidad} onUpload={pickAndUploadIdentity} uploading={uploadingId} />
         {/* ponytail: logout temporal para pruebas; no está en el diseño, ubicarlo en Ajustes cuando exista */}
         <Pressable onPress={() => signOut()} style={styles.logout}>
           <ThemedText type="smallBold">Cerrar sesión</ThemedText>

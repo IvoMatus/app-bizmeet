@@ -918,14 +918,19 @@ const IDENTITY_DOCUMENT_ERRORS: Record<number, string> = {
 
 /** POST /users/:clerkUserId/identity-document (multipart `file`, JPG/PNG ≤10 MB). Volver a subirla
  * la reemplaza y la deja otra vez en revisión. 404 si el perfil todavía no existe. */
-export async function uploadIdentityDocument(clerkUserId: string, uri: string, token: string): Promise<DocumentoIdentidad> {
+export async function uploadIdentityDocument(
+  clerkUserId: string,
+  uri: string,
+  token: string,
+  mimeType?: string,
+): Promise<DocumentoIdentidad> {
   const { File, UploadType } = await import('expo-file-system');
   const { status, body } = await new File(uri).upload(`${API_URL}/users/${clerkUserId}/identity-document`, {
     httpMethod: 'POST',
     uploadType: UploadType.MULTIPART,
     fieldName: 'file',
-    // ponytail: el formato se infiere por extensión (el picker devuelve JPG o PNG); si llega otro, el 415 lo explica.
-    mimeType: uri.toLowerCase().endsWith('.png') ? 'image/png' : 'image/jpeg',
+    // ponytail: sin `mimeType` se infiere por extensión (el picker devuelve JPG o PNG); si llega otro, el 415 lo explica.
+    mimeType: mimeType ?? (uri.toLowerCase().endsWith('.png') ? 'image/png' : 'image/jpeg'),
     headers: { Authorization: `Bearer ${token}` },
   });
   let parsed: { documentoIdentidad?: DocumentoIdentidad; message?: string } = {};
