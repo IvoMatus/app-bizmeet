@@ -66,27 +66,18 @@ export default function PlanScreen() {
     load();
   }, [load]);
 
-  // Handler de retorno post-pago por deep link, preparado pero sin esquema real todavía.
-  // TODO: coordinar esquema real con T2.7 (hoy no hay infraestructura confirmada de retorno).
-  useEffect(() => {
-    const subscription = Linking.addEventListener('url', ({ url }) => {
-      if (!url.includes('billing-return')) return;
-      const success = url.includes('status=success');
-      showAlert(
-        success ? 'Suscripción activada' : 'No se completó el pago',
-        success ? 'Tu plan se actualizará en unos instantes.' : 'Puedes intentarlo de nuevo cuando quieras.',
-      );
-      if (success) load();
-    });
-    return () => subscription.remove();
-  }, [load]);
-
   const handleChoosePlan = useCallback(
     async (plan: PlanCatalogEntry) => {
       setCheckoutLoadingPlan(plan.code);
       try {
         const session = await createMockCheckoutSession(companyId, plan.code);
-        await WebBrowser.openAuthSessionAsync(session.url, Linking.createURL('empresa/billing-return'));
+        const result = await WebBrowser.openAuthSessionAsync(session.url, Linking.createURL('empresa/billing-return'));
+        // Stripe vuelve a STRIPE_CHECKOUT_SUCCESS_URL/CANCEL_URL (…/empresa/billing-return?status=success|cancel).
+        // Cerrar el navegador sin terminar (`dismiss`/`cancel`) no navega: se queda en Elegir plan.
+        if (result.type === 'success') {
+          const status = new URL(result.url).searchParams.get('status') ?? 'error';
+          router.replace(`/empresa/billing-return?status=${status}&companyId=${companyId}`);
+        }
       } catch (e) {
         // Mensaje de la API cuando lo hay (p. ej. 409 de Red Privada sin Partner, 400 de tipo de empresa).
         showAlert('No se pudo iniciar el pago', e instanceof Error && e.message ? e.message : 'Revisa tu conexión e intenta de nuevo.');
