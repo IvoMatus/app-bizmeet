@@ -2,6 +2,7 @@ import { Tabs } from 'expo-router';
 import { useState } from 'react';
 
 import { CompanySwitcherSheet } from '@/components/company/company-switcher-sheet';
+import { PendingPaymentBanner } from '@/components/company/pending-payment-banner';
 import { BottomTabBar } from '@/components/navigation/bottom-tab-bar';
 import { ProfileTopBar } from '@/components/profile/profile-chrome';
 import { useUnreadNotifications } from '@/components/notifications/unread-notifications';
@@ -24,14 +25,18 @@ export default function AppTabs() {
           // `navigation.setOptions`, ver index.tsx) y este header lo renderiza igual para todas.
           // El subtítulo es tocable cuando el usuario tiene al menos una empresa: abre el
           // selector de empresa activa (T2.5), disponible desde cualquier tab.
+          // El aviso de pago pendiente de la empresa activa va debajo del topbar, en todas las tabs.
           header: ({ options }) => (
-            <ProfileTopBar
-              avatar={avatar}
-              companyLogo={MOCK_PROFILE.companyLogoUri}
-              hasUnread={unread > 0}
-              subtitle={options.title}
-              onPressSubtitle={companies && companies.length > 0 ? () => setSwitcherOpen(true) : undefined}
-            />
+            <>
+              <ProfileTopBar
+                avatar={avatar}
+                companyLogo={MOCK_PROFILE.companyLogoUri}
+                hasUnread={unread > 0}
+                subtitle={options.title}
+                onPressSubtitle={companies && companies.length > 0 ? () => setSwitcherOpen(true) : undefined}
+              />
+              <PendingPaymentBanner />
+            </>
           ),
         }}
         tabBar={({ state }) => {
