@@ -8,13 +8,19 @@ import '@/global.css';
 import { Platform, type TextStyle } from 'react-native';
 
 export const Colors = {
+  // T1.7 (AA): error/textMuted/warning/eyebrow/warningText ajustados (mismo tono, apenas más
+  // oscuros en claro / más claros en oscuro) para llegar a 4.5:1 como texto sobre todos los fondos
+  // de la app (screenBackground/card/cardElevated/surface/surfaceInset y sus *Soft).
+  // ponytail: `accent` y `success` en claro siguen sin llegar a 4.5:1 como texto chico — son
+  // colores de marca que también rellenan botones/chips con texto blanco; cambiarlos es decisión
+  // de diseño. Para texto chico acento ya existe `accentText`.
   light: {
     text: '#000000',
     background: '#ffffff',
     backgroundElement: '#F0F0F3',
     backgroundSelected: '#E0E1E6',
     textSecondary: '#60646C',
-    error: '#D92D20',
+    error: '#cc2a1e',
     // Registration/onboarding ("BizAINet" fintech) palette — derived light equivalents of the
     // dark-only Figma design (see dark below), kept on the same cyan/navy brand hue.
     screenBackground: '#f4f9fc',
@@ -22,10 +28,10 @@ export const Colors = {
     cardElevated: '#e2eef5',
     accent: '#1d96ac',
     accentStrong: '#0c6e7f',
-    textMuted: '#54708a',
+    textMuted: '#526e87',
     success: '#2abb22',
     successStrong: '#1f8f19',
-    warning: '#b9791f',
+    warning: '#936019',
     border: 'rgba(29, 150, 172, 0.18)',
     // Perfil (Figma "Ver/Editar Perfil", modo claro)
     textPrimary: '#0c1d32',
@@ -33,7 +39,7 @@ export const Colors = {
     surfaceBorder: '#e1e8f0',
     surfaceInset: '#f4f7fa',
     navBackground: 'rgba(255, 255, 255, 0.95)',
-    eyebrow: '#1e8a19',
+    eyebrow: '#1b7c16',
     successSurface: '#ddf5db',
     successBorder: 'rgba(42, 187, 34, 0.3)',
     buttonDark: '#0c1d32',
@@ -54,7 +60,7 @@ export const Colors = {
     // TITULAR" del mismo frame (#10b981) SÍ se normalizó a `success` (decisión de diseño,
     // ver commit) en lugar de agregarse como token aparte.
     warningAccent: '#f59e0b',
-    warningText: '#d97706',
+    warningText: '#9e5703',
     warningSoft: '#fef3c7',
     warningBorder: '#fde68a',
     warningSurface: '#fffbeb',
@@ -67,14 +73,14 @@ export const Colors = {
     backgroundElement: '#212225',
     backgroundSelected: '#2E3135',
     textSecondary: '#B0B4BA',
-    error: '#F97066',
+    error: '#fa7f76',
     // Registration/onboarding ("BizAINet" fintech) palette — pixel-matched to the Figma design.
     screenBackground: '#011523',
     card: '#0c1d32',
     cardElevated: '#16324f',
     accent: '#5bc6d8',
     accentStrong: '#1d96ac',
-    textMuted: '#7e9ab5',
+    textMuted: '#7f9bb5',
     success: '#57e247',
     successStrong: '#2abb22',
     warning: '#e9a83b',
