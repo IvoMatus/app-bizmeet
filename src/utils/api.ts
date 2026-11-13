@@ -67,6 +67,14 @@ if (!gj.__bizmeetJsonPatched) {
   };
 }
 
+/** Consentimiento expreso del aviso de privacidad. POST /users lo exige (400 si falta). */
+export type AvisoPrivacidad = {
+  /** Versión del texto aceptado (no vacía). */
+  version: string;
+  /** ISO 8601. */
+  aceptadoEn: string;
+};
+
 export type CreateUserProfileInput = {
   clerkUserId: string;
   nombre: string;
@@ -79,6 +87,16 @@ export type CreateUserProfileInput = {
   phoneNumber: string;
   idiomas: string[];
   curp: string;
+  avisoPrivacidad: AvisoPrivacidad;
+};
+
+/** Identificación oficial del perfil (revisión manual). `url` es una ruta de la API, no una URL
+ * firmada: la imagen está cifrada y se pide con Bearer (ver `identityDocumentSource`). */
+export type DocumentoIdentidad = {
+  url: string;
+  estado: 'PENDIENTE_REVISION' | 'APROBADO' | 'RECHAZADO';
+  /** ISO 8601. */
+  subidoEn: string;
 };
 
 /** Vista Perfil que devuelve GET /users/:clerkUserId (mismo shape que la respuesta del PATCH). */
@@ -98,6 +116,8 @@ export type UserProfileView = {
   fechaNacimiento: string;
   /** No tipado como union estricta: el backend puede sumar valores sin avisar al front. */
   experiencia: string;
+  /** No viene si todavía no la subió. */
+  documentoIdentidad?: DocumentoIdentidad;
 };
 
 /** Trae el perfil del usuario logueado desde api-bizmeet. */
@@ -889,4 +909,39 @@ export async function uploadProfilePhoto(
     throw new Error(parsed.message ?? `No se pudo subir la foto de perfil (${status}).`);
   }
   return parsed;
+}
+
+const IDENTITY_DOCUMENT_ERRORS: Record<number, string> = {
+  413: 'La identificación debe pesar 10 MB o menos.',
+  415: 'La identificación debe ser una imagen JPG o PNG.',
+};
+
+/** POST /users/:clerkUserId/identity-document (multipart `file`, JPG/PNG ≤10 MB). Volver a subirla
+ * la reemplaza y la deja otra vez en revisión. 404 si el perfil todavía no existe. */
+export async function uploadIdentityDocument(clerkUserId: string, uri: string, token: string): Promise<DocumentoIdentidad> {
+  const { File, UploadType } = await import('expo-file-system');
+  const { status, body } = await new File(uri).upload(`${API_URL}/users/${clerkUserId}/identity-document`, {
+    httpMethod: 'POST',
+    uploadType: UploadType.MULTIPART,
+    fieldName: 'file',
+    // ponytail: el formato se infiere por extensión (el picker devuelve JPG o PNG); si llega otro, el 415 lo explica.
+    mimeType: uri.toLowerCase().endsWith('.png') ? 'image/png' : 'image/jpeg',
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  let parsed: { documentoIdentidad?: DocumentoIdentidad; message?: string } = {};
+  try {
+    parsed = JSON.parse(body);
+  } catch {
+    // body no-JSON: se usa el mensaje por status
+  }
+  if (status < 200 || status >= 300 || !parsed.documentoIdentidad) {
+    throw new Error(IDENTITY_DOCUMENT_ERRORS[status] ?? parsed.message ?? `No se pudo subir la identificación (${status}).`);
+  }
+  return parsed.documentoIdentidad;
+}
+
+/** Fuente para <Image> de la identificación: va contra la API con Bearer (no hay URL firmada).
+ * Usar sin caché en disco: es un documento sensible (la API responde Cache-Control: no-store). */
+export function identityDocumentSource(documento: DocumentoIdentidad, token: string) {
+  return { uri: `${API_URL}${documento.url}`, headers: { Authorization: `Bearer ${token}` } };
 }

@@ -5,7 +5,7 @@ import { useState } from 'react';
 import { useAuthToken } from '@/hooks/use-auth-token';
 
 import { AuthScreenShell } from '@/components/register/auth-screen-shell';
-import { saveRegisteredProfile } from '@/components/register/save-registered-profile';
+import { identificacionPendienteMensaje, saveRegisteredProfile } from '@/components/register/save-registered-profile';
 import { StepProgress } from '@/components/register/step-progress';
 import { Step1PersonalData, type PersonalDataForm } from '@/components/register/step-1-personal-data';
 import { showAlert } from '@/components/ui/app-alert';
@@ -29,6 +29,7 @@ function toPersonalData(data: PersonalDataForm): RegisterPersonalData {
     curp: data.curp,
     phoneNumber: toPhoneNumber(data),
     fotoPerfilUri: data.fotoPerfilUri,
+    documentoIdentidadUri: data.documentoIdentidadUri,
   };
 }
 
@@ -38,13 +39,18 @@ function toPersonalData(data: PersonalDataForm): RegisterPersonalData {
  * y va directo al paso final.
  */
 export default function Step1Screen() {
-  const { setPersonalData } = useRegisterForm();
+  const { setPersonalData, avisoPrivacidad } = useRegisterForm();
   const { completar } = useLocalSearchParams<{ completar?: string }>();
   const { user } = useUser();
   const getToken = useAuthToken();
   const [submitting, setSubmitting] = useState(false);
 
   async function handleSubmit(data: PersonalDataForm) {
+    // Sin consentimiento (se llegó salteando el aviso): POST /users daría 400, mejor volver al aviso.
+    if (!avisoPrivacidad) {
+      router.replace(completar ? '/(auth)/register/aviso-privacidad?completar=1' : '/(auth)/register/aviso-privacidad');
+      return;
+    }
     const personalData = toPersonalData(data);
     if (!completar) {
       setPersonalData(personalData);
@@ -56,7 +62,8 @@ export default function Step1Screen() {
     try {
       const token = await getToken();
       if (!token || !user) throw new Error('No se pudo obtener la sesión.');
-      await saveRegisteredProfile(user.id, personalData, token);
+      const { identificacionError } = await saveRegisteredProfile(user.id, personalData, avisoPrivacidad, token);
+      if (identificacionError) showAlert('No se pudo subir tu identificación', identificacionPendienteMensaje(identificacionError));
       router.replace('/(auth)/register/step-4');
     } catch (e) {
       showAlert('No se pudo guardar tu perfil', e instanceof Error ? e.message : 'Ocurrió un error inesperado.');

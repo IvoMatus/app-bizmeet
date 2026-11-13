@@ -6,7 +6,7 @@ import { useAuthToken } from '@/hooks/use-auth-token';
 
 import { AuthScreenShell } from '@/components/register/auth-screen-shell';
 import { OtpVerificationStep } from '@/components/register/otp-verification-step';
-import { saveRegisteredProfile } from '@/components/register/save-registered-profile';
+import { identificacionPendienteMensaje, saveRegisteredProfile } from '@/components/register/save-registered-profile';
 import { StepProgress } from '@/components/register/step-progress';
 import { showAlert } from '@/components/ui/app-alert';
 import { getClerkErrorMessage } from '@/utils/clerk-error';
@@ -16,7 +16,7 @@ import { useRegisterForm } from './_layout';
 export default function Step3aScreen() {
   const { signUp } = useSignUp();
   const getToken = useAuthToken();
-  const { personalData } = useRegisterForm();
+  const { personalData, avisoPrivacidad } = useRegisterForm();
   const [submitting, setSubmitting] = useState(false);
 
   async function handleVerify(code: string) {
@@ -39,8 +39,18 @@ export default function Step3aScreen() {
           try {
             const token = await getToken();
             if (!token) throw new Error('No se pudo obtener la sesión recién creada.');
+            // El paso 1 no deja avanzar sin consentimiento, pero si faltara, POST /users daría 400.
+            if (!avisoPrivacidad) throw new Error('Falta aceptar el aviso de privacidad.');
 
-            await saveRegisteredProfile(signUp.createdUserId, personalData, token);
+            const { identificacionError } = await saveRegisteredProfile(
+              signUp.createdUserId,
+              personalData,
+              avisoPrivacidad,
+              token,
+            );
+            if (identificacionError) {
+              showAlert('No se pudo subir tu identificación', identificacionPendienteMensaje(identificacionError));
+            }
           } catch (profileError) {
             // La cuenta y la sesión ya existen: no dejamos al usuario trabado, solo avisamos. Al
             // salir del registro, AuthGuard (app/_layout.tsx) ve que falta el perfil y lo manda a

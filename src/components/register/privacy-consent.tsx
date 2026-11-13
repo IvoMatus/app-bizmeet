@@ -13,6 +13,10 @@ import { useTheme } from '@/hooks/use-theme';
  * que entregue legal antes de publicar la app (T1.5, 86bccd1yw). Se muestra marcado como
  * ejemplo en la propia pantalla para que nadie lo tome por definitivo.
  */
+/** Versión del texto que se acepta (viaja en `avisoPrivacidad.version` de POST /users). Cambiarla
+ * junto con el texto cuando llegue el aviso oficial. */
+export const AVISO_PRIVACIDAD_VERSION = 'placeholder-2026-11';
+
 const PLACEHOLDER_SECTIONS = [
   {
     title: 'Responsable del tratamiento',
