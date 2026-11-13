@@ -130,11 +130,15 @@ const MOCK_SECRETOS: Record<string, RevelarConvenioResult> = {
 
 const esMock = (id: string) => id.startsWith('mock-');
 
-/** API real; si falla o viene vacía (seed sin correr), cae al mock. */
+/** API real; si no se puede conectar o viene vacía (seed sin correr), cae al mock. Un error HTTP
+ * (p. ej. 409 de empresa Red Privada sin Partner, 403) se propaga con su mensaje: caer al mock ahí
+ * escondería el error detrás de convenios inventados. */
 export function loadConvenios(token: string, companyId?: string): Promise<Convenio[]> {
   return fetchConvenios(token, companyId)
     .then((lista) => (lista.length ? lista : MOCK_CONVENIOS))
     .catch((e: Error) => {
+      // fetch de React Native tira TypeError ("Network request failed") solo cuando no hubo respuesta.
+      if (!(e instanceof TypeError)) throw e;
       if (__DEV__) console.warn('[convenios] API no disponible, usando mock:', e.message);
       return MOCK_CONVENIOS;
     });

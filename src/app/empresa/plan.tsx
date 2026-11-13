@@ -87,8 +87,9 @@ export default function PlanScreen() {
       try {
         const session = await createMockCheckoutSession(companyId, plan.code);
         await WebBrowser.openAuthSessionAsync(session.url, Linking.createURL('empresa/billing-return'));
-      } catch {
-        showAlert('No se pudo iniciar el pago', 'Revisa tu conexión e intenta de nuevo.');
+      } catch (e) {
+        // Mensaje de la API cuando lo hay (p. ej. 409 de Red Privada sin Partner, 400 de tipo de empresa).
+        showAlert('No se pudo iniciar el pago', e instanceof Error && e.message ? e.message : 'Revisa tu conexión e intenta de nuevo.');
       } finally {
         setCheckoutLoadingPlan(null);
       }
