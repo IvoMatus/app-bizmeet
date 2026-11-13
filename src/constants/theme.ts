@@ -39,6 +39,9 @@ export const Colors = {
     buttonDark: '#0c1d32',
     onButtonDark: '#ffffff',
     accentSoft: 'rgba(29, 150, 172, 0.15)',
+    // Texto acento chico sobre card/surface (subtítulos, botón outline): `accent` no llega a 4.5:1
+    // sobre fondo claro, así que en claro es `accentStrong` y en oscuro `accent`.
+    accentText: '#0c6e7f',
     // Mis Empresas (Figma "Mis Empresas - Listado Corporativo", modo claro)
     offerSoft: 'rgba(12, 110, 127, 0.1)',
     offerIconSoft: 'rgba(12, 110, 127, 0.2)',
@@ -88,6 +91,7 @@ export const Colors = {
     buttonDark: '#15406a',
     onButtonDark: '#ffffff',
     accentSoft: 'rgba(91, 198, 216, 0.15)',
+    accentText: '#5bc6d8',
     // Mis Empresas (Figma "Mis Empresas - Listado Corporativo", modo oscuro)
     offerSoft: 'rgba(29, 150, 172, 0.1)',
     offerIconSoft: 'rgba(29, 150, 172, 0.2)',

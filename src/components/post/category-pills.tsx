@@ -8,16 +8,18 @@ import type { Rubro } from '@/utils/api';
 export const GENERAL_FEED = 'general';
 
 type CategoryPillsProps = {
-  /** Catálogo SCIAN (PA-10) — `null` mientras carga. */
-  industries: Rubro[] | null;
+  /** Catálogo SCIAN (PA-10) u otra lista código+nombre (categorías de convenios) — `null` mientras carga. */
+  industries: Pick<Rubro, 'codigo' | 'nombre'>[] | null;
   selected: string;
   onSelect: (value: string) => void;
+  /** Etiqueta de la primera opción, la que no filtra (valor `GENERAL_FEED`). */
+  allLabel?: string;
 };
 
-/** Selector de muro: "General" + rubros (filtra por `codigo`), pills horizontales (T3.2). */
-export function CategoryPills({ industries, selected, onSelect }: CategoryPillsProps) {
+/** Pills horizontales: opción "todas" + una por código (muro T3.2, Convenios). */
+export function CategoryPills({ industries, selected, onSelect, allLabel = 'General' }: CategoryPillsProps) {
   const theme = useTheme();
-  const options = [{ label: 'General', value: GENERAL_FEED }, ...(industries ?? []).map((r) => ({ label: r.nombre, value: r.codigo }))];
+  const options = [{ label: allLabel, value: GENERAL_FEED }, ...(industries ?? []).map((r) => ({ label: r.nombre, value: r.codigo }))];
 
   return (
     <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.wrap} contentContainerStyle={styles.content}>
