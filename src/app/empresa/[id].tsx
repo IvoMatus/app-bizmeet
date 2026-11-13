@@ -7,12 +7,13 @@ import { useAuthToken } from '@/hooks/use-auth-token';
 
 import { PLAN_LABEL } from '@/components/company/company-card';
 import { CompanyIcon } from '@/components/company/company-icons';
+import { DOCUMENT_TYPE_LABEL } from '@/components/company/kyb-documents-field';
 import { RegisterHeader } from '@/components/register/register-header';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
-import { fetchCompany, fetchPlans, type CompanyDetail, type CompanyDetailMiembro, type PlanCatalogEntry } from '@/utils/api';
+import { fetchCompany, fetchPlans, type CompanyDetail, type CompanyDetailMiembro, type CompanyDocumentType, type PlanCatalogEntry } from '@/utils/api';
 
 const TIPO_LABEL: Record<CompanyDetail['tipo'], string> = {
   CLUB: 'Club',
@@ -147,7 +148,7 @@ export default function EmpresaDetalleScreen() {
                 {company.documentos.map((doc, index) => (
                   <View key={`${doc.tipo}-${index}`} style={styles.docRow}>
                     <CompanyIcon name="tag" color={theme.accent} width={13} height={13} />
-                    <ThemedText style={[styles.docLabel, { color: theme.textPrimary }]}>{doc.tipo}</ThemedText>
+                    <ThemedText style={[styles.docLabel, { color: theme.textPrimary }]}>{DOCUMENT_TYPE_LABEL[doc.tipo as CompanyDocumentType] ?? doc.tipo}</ThemedText>
                   </View>
                 ))}
               </View>

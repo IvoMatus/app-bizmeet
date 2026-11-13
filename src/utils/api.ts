@@ -182,6 +182,43 @@ export async function createCompany(input: CreateCompanyInput, token: string): P
   return response.json();
 }
 
+/** Tipos de documento KYB que acepta POST /companies/:id/documents. */
+export type CompanyDocumentType =
+  | 'RFC'
+  | 'ACTA_CONSTITUTIVA'
+  | 'CONSTANCIA_SITUACION_FISCAL_EMPRESA'
+  | 'PODER_REPRESENTANTE_LEGAL'
+  | 'IDENTIFICACION_REPRESENTANTE';
+
+/** POST /companies/:id/documents (multipart `file` + `tipo`): JPG, PNG o PDF de hasta 10 MB. Solo
+ * quien puede subir documentos de la empresa (hoy, ADMINISTRADOR; quien la crea lo es). Mismo
+ * mecanismo que `uploadProfilePhoto` (File.upload de expo-file-system, sin fetch/Blob). */
+export async function uploadCompanyDocument(
+  companyId: string,
+  tipo: CompanyDocumentType,
+  file: { uri: string; mimeType: string },
+  token: string,
+): Promise<void> {
+  const { File, UploadType } = await import('expo-file-system');
+  const { status, body } = await new File(file.uri).upload(`${API_URL}/companies/${companyId}/documents`, {
+    httpMethod: 'POST',
+    uploadType: UploadType.MULTIPART,
+    fieldName: 'file',
+    mimeType: file.mimeType,
+    parameters: { tipo },
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (status < 200 || status >= 300) {
+    let message: string | undefined;
+    try {
+      message = JSON.parse(body)?.message;
+    } catch {
+      // body no-JSON: se usa el mensaje genérico
+    }
+    throw new Error(message ?? `No se pudo subir el documento (${status}).`);
+  }
+}
+
 /** Código de plan que puede tener una empresa (confirmado con backend-dev: `plan` viaja como
  * string plano, no como objeto — `PERFIL_BASICO` no aplica, eso es "sin empresa"). */
 export type CompanyPlanCode = 'RED_PRIVADA' | 'EMPRENDIMIENTO' | 'EMPRESA' | 'PREMIUM';

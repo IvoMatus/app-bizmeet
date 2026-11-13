@@ -6,6 +6,7 @@ import { useForm, useWatch } from 'react-hook-form';
 
 import { useAuthToken } from '@/hooks/use-auth-token';
 
+import { DOCUMENT_TYPE_LABEL, KybDocumentsField, type KybDocuments } from '@/components/company/kyb-documents-field';
 import { DiscardButton } from '@/components/profile/profile-form';
 import { PrimaryButton } from '@/components/register/primary-button';
 import { RegisterHeader } from '@/components/register/register-header';
@@ -14,7 +15,7 @@ import { showAlert } from '@/components/ui/app-alert';
 import { FormInput } from '@/components/ui/form-input';
 import { FormSelect, type FormSelectOption } from '@/components/ui/form-select';
 import { Spacing } from '@/constants/theme';
-import { createCompany, type CreateCompanyInput } from '@/utils/api';
+import { createCompany, uploadCompanyDocument, type CompanyDocumentType, type CreateCompanyInput } from '@/utils/api';
 
 type CrearEmpresaForm = {
   name: string;
@@ -45,6 +46,7 @@ const PLAN_OPTIONS: FormSelectOption<CreateCompanyInput['plan']>[] = [
 export default function CrearEmpresaScreen() {
   const getToken = useAuthToken();
   const [submitting, setSubmitting] = useState(false);
+  const [documentos, setDocumentos] = useState<KybDocuments>({});
   const { control, handleSubmit, setValue } = useForm<CrearEmpresaForm>({
     defaultValues: { name: '', rfc: '', industry: '', tipo: '', formaJuridica: '', plan: '' },
   });
@@ -63,7 +65,7 @@ export default function CrearEmpresaScreen() {
         showAlert('No se pudo crear la empresa', 'Tu sesión expiró. Vuelve a iniciar sesión e intenta de nuevo.');
         return;
       }
-      await createCompany(
+      const { id } = await createCompany(
         {
           name: data.name,
           rfc: data.rfc,
@@ -74,6 +76,21 @@ export default function CrearEmpresaScreen() {
         },
         token,
       );
+
+      // El endpoint de documentos necesita el id: se suben recién ahora. Un fallo no deshace la
+      // empresa ya creada — se avisa qué documentos quedaron sin subir.
+      const fallidos: string[] = [];
+      for (const [tipo, doc] of Object.entries(documentos) as [CompanyDocumentType, KybDocuments[CompanyDocumentType]][]) {
+        if (!doc) continue;
+        try {
+          await uploadCompanyDocument(id, tipo, doc, token);
+        } catch {
+          fallidos.push(DOCUMENT_TYPE_LABEL[tipo]);
+        }
+      }
+      if (fallidos.length > 0) {
+        showAlert('Empresa creada, pero faltan documentos', `No se pudieron subir: ${fallidos.join(', ')}.`);
+      }
       router.back();
     } catch (e) {
       showAlert('No se pudo crear la empresa', (e as Error).message);
@@ -134,7 +151,9 @@ export default function CrearEmpresaScreen() {
             rules={{ required: 'Requerido' }}
           />
 
-          <PrimaryButton label="Crear Empresa" onPress={handleSubmit(onSubmit)} disabled={submitting} />
+          <KybDocumentsField value={documentos} onChange={setDocumentos} />
+
+          <PrimaryButton label={submitting ? 'Creando…' : 'Crear Empresa'} onPress={handleSubmit(onSubmit)} disabled={submitting} />
           <DiscardButton label="Cancelar" onPress={() => router.back()} />
         </ScrollView>
       </SafeAreaView>
