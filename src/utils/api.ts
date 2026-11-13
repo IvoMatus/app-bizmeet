@@ -112,6 +112,17 @@ export async function fetchUserProfile(clerkUserId: string, token: string): Prom
   return response.json();
 }
 
+/** ¿La cuenta de Clerk ya tiene perfil de BizMeet? GET /users/:id responde 404 si no (p. ej. alta
+ * con Google, o un registro cuyo POST /users falló). Otros errores se propagan. */
+export async function hasUserProfile(clerkUserId: string, token: string): Promise<boolean> {
+  const response = await fetch(`${API_URL}/users/${clerkUserId}`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (response.status === 404) return false;
+  if (!response.ok) throw new Error(`No se pudo verificar el perfil (${response.status}).`);
+  return true;
+}
+
 /** Todo opcional: mandar solo los campos que cambiaron. El celular viaja como `phoneNumber` acá
  * pero vuelve como `celular` en la respuesta (mismo shape que `UserProfileView`). `curp` y
  * `fechaNacimiento` no se pueden editar — no están en este tipo a propósito. `null` o `""` en

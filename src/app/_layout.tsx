@@ -4,7 +4,7 @@ import { Inter_400Regular, Inter_500Medium, Inter_600SemiBold, Inter_700Bold, In
 import { useFonts } from 'expo-font';
 import { DarkTheme, DefaultTheme, router, Stack, ThemeProvider, useSegments } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { useColorScheme, View } from 'react-native';
 
 import { AnimatedSplashOverlay } from '@/components/animated-icon';
@@ -13,7 +13,9 @@ import { CHILD_ROUTE_TAB_KEY } from '@/components/navigation/tab-route-map';
 import { MOCK_PROFILE } from '@/components/profile/profile-data';
 import { AppAlertHost } from '@/components/ui/app-alert';
 import { ActiveCompanyProvider } from '@/hooks/use-active-company';
+import { useAuthToken } from '@/hooks/use-auth-token';
 import { ProfileAvatarProvider, useProfileAvatar } from '@/hooks/use-profile-avatar';
+import { hasUserProfile } from '@/utils/api';
 
 const publishableKey = process.env.EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY!;
 if (!publishableKey) {
@@ -30,19 +32,47 @@ SplashScreen.preventAutoHideAsync();
 // whole register subtree own its navigation (it already does, via its own `router.push`/
 // `router.replace` calls) removes the race instead of just narrowing the window.
 function AuthGuard() {
-  const { isLoaded, isSignedIn } = useAuth();
+  const { isLoaded, isSignedIn, userId } = useAuth();
+  const getToken = useAuthToken();
   const segments = useSegments();
+  const inAuthGroup = segments[0] === '(auth)';
+  const inRegisterFlow = segments[1] === 'register';
+  // Cuenta de Clerk cuyo perfil de BizMeet ya se confirmó: se chequea una sola vez por sesión.
+  // Solo se guarda el "sí" — un "no" se vuelve a preguntar al salir del registro (ya completado).
+  const confirmedUserId = useRef<string | null>(null);
 
   useEffect(() => {
     if (!isLoaded) return;
-    const inAuthGroup = segments[0] === '(auth)';
-    const inRegisterFlow = segments[1] === 'register';
-    if (isSignedIn && inAuthGroup && !inRegisterFlow) {
-      router.replace('/');
-    } else if (!isSignedIn && !inAuthGroup) {
-      router.replace('/(auth)/welcome');
+    if (!isSignedIn) {
+      if (!inAuthGroup) router.replace('/(auth)/welcome');
+      return;
     }
-  }, [isLoaded, isSignedIn, segments]);
+    if (inRegisterFlow) return;
+    if (confirmedUserId.current === userId) {
+      if (inAuthGroup) router.replace('/');
+      return;
+    }
+
+    // Sesión sin perfil de BizMeet (alta con Google, o un registro cuyo POST /users falló):
+    // completar el perfil antes de entrar a la app. Mientras se chequea, no se redirige.
+    let cancelled = false;
+    getToken()
+      .then((token) => (token && userId ? hasUserProfile(userId, token) : true))
+      // ponytail: si el chequeo falla (red), no bloquea — mismo comportamiento que antes del chequeo.
+      .catch(() => true)
+      .then((exists) => {
+        if (cancelled) return;
+        if (exists) {
+          confirmedUserId.current = userId ?? null;
+          if (inAuthGroup) router.replace('/');
+        } else {
+          router.replace('/(auth)/register/aviso-privacidad?completar=1');
+        }
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [isLoaded, isSignedIn, userId, inAuthGroup, inRegisterFlow, getToken]);
 
   return null;
 }

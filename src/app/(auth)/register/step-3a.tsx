@@ -6,10 +6,10 @@ import { useAuthToken } from '@/hooks/use-auth-token';
 
 import { AuthScreenShell } from '@/components/register/auth-screen-shell';
 import { OtpVerificationStep } from '@/components/register/otp-verification-step';
+import { saveRegisteredProfile } from '@/components/register/save-registered-profile';
 import { StepProgress } from '@/components/register/step-progress';
 import { showAlert } from '@/components/ui/app-alert';
 import { getClerkErrorMessage } from '@/utils/clerk-error';
-import { createUserProfile, uploadProfilePhoto } from '@/utils/api';
 
 import { useRegisterForm } from './_layout';
 
@@ -40,34 +40,11 @@ export default function Step3aScreen() {
             const token = await getToken();
             if (!token) throw new Error('No se pudo obtener la sesión recién creada.');
 
-            await createUserProfile(
-              {
-                clerkUserId: signUp.createdUserId,
-                nombre: personalData.nombre,
-                apellidoPaterno: personalData.apellidoPaterno,
-                apellidoMaterno: personalData.apellidoMaterno,
-                fechaNacimiento: personalData.fechaNacimiento.toISOString(),
-                pais: personalData.pais,
-                estado: personalData.estado,
-                comuna: personalData.comuna,
-                phoneNumber: personalData.phoneNumber,
-                idiomas: personalData.idiomas,
-                curp: personalData.curp,
-              },
-              token
-            );
-
-            if (personalData.fotoPerfilUri) {
-              try {
-                await uploadProfilePhoto(signUp.createdUserId, personalData.fotoPerfilUri, token);
-              } catch {
-                // ponytail: photo is optional cosmetics, don't block registration over it.
-                // User can re-upload later from their profile once that screen exists.
-              }
-            }
+            await saveRegisteredProfile(signUp.createdUserId, personalData, token);
           } catch (profileError) {
-            // ponytail: account + session already exist at this point; don't strand the user
-            // over a profile-save failure, just surface it. No retry/backfill flow yet.
+            // La cuenta y la sesión ya existen: no dejamos al usuario trabado, solo avisamos. Al
+            // salir del registro, AuthGuard (app/_layout.tsx) ve que falta el perfil y lo manda a
+            // completarlo (aviso de privacidad + paso 1 en modo `completar`).
             showAlert(
               'Cuenta creada, pero no se pudo guardar tu perfil',
               profileError instanceof Error ? profileError.message : 'Ocurrió un error inesperado.'

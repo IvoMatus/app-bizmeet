@@ -1,11 +1,15 @@
+import { useSSO } from '@clerk/expo';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Image } from 'expo-image';
 import { router } from 'expo-router';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { useState } from 'react';
+import { ActivityIndicator, Pressable, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { SvgXml } from 'react-native-svg';
 
 import { ThemedText } from '@/components/themed-text';
+import { showAlert } from '@/components/ui/app-alert';
+import { getClerkErrorMessage } from '@/utils/clerk-error';
 
 // ponytail: fuente Plus Jakarta Sans no cargada, se usa system font con el weight equivalente; agregar con expo-font si hace falta pixel-fidelity tipográfica
 
@@ -41,6 +45,26 @@ const BENEFIT_ALIANZAS_ICON_XML = `<svg width="16" height="16" viewBox="0 0 16 1
 </svg>`;
 
 export default function HomeScreen() {
+  const { startSSOFlow } = useSSO();
+  const [googleLoading, setGoogleLoading] = useState(false);
+
+  // Alta o login con Google (Clerk OAuth). Con la sesión activa, AuthGuard (app/_layout.tsx) decide:
+  // si la cuenta ya tiene perfil de BizMeet va al Muro; si es nueva, a completar el perfil.
+  async function continueWithGoogle() {
+    setGoogleLoading(true);
+    try {
+      const { createdSessionId, setActive } = await startSSOFlow({ strategy: 'oauth_google' });
+      // Sin sesión = el usuario cerró el navegador: no es un error.
+      if (createdSessionId && setActive) await setActive({ session: createdSessionId });
+    } catch (e) {
+      // useSSO (API clásica de Clerk) lanza ClerkAPIResponseError: el código traducible viene en errors[0].
+      const err = e as { errors?: { code?: string; message?: string; longMessage?: string }[]; message?: string };
+      showAlert('No se pudo continuar con Google', getClerkErrorMessage(err.errors?.[0] ?? err));
+    } finally {
+      setGoogleLoading(false);
+    }
+  }
+
   return (
     <View style={styles.container}>
       <Image
@@ -81,11 +105,11 @@ export default function HomeScreen() {
 
           <Pressable
             style={styles.googleButton}
-            onPress={() => {
-              // TODO: wire real Google OAuth (Clerk) cuando esté disponible
-              router.push('/(auth)/login');
-            }}>
-            <SvgXml xml={GOOGLE_ICON_XML} width={16} height={16} />
+            accessibilityRole="button"
+            accessibilityState={{ disabled: googleLoading, busy: googleLoading }}
+            disabled={googleLoading}
+            onPress={continueWithGoogle}>
+            {googleLoading ? <ActivityIndicator size="small" /> : <SvgXml xml={GOOGLE_ICON_XML} width={16} height={16} />}
             <ThemedText style={styles.googleButtonLabel}>Continuar con Google</ThemedText>
           </Pressable>
 

@@ -160,11 +160,16 @@ function LanguageChips({ control }: { control: Control<PersonalDataForm> }) {
 
 type Step1PersonalDataProps = {
   onSubmit: (data: PersonalDataForm) => void;
+  /** Texto del botón final (default: avanzar al paso 2). */
+  submitLabel?: string;
+  submitting?: boolean;
+  /** Prellenado (p. ej. nombre y apellido que trae la cuenta de Google al completar el perfil). */
+  initialValues?: Partial<PersonalDataForm>;
 };
 
 /** Paso 1: Datos personales — form + subida de foto de documento (revisión manual, C5). */
-export function Step1PersonalData({ onSubmit }: Step1PersonalDataProps) {
-  const { control, handleSubmit } = useForm<PersonalDataForm>({ defaultValues });
+export function Step1PersonalData({ onSubmit, submitLabel = 'Continuar al Paso 2', submitting, initialValues }: Step1PersonalDataProps) {
+  const { control, handleSubmit } = useForm<PersonalDataForm>({ defaultValues: { ...defaultValues, ...initialValues } });
   const headingRef = useAccessibilityFocusOnMount();
   const apellidoPaternoRef = useRef<TextInputRef>(null);
   const apellidoMaternoRef = useRef<TextInputRef>(null);
@@ -301,10 +306,10 @@ export function Step1PersonalData({ onSubmit }: Step1PersonalDataProps) {
       </ThemedView>
 
       <PrimaryButton
-        label="Continuar al Paso 2"
+        label={submitting ? 'Guardando…' : submitLabel}
         icon={{ ios: 'arrow.right', android: 'arrow_forward', web: 'arrow_forward' }}
-        // TODO: validate + persist step 1 data before advancing (backend not wired yet).
         onPress={handleSubmit(onSubmit)}
+        disabled={submitting}
       />
 
       <ThemedText type="small" themeColor="textMuted" style={styles.footer}>
