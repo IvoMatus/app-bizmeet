@@ -1,6 +1,6 @@
 import { Stack } from 'expo-router';
 
-import { useHasUnreadNotifications } from '@/components/notifications/use-has-unread-notifications';
+import { useUnreadNotifications } from '@/components/notifications/unread-notifications';
 import { ProfileTopBar } from '@/components/profile/profile-chrome';
 import { MOCK_PROFILE } from '@/components/profile/profile-data';
 import { useProfileAvatar } from '@/hooks/use-profile-avatar';
@@ -9,7 +9,7 @@ import { useProfileAvatar } from '@/hooks/use-profile-avatar';
  * trae su propio EditTopBar a pantalla completa). */
 export default function PerfilLayout() {
   const avatar = useProfileAvatar();
-  const hasUnread = useHasUnreadNotifications();
+  const { unread } = useUnreadNotifications();
 
   return (
     <Stack
@@ -18,7 +18,7 @@ export default function PerfilLayout() {
           <ProfileTopBar
             avatar={avatar}
             companyLogo={MOCK_PROFILE.companyLogoUri}
-            hasUnread={hasUnread}
+            hasUnread={unread > 0}
             subtitle={options.title}
           />
         ),

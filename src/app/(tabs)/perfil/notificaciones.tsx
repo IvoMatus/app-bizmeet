@@ -3,24 +3,29 @@ import { ActivityIndicator, Pressable, ScrollView, StyleSheet, View } from 'reac
 
 import { useAuthToken } from '@/hooks/use-auth-token';
 
+import { useUnreadNotifications } from '@/components/notifications/unread-notifications';
+
 import { toAppNotification, unreadCount, type AppNotification } from '@/components/notifications/notifications-data';
 import { NotificationCard } from '@/components/notifications/notifications-sections';
 import { ProfileTabs } from '@/components/profile/profile-chrome';
 import { ThemedText } from '@/components/themed-text';
 import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
-import { fetchNotifications } from '@/utils/api';
+import { fetchNotifications, markNotificationsRead } from '@/utils/api';
 
 /** "Centro de Notificaciones B2B" (T2.5, Figma 2046:558 claro / 2046:2 oscuro) — tab hermana de
  * Perfil/Invitaciones/Pago dentro del mismo stack/header compartido (ver perfil/_layout.tsx).
  *
  * Alcance: solo feed in-app (invitaciones, pagos, cambios de rol/equipo). Push/correo y sus
  * settings son Fase 2, explícitamente fuera de alcance acá. El feed arranca desde que se creó
- * el endpoint — no hay eventos históricos. Tampoco hay "marcar leído" server-side todavía.
+ * el endpoint — no hay eventos históricos. Al abrir la vista se marcan todas como leídas (POST
+ * /notifications/read) y el badge se actualiza con la respuesta; la lista ya cargada conserva sus
+ * marcas de "no leída" para que se vea qué era nuevo.
  */
 export default function NotificacionesScreen() {
   const theme = useTheme();
   const getToken = useAuthToken();
+  const { setUnread } = useUnreadNotifications();
   const [notifications, setNotifications] = useState<AppNotification[] | null>(null);
   const [nextCursor, setNextCursor] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -29,20 +34,21 @@ export default function NotificacionesScreen() {
   const load = useCallback(
     (cursor?: string) => {
       getToken()
-        .then((token) => {
+        .then(async (token) => {
           if (!token) throw new Error('No se pudo obtener la sesión.');
-          return fetchNotifications(token, { cursor });
-        })
-        .then((page) => {
+          const page = await fetchNotifications(token, { cursor });
           const mapped = page.items.map(toAppNotification);
           setNotifications((prev) => (cursor ? [...(prev ?? []), ...mapped] : mapped));
           setNextCursor(page.nextCursor);
           setError(null);
+          // Primera página ya visible: marcar todo como leído y bajar el badge. Si falla, el badge
+          // queda como estaba (no rompe la vista).
+          if (!cursor) markNotificationsRead(token).then(setUnread).catch(() => {});
         })
         .catch((e: Error) => setError(e.message))
         .finally(() => setLoadingMore(false));
     },
-    [getToken],
+    [getToken, setUnread],
   );
 
   useEffect(() => {

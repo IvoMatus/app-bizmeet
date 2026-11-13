@@ -600,6 +600,33 @@ export async function fetchNotifications(token: string, params: { cursor?: strin
   return { items, nextCursor: items.length < limit ? null : (items[items.length - 1]?.id ?? null) };
 }
 
+/** GET /notifications/unread-count — badge de la campana. */
+export async function fetchUnreadNotificationsCount(token: string): Promise<number> {
+  const response = await fetch(`${API_URL}/notifications/unread-count`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (!response.ok) {
+    const body = await response.json().catch(() => null);
+    throw new Error(body?.message ?? `No se pudo cargar el contador de notificaciones (${response.status}).`);
+  }
+  return ((await response.json()) as { unread: number }).unread;
+}
+
+/** POST /notifications/read — marca leídas `ids` (mongoIds, máx. 100) o todas si no se pasan.
+ * Devuelve el badge actualizado. */
+export async function markNotificationsRead(token: string, ids?: string[]): Promise<number> {
+  const response = await fetch(`${API_URL}/notifications/read`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+    body: JSON.stringify(ids ? { ids } : {}),
+  });
+  if (!response.ok) {
+    const body = await response.json().catch(() => null);
+    throw new Error(body?.message ?? `No se pudieron marcar las notificaciones (${response.status}).`);
+  }
+  return ((await response.json()) as { unread: number }).unread;
+}
+
 // --- Equipo e Invitaciones (T2.2, módulos `membership`/`invitation` de api-bizmeet) ---
 
 /** Rol real de empresa. El backend NO tiene roles de negocio (Comercial/Operativo/etc.),

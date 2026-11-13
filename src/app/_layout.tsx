@@ -10,6 +10,7 @@ import { useColorScheme, View } from 'react-native';
 import { AnimatedSplashOverlay } from '@/components/animated-icon';
 import { BottomTabBar } from '@/components/navigation/bottom-tab-bar';
 import { CHILD_ROUTE_TAB_KEY } from '@/components/navigation/tab-route-map';
+import { UnreadNotificationsProvider } from '@/components/notifications/unread-notifications';
 import { MOCK_PROFILE } from '@/components/profile/profile-data';
 import { AppAlertHost } from '@/components/ui/app-alert';
 import { ActiveCompanyProvider } from '@/hooks/use-active-company';
@@ -131,10 +132,12 @@ export default function RootLayout() {
           {/* Un solo fetch de avatar por sesión, compartido por la barra de (tabs) (app-tabs.tsx)
               y por RootBottomTabBar de aquí abajo — por eso vive arriba del Stack entero. */}
           <ProfileAvatarProvider>
-            <View style={{ flex: 1 }}>
-              <Stack screenOptions={{ headerShown: false }} />
-              <RootBottomTabBar />
-            </View>
+            <UnreadNotificationsProvider>
+              <View style={{ flex: 1 }}>
+                <Stack screenOptions={{ headerShown: false }} />
+                <RootBottomTabBar />
+              </View>
+            </UnreadNotificationsProvider>
           </ProfileAvatarProvider>
         </ActiveCompanyProvider>
         <AppAlertHost />

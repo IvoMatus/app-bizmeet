@@ -4,14 +4,14 @@ import { useState } from 'react';
 import { CompanySwitcherSheet } from '@/components/company/company-switcher-sheet';
 import { BottomTabBar } from '@/components/navigation/bottom-tab-bar';
 import { ProfileTopBar } from '@/components/profile/profile-chrome';
-import { useHasUnreadNotifications } from '@/components/notifications/use-has-unread-notifications';
+import { useUnreadNotifications } from '@/components/notifications/unread-notifications';
 import { MOCK_PROFILE } from '@/components/profile/profile-data';
 import { useActiveCompany } from '@/hooks/use-active-company';
 import { useProfileAvatar } from '@/hooks/use-profile-avatar';
 
 export default function AppTabs() {
   const avatar = useProfileAvatar();
-  const hasUnread = useHasUnreadNotifications();
+  const { unread } = useUnreadNotifications();
   const { companies } = useActiveCompany();
   const [switcherOpen, setSwitcherOpen] = useState(false);
 
@@ -28,7 +28,7 @@ export default function AppTabs() {
             <ProfileTopBar
               avatar={avatar}
               companyLogo={MOCK_PROFILE.companyLogoUri}
-              hasUnread={hasUnread}
+              hasUnread={unread > 0}
               subtitle={options.title}
               onPressSubtitle={companies && companies.length > 0 ? () => setSwitcherOpen(true) : undefined}
             />
