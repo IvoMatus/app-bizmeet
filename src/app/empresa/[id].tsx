@@ -1,5 +1,5 @@
-import { router, useLocalSearchParams } from 'expo-router';
-import { useCallback, useEffect, useState } from 'react';
+import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
+import { useCallback, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -64,9 +64,8 @@ export default function EmpresaDetalleScreen() {
       .catch((e: Error) => setError(e.message));
   }, [getToken, id]);
 
-  useEffect(() => {
-    load();
-  }, [load]);
+  // Al volver de Editar Empresa (o Cambiar plan) se ve lo recién guardado.
+  useFocusEffect(load);
 
   const breadcrumb = company ? `Empresas / ${company.name}` : 'Empresas';
 
@@ -140,6 +139,17 @@ export default function EmpresaDetalleScreen() {
                   </Pressable>
                 )}
               </View>
+            )}
+
+            {company.esMiembro && company.rol === 'ADMINISTRADOR' && (
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Editar empresa"
+                onPress={() => router.push(`/empresa/editar?companyId=${company.id}`)}
+                style={({ pressed }) => [styles.detailsButton, { backgroundColor: theme.buttonDark, opacity: pressed ? 0.85 : 1 }]}>
+                <ThemedText style={[styles.detailsLabel, { color: theme.accent }]}>Editar empresa</ThemedText>
+                <CompanyIcon name="edit" color={theme.accent} width={12} height={12} />
+              </Pressable>
             )}
 
             {company.esMiembro && company.documentos.length > 0 && (

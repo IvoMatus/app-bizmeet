@@ -22,18 +22,21 @@ import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { withStableCacheKey } from '@/utils/image';
 
-/** Header fijo de formulario: volver, eyebrow, título, subtítulo y avatar (los opcionales se omiten si no vienen). */
+/** Header fijo de formulario: volver, eyebrow, título, subtítulo, avatar y acción a la derecha (los
+ * opcionales se omiten si no vienen). */
 export function EditTopBar({
   title,
   eyebrow,
   subtitle,
   avatar,
+  action,
   onBack,
 }: {
   title: string;
   eyebrow?: string;
   subtitle?: string;
   avatar?: ImageSourcePropType;
+  action?: ReactNode;
   onBack?: () => void;
 }) {
   const theme = useTheme();
@@ -49,11 +52,16 @@ export function EditTopBar({
           <ThemedText accessibilityRole="header" style={[styles.title, { color: theme.textPrimary }]}>
             {title}
           </ThemedText>
-          {subtitle && <ThemedText style={[styles.helper, { color: theme.textMuted }]}>{subtitle}</ThemedText>}
+          {subtitle && (
+            <ThemedText style={[styles.helper, { color: theme.textMuted }]} numberOfLines={1}>
+              {subtitle}
+            </ThemedText>
+          )}
         </View>
         {avatar && (
           <Image source={withStableCacheKey(avatar)} style={[styles.avatar, { borderColor: theme.accent }]} contentFit="cover" />
         )}
+        {action}
       </View>
     </SafeAreaView>
   );
@@ -155,7 +163,8 @@ export function FormSection({
   );
 }
 
-/** Campo de texto con label, requerido opcional, prefijo/badge, texto de ayuda y error (reemplaza a la ayuda). */
+/** Campo de texto con label, requerido opcional, prefijo/ícono/badge, texto de ayuda y error (reemplaza a la
+ * ayuda). Sin `label` no hay fila de label: pasar `accessibilityLabel` (p. ej. un textarea bajo el título de la card). */
 export function FormField({
   label,
   value,
@@ -166,9 +175,11 @@ export function FormField({
   badge,
   editable = true,
   prefix,
+  icon,
+  multiline,
   ...inputProps
 }: Omit<TextInputProps, 'value' | 'onChangeText'> & {
-  label: string;
+  label?: string;
   value: string;
   onChangeText?: (text: string) => void;
   required?: boolean;
@@ -177,21 +188,25 @@ export function FormField({
   badge?: ReactNode;
   editable?: boolean;
   prefix?: string;
+  icon?: ProfileIconName;
 }) {
   const theme = useTheme();
 
   return (
     <View style={styles.field}>
-      <View style={styles.fieldLabelRow}>
-        <ThemedText style={[styles.fieldLabel, { color: theme.textMuted }]}>
-          {label}
-          {required && <ThemedText style={{ color: theme.error }}>*</ThemedText>}
-        </ThemedText>
-        {badge}
-      </View>
+      {(label || badge) && (
+        <View style={styles.fieldLabelRow}>
+          <ThemedText style={[styles.fieldLabel, { color: theme.textMuted }]}>
+            {label}
+            {required && <ThemedText style={{ color: theme.error }}>*</ThemedText>}
+          </ThemedText>
+          {badge}
+        </View>
+      )}
       <View
         style={[
           styles.inputWrap,
+          multiline && styles.inputWrapMultiline,
           {
             backgroundColor: editable ? theme.surfaceInset : theme.surfaceBorder,
             borderColor: error ? theme.error : theme.surfaceBorder,
@@ -202,14 +217,17 @@ export function FormField({
             {prefix}
           </ThemedText>
         )}
+        {/* Sin width/height: tamaño intrínseco del SVG (los de profile-icons no conservan proporción). */}
+        {icon && <ProfileIcon name={icon} color={theme.accent} />}
         <ThemedTextInput
           value={value}
           onChangeText={onChangeText}
           editable={editable}
+          multiline={multiline}
           placeholderTextColor={theme.textMuted}
           accessibilityLabel={label}
           accessibilityHint={error}
-          style={[styles.input, { color: theme.textPrimary }]}
+          style={[styles.input, multiline && styles.inputMultiline, { color: theme.textPrimary }]}
           {...inputProps}
         />
       </View>
@@ -581,6 +599,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.two + Spacing.half,
     minHeight: 44,
     gap: Spacing.two,
+  },
+  inputWrapMultiline: {
+    alignItems: 'flex-start',
+  },
+  inputMultiline: {
+    minHeight: 112,
+    textAlignVertical: 'top',
   },
   prefix: {
     fontSize: 14,

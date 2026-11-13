@@ -17,6 +17,7 @@ export const CHILD_ROUTE_TAB_KEY: Record<string, string> = {
   'publicacion/[id]': 'index',
   'publicacion/mis-publicaciones': 'perfil',
   'empresa/crear': 'company',
+  'empresa/editar': 'company',
   'empresa/equipo': 'company',
   'empresa/[id]': 'company',
   'empresa/pagos': 'company',

@@ -4,7 +4,6 @@ import { Pressable, StyleSheet, View } from 'react-native';
 import { CompanyIcon } from '@/components/company/company-icons';
 import type { Company } from '@/components/company/company-data';
 import { ProfileIcon } from '@/components/profile/profile-icons';
-import { showAlert } from '@/components/ui/app-alert';
 import { ThemedText } from '@/components/themed-text';
 import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
@@ -90,12 +89,7 @@ export function CompanyCard({ company }: { company: Company }) {
           <Pressable
             accessibilityRole="button"
             accessibilityLabel={`Editar ${company.name}`}
-            onPress={() =>
-              // TODO: no existe ruta/endpoint de edición de empresa ni diseño de Figma
-              // relevado para esa pantalla todavía. Navegar a `/empresa/editar?id=...` cuando
-              // ambos existan.
-              showAlert('Próximamente', 'Editar empresa estará disponible próximamente.')
-            }
+            onPress={() => router.push(`/empresa/editar?companyId=${company.id}`)}
             style={({ pressed }) => [styles.secondaryButton, { backgroundColor: theme.surfaceInset, opacity: pressed ? 0.85 : 1 }]}>
             <CompanyIcon name="edit" color={theme.textMuted} width={12} height={12} />
             <ThemedText style={[styles.secondaryLabel, { color: theme.textMuted }]}>Editar</ThemedText>

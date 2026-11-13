@@ -22,6 +22,7 @@ import { type FormSelectOption } from '@/components/ui/form-select';
 import { SegmentedControl } from '@/components/ui/segmented-control';
 import { Spacing } from '@/constants/theme';
 import { createCompany, uploadCompanyDocument, type CompanyDocumentType, type CreateCompanyInput } from '@/utils/api';
+import { rfcServerError } from '@/utils/company-api';
 
 type FormaJuridica = NonNullable<CreateCompanyInput['formaJuridica']>;
 
@@ -109,17 +110,13 @@ export default function CrearEmpresaScreen() {
       allowExit();
       router.back();
     } catch (e) {
-      const { message, status, messages = [] } = e as Error & { status?: number; messages?: string[] };
-      // 409 = RFC duplicado (la única unicidad al crear); 400 = formato de RFC inválido.
-      // ponytail: el 400 se reconoce por el texto del ValidationPipe ("El RFC no tiene un formato
-      // válido."); si el backend empieza a devolver el campo con error, usar eso.
-      const rfcError = status === 409 ? message : status === 400 ? messages.find((m) => m.includes('RFC')) : undefined;
+      const rfcError = rfcServerError(e);
       if (rfcError) {
         setError('rfc', { message: rfcError });
         scrollToTop();
         AccessibilityInfo.announceForAccessibility(rfcError);
       } else {
-        showAlert('No se pudo crear la empresa', message);
+        showAlert('No se pudo crear la empresa', (e as Error).message);
       }
     } finally {
       setSubmitting(false);
