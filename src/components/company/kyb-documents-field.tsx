@@ -24,7 +24,8 @@ export type KybDocuments = Partial<Record<CompanyDocumentType, PickedDocument>>;
 
 /**
  * Documentos KYB opcionales al crear la empresa: uno por tipo, JPG/PNG/PDF de hasta 10 MB. Se
- * suben después de crear la empresa (el endpoint necesita su id) — ver empresa/crear.tsx.
+ * suben después de crear la empresa (el endpoint necesita su id) — ver empresa/crear.tsx, que
+ * también pone el título y la ayuda (card `FormSection`).
  * ponytail: todos opcionales y sin depender de la forma jurídica; si producto define cuáles son
  * obligatorios según el tipo de empresa, se filtra `DOCUMENT_TYPE_LABEL` aquí.
  */
@@ -54,15 +55,11 @@ export function KybDocumentsField({ value, onChange }: { value: KybDocuments; on
 
   return (
     <View style={styles.container}>
-      <ThemedText type="smallBold">Documentos de la empresa (opcional)</ThemedText>
-      <ThemedText type="small" themeColor="textMuted">
-        JPG, PNG o PDF de hasta 10 MB. Se revisan para validar la empresa.
-      </ThemedText>
       {(Object.keys(DOCUMENT_TYPE_LABEL) as CompanyDocumentType[]).map((tipo) => {
         const doc = value[tipo];
         const label = DOCUMENT_TYPE_LABEL[tipo];
         return (
-          <View key={tipo} style={[styles.row, { backgroundColor: theme.card, borderColor: theme.border }]}>
+          <View key={tipo} style={[styles.row, { backgroundColor: theme.surfaceInset, borderColor: theme.surfaceBorder }]}>
             <View style={styles.text}>
               <ThemedText type="small" themeColor="textPrimary">
                 {label}

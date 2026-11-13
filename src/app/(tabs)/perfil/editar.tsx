@@ -157,7 +157,7 @@ export default function EditarPerfilScreen() {
 
   return (
     <View style={[styles.screen, { backgroundColor: theme.screenBackground }]}>
-      <EditTopBar avatar={avatar} onBack={() => router.back()} />
+      <EditTopBar title="Editar Perfil" eyebrow="BizAInet Core" avatar={avatar} onBack={() => router.back()} />
 
       {loading ? (
         <View style={styles.center}>

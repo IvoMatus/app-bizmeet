@@ -188,7 +188,10 @@ export async function createCompany(input: CreateCompanyInput, token: string): P
   });
   if (!response.ok) {
     const body = await response.json().catch(() => null);
-    throw new Error(body?.message ?? `No se pudo crear la empresa (${response.status}).`);
+    // ValidationPipe responde `message` como string[]; el 409 (RFC duplicado), como string. `status` y
+    // `messages` van en el error para que Crear Empresa muestre los del RFC en el campo.
+    const messages: string[] = [body?.message ?? `No se pudo crear la empresa (${response.status}).`].flat();
+    throw Object.assign(new Error(messages.join(' ')), { status: response.status, messages });
   }
   return response.json();
 }

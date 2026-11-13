@@ -1,7 +1,8 @@
 import { Image } from 'expo-image';
 import { SymbolView } from 'expo-symbols';
-import { useState, type ReactNode } from 'react';
+import { useState, type ReactElement, type ReactNode } from 'react';
 import {
+  ActivityIndicator,
   Pressable,
   StyleSheet,
   Switch,
@@ -12,7 +13,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ThemedText } from '@/components/themed-text';
-import { ProfileIcon } from '@/components/profile/profile-icons';
+import { ProfileIcon, type ProfileIconName } from '@/components/profile/profile-icons';
 import { StatusPill, SectionCard } from '@/components/profile/profile-primitives';
 import { ChipMultiSelect } from '@/components/ui/chip-multi-select';
 import { OptionsSheet, type FormSelectOption } from '@/components/ui/form-select';
@@ -21,8 +22,20 @@ import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { withStableCacheKey } from '@/utils/image';
 
-/** Header fijo de Editar Perfil: volver, eyebrow, título y avatar. */
-export function EditTopBar({ avatar, onBack }: { avatar: ImageSourcePropType; onBack?: () => void }) {
+/** Header fijo de formulario: volver, eyebrow, título, subtítulo y avatar (los opcionales se omiten si no vienen). */
+export function EditTopBar({
+  title,
+  eyebrow,
+  subtitle,
+  avatar,
+  onBack,
+}: {
+  title: string;
+  eyebrow?: string;
+  subtitle?: string;
+  avatar?: ImageSourcePropType;
+  onBack?: () => void;
+}) {
   const theme = useTheme();
 
   return (
@@ -32,10 +45,15 @@ export function EditTopBar({ avatar, onBack }: { avatar: ImageSourcePropType; on
           <SymbolView name={{ ios: 'chevron.left', android: 'chevron_left', web: 'chevron_left' }} tintColor={theme.textPrimary} size={18} />
         </Pressable>
         <View style={styles.titleBlock}>
-          <ThemedText style={[styles.eyebrow, { color: theme.eyebrow }]}>BizAInet Core</ThemedText>
-          <ThemedText style={[styles.title, { color: theme.textPrimary }]}>Editar Perfil</ThemedText>
+          {eyebrow && <ThemedText style={[styles.eyebrow, { color: theme.eyebrow }]}>{eyebrow}</ThemedText>}
+          <ThemedText accessibilityRole="header" style={[styles.title, { color: theme.textPrimary }]}>
+            {title}
+          </ThemedText>
+          {subtitle && <ThemedText style={[styles.helper, { color: theme.textMuted }]}>{subtitle}</ThemedText>}
         </View>
-        <Image source={withStableCacheKey(avatar)} style={[styles.avatar, { borderColor: theme.accent }]} contentFit="cover" />
+        {avatar && (
+          <Image source={withStableCacheKey(avatar)} style={[styles.avatar, { borderColor: theme.accent }]} contentFit="cover" />
+        )}
       </View>
     </SafeAreaView>
   );
@@ -95,17 +113,23 @@ export function PhotoCard({
   );
 }
 
-/** Sección del formulario: icono de acento, eyebrow, título, acción opcional y línea separadora. */
+/** Sección del formulario: icono de acento (círculo o cuadrado), eyebrow/subtítulo opcionales, título,
+ * acción opcional y línea separadora. `icon` acepta un nombre de ProfileIcon o un elemento ya armado
+ * (p. ej. un SymbolView) — en ese caso el caller le pasa `theme.accent` como tinte. */
 export function FormSection({
   icon,
+  squareIcon,
   eyebrow,
   title,
+  subtitle,
   action,
   children,
 }: {
-  icon: 'person' | 'pin' | 'shield';
-  eyebrow: string;
+  icon: ProfileIconName | ReactElement;
+  squareIcon?: boolean;
+  eyebrow?: string;
   title: string;
+  subtitle?: string;
   action?: ReactNode;
   children: ReactNode;
 }) {
@@ -114,12 +138,15 @@ export function FormSection({
   return (
     <SectionCard>
       <View style={[styles.sectionHeader, { borderBottomColor: theme.surfaceBorder }]}>
-        <View style={[styles.sectionIcon, { backgroundColor: theme.accentSoft }]}>
-          <ProfileIcon name={icon} color={theme.accent} width={16} height={16} />
+        <View style={[styles.sectionIcon, squareIcon && styles.sectionIconSquare, { backgroundColor: theme.accentSoft }]}>
+          {typeof icon === 'string' ? <ProfileIcon name={icon} color={theme.accent} width={16} height={16} /> : icon}
         </View>
         <View style={styles.sectionTitleBlock}>
-          <ThemedText style={[styles.eyebrow, { color: theme.eyebrow }]}>{eyebrow}</ThemedText>
-          <ThemedText style={[styles.sectionTitle, { color: theme.textPrimary }]}>{title}</ThemedText>
+          {eyebrow && <ThemedText style={[styles.eyebrow, { color: theme.eyebrow }]}>{eyebrow}</ThemedText>}
+          <ThemedText accessibilityRole="header" style={[styles.sectionTitle, { color: theme.textPrimary }]}>
+            {title}
+          </ThemedText>
+          {subtitle && <ThemedText style={[styles.helperSmall, { color: theme.textMuted }]}>{subtitle}</ThemedText>}
         </View>
         {action}
       </View>
@@ -128,13 +155,14 @@ export function FormSection({
   );
 }
 
-/** Campo de texto con label, requerido opcional, prefijo/badge y texto de ayuda. */
+/** Campo de texto con label, requerido opcional, prefijo/badge, texto de ayuda y error (reemplaza a la ayuda). */
 export function FormField({
   label,
   value,
   onChangeText,
   required,
   helper,
+  error,
   badge,
   editable = true,
   prefix,
@@ -145,6 +173,7 @@ export function FormField({
   onChangeText?: (text: string) => void;
   required?: boolean;
   helper?: string;
+  error?: string;
   badge?: ReactNode;
   editable?: boolean;
   prefix?: string;
@@ -163,7 +192,10 @@ export function FormField({
       <View
         style={[
           styles.inputWrap,
-          { backgroundColor: editable ? theme.surfaceInset : theme.surfaceBorder, borderColor: theme.surfaceBorder },
+          {
+            backgroundColor: editable ? theme.surfaceInset : theme.surfaceBorder,
+            borderColor: error ? theme.error : theme.surfaceBorder,
+          },
         ]}>
         {prefix && (
           <ThemedText style={[styles.prefix, { color: theme.textMuted, borderRightColor: theme.surfaceBorder }]}>
@@ -176,11 +208,16 @@ export function FormField({
           editable={editable}
           placeholderTextColor={theme.textMuted}
           accessibilityLabel={label}
+          accessibilityHint={error}
           style={[styles.input, { color: theme.textPrimary }]}
           {...inputProps}
         />
       </View>
-      {helper && <ThemedText style={[styles.helperSmall, { color: theme.textMuted }]}>{helper}</ThemedText>}
+      {error ? (
+        <ThemedText style={[styles.helperSmall, { color: theme.error }]}>{error}</ThemedText>
+      ) : (
+        helper && <ThemedText style={[styles.helperSmall, { color: theme.textMuted }]}>{helper}</ThemedText>
+      )}
     </View>
   );
 }
@@ -192,12 +229,16 @@ export function SelectField({
   options,
   value,
   onChange,
+  placeholder = 'Seleccionar',
+  error,
 }: {
   label: string;
   required?: boolean;
   options: FormSelectOption<string>[];
   value: string;
   onChange: (value: string) => void;
+  placeholder?: string;
+  error?: string;
 }) {
   const theme = useTheme();
   const [open, setOpen] = useState(false);
@@ -207,19 +248,26 @@ export function SelectField({
     <Pressable
       accessibilityRole="button"
       accessibilityLabel={label}
-      accessibilityValue={{ text: selectedLabel }}
+      accessibilityValue={{ text: selectedLabel || placeholder }}
+      accessibilityHint={error}
       onPress={() => setOpen(true)}
       style={styles.field}>
       <ThemedText style={[styles.fieldLabel, { color: theme.textMuted }]}>
         {label}
         {required && <ThemedText style={{ color: theme.error }}>*</ThemedText>}
       </ThemedText>
-      <View style={[styles.inputWrap, { backgroundColor: theme.surfaceInset, borderColor: theme.surfaceBorder }]}>
-        <ThemedText style={[styles.input, { color: theme.textPrimary, paddingVertical: Spacing.two + Spacing.half }]}>
-          {selectedLabel}
+      <View
+        style={[styles.inputWrap, { backgroundColor: theme.surfaceInset, borderColor: error ? theme.error : theme.surfaceBorder }]}>
+        <ThemedText
+          style={[
+            styles.input,
+            { color: selectedLabel ? theme.textPrimary : theme.textMuted, paddingVertical: Spacing.two + Spacing.half },
+          ]}>
+          {selectedLabel || placeholder}
         </ThemedText>
         <SymbolView name={{ ios: 'chevron.down', android: 'expand_more', web: 'expand_more' }} tintColor={theme.textMuted} size={12} />
       </View>
+      {error && <ThemedText style={[styles.helperSmall, { color: theme.error }]}>{error}</ThemedText>}
       {open && <OptionsSheet options={options} selected={value} onSelect={onChange} onClose={() => setOpen(false)} />}
     </Pressable>
   );
@@ -323,32 +371,50 @@ export function InfoNote({ text }: { text: string }) {
   );
 }
 
-/** Botón primario de ancho completo (acento). `disabled` lo atenúa y bloquea el toque. */
-export function SaveButton({ label, onPress, disabled }: { label: string; onPress?: () => void; disabled?: boolean }) {
+/** Botón primario de ancho completo (acento). `disabled` lo atenúa y bloquea el toque; `loading` además
+ * cambia el check por un spinner. */
+export function SaveButton({
+  label,
+  onPress,
+  disabled,
+  loading,
+}: {
+  label: string;
+  onPress?: () => void;
+  disabled?: boolean;
+  loading?: boolean;
+}) {
   const theme = useTheme();
 
   return (
     <Pressable
       accessibilityRole="button"
-      accessibilityState={{ disabled }}
-      disabled={disabled}
+      accessibilityState={{ disabled: disabled || loading, busy: loading }}
+      disabled={disabled || loading}
       onPress={onPress}
       style={({ pressed }) => [
         styles.saveButton,
-        { backgroundColor: theme.accent, opacity: disabled ? 0.5 : pressed ? 0.85 : 1 },
+        { backgroundColor: theme.accent, opacity: disabled || loading ? 0.5 : pressed ? 0.85 : 1 },
       ]}>
-      <SymbolView name={{ ios: 'checkmark', android: 'check', web: 'check' }} tintColor={theme.background} size={14} />
+      {loading ? (
+        <ActivityIndicator size="small" color={theme.background} />
+      ) : (
+        <SymbolView name={{ ios: 'checkmark', android: 'check', web: 'check' }} tintColor={theme.background} size={14} />
+      )}
       <ThemedText style={[styles.saveLabel, { color: theme.background }]}>{label}</ThemedText>
     </Pressable>
   );
 }
 
-/** Botón secundario centrado con icono X. */
-export function DiscardButton({ label, onPress }: { label: string; onPress?: () => void }) {
+/** Botón secundario centrado con icono X. `outlined` lo enmarca (footer de acciones junto a SaveButton). */
+export function DiscardButton({ label, onPress, outlined }: { label: string; onPress?: () => void; outlined?: boolean }) {
   const theme = useTheme();
 
   return (
-    <Pressable accessibilityRole="button" onPress={onPress} style={styles.discardButton}>
+    <Pressable
+      accessibilityRole="button"
+      onPress={onPress}
+      style={[styles.discardButton, outlined && [styles.discardOutlined, { borderColor: theme.surfaceBorder }]]}>
       <SymbolView name={{ ios: 'xmark', android: 'close', web: 'close' }} tintColor={theme.textMuted} size={12} />
       <ThemedText style={[styles.secondaryLabel, { color: theme.textMuted }]}>{label}</ThemedText>
     </Pressable>
@@ -484,6 +550,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  sectionIconSquare: {
+    borderRadius: 8,
+  },
   sectionTitleBlock: {
     flex: 1,
     gap: Spacing.half,
@@ -577,6 +646,11 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: Spacing.two,
     minHeight: 44,
+  },
+  discardOutlined: {
+    borderWidth: 1,
+    borderRadius: 12,
+    paddingVertical: Spacing.three,
   },
   curpRow: {
     flexDirection: 'row',
