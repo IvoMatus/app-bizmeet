@@ -71,6 +71,11 @@ export default function PlanScreen() {
       setCheckoutLoadingPlan(plan.code);
       try {
         const session = await createMockCheckoutSession(companyId, plan.code);
+        // Mock: la URL no existe ni vuelve a la app — se simula el regreso exitoso para poder probar el flujo.
+        if (session.mock) {
+          router.replace(`/empresa/billing-return?status=success&companyId=${companyId}`);
+          return;
+        }
         const result = await WebBrowser.openAuthSessionAsync(session.url, Linking.createURL('empresa/billing-return'));
         // Stripe vuelve a STRIPE_CHECKOUT_SUCCESS_URL/CANCEL_URL (…/empresa/billing-return?status=success|cancel).
         // Cerrar el navegador sin terminar (`dismiss`/`cancel`) no navega: se queda en Elegir plan.

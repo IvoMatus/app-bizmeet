@@ -1,6 +1,7 @@
 import type { PlanCatalogEntry } from '@/utils/api';
 
-export type CheckoutSession = { url: string };
+/** `mock`: la URL no es una Checkout Session real y nunca vuelve a la app (ver plan.tsx). */
+export type CheckoutSession = { url: string; mock?: boolean };
 
 /**
  * Mock de la creación de la Checkout Session de Stripe. El backend YA tiene
@@ -15,5 +16,5 @@ export type CheckoutSession = { url: string };
 export async function createMockCheckoutSession(companyId: string, planCode: PlanCatalogEntry['code']): Promise<CheckoutSession> {
   await new Promise((resolve) => setTimeout(resolve, 400));
   const params = new URLSearchParams({ companyId, planCode });
-  return { url: `https://checkout.stripe.com/mock?${params.toString()}` };
+  return { url: `https://checkout.stripe.com/mock?${params.toString()}`, mock: true };
 }
