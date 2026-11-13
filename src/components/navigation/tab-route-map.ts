@@ -21,4 +21,6 @@ export const CHILD_ROUTE_TAB_KEY: Record<string, string> = {
   'empresa/[id]': 'company',
   'empresa/pagos': 'company',
   'empresa/plan': 'company',
+  'beneficios/convenio/[id]': 'benefits',
+  'beneficios/evento/[id]': 'benefits',
 };

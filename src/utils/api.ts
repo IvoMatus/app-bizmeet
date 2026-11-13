@@ -671,6 +671,88 @@ export async function rejectMyInvitation(invitationId: string, token: string): P
   }
 }
 
+// --- Convenios (pestaña Beneficios, módulo `convenio` de api-bizmeet) ---
+
+export type NivelConvenio = 'BASICO' | 'MEDIO' | 'PREMIUM';
+
+/** Vista pública de un convenio. El código/enlace nunca viene acá: solo por `revelarConvenio`. */
+export type Convenio = {
+  id: string;
+  proveedor: string;
+  nombre: string;
+  subtitulo: string;
+  descripcion: string;
+  puntos: string[];
+  condiciones: string;
+  categoria: string;
+  etiquetaPartner?: string;
+  destacado?: string;
+  tipo: 'BENEFICIO' | 'PROMOCIONAL';
+  nivel: NivelConvenio;
+  partnerId?: string;
+  imagenUrl?: string;
+  logoUrl?: string;
+  /** ISO. */
+  vigenciaHasta: string;
+  accion: 'CODIGO' | 'ENLACE';
+  /** Lo decide la API según el plan de la empresa activa: se lista igual, pero no se revela. */
+  bloqueado: boolean;
+  // Detalle extendido (pantalla Detalle de Convenio). Si un convenio no lo tiene, la clave no
+  // viene en el JSON (ni como []): ocultar la sección.
+  descripcionLarga?: string;
+  etiquetas?: string[];
+  /** `icono` es un nombre libre ("cloud", "percent", "headset"...) que mapea la app. */
+  destacados?: { icono?: string; label: string; valor: string }[];
+  elegibilidad?: { titulo: string; texto: string }[];
+  pasos?: { titulo: string; texto: string }[];
+};
+
+export type RevelarConvenioResult = { codigo?: string; enlace?: string };
+
+/** GET /convenios/:id?companyId= — mismo shape que un ítem del listado. */
+export async function fetchConvenio(id: string, token: string, companyId?: string): Promise<Convenio> {
+  const qs = companyId ? `?companyId=${companyId}` : '';
+  const response = await fetch(`${API_URL}/convenios/${id}${qs}`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (!response.ok) {
+    const body = await response.json().catch(() => null);
+    throw new Error(body?.message ?? `No se pudo cargar el convenio (${response.status}).`);
+  }
+  return response.json();
+}
+
+/**
+ * GET /convenios?companyId= — mismo criterio que `fetchPostsFeed`: sin `companyId` la API trata al
+ * lector como perfil básico y devuelve todo `bloqueado`. ponytail: `categoria`/`q` del contrato sin
+ * usar — la pantalla filtra en memoria (catálogo chico); pasarlos acá si la lista crece.
+ */
+export async function fetchConvenios(token: string, companyId?: string): Promise<Convenio[]> {
+  const qs = companyId ? `?companyId=${companyId}` : '';
+  const response = await fetch(`${API_URL}/convenios${qs}`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (!response.ok) {
+    const body = await response.json().catch(() => null);
+    throw new Error(body?.message ?? `No se pudieron cargar los convenios (${response.status}).`);
+  }
+  return (await response.json()) ?? [];
+}
+
+/** POST /convenios/:id/revelar?companyId= — `{ codigo }` o `{ enlace }`; 403 si está bloqueado. */
+export async function revelarConvenio(id: string, token: string, companyId?: string): Promise<RevelarConvenioResult> {
+  const qs = companyId ? `?companyId=${companyId}` : '';
+  const response = await fetch(`${API_URL}/convenios/${id}/revelar${qs}`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (!response.ok) {
+    const body = await response.json().catch(() => null);
+    throw new Error(body?.message ?? `No se pudo canjear el convenio (${response.status}).`);
+  }
+  return response.json();
+}
+
 /** Respuesta de subir la foto de perfil. El backend puede devolver la URL final en Spaces o body vacío. */
 export type UploadProfilePhotoResult = { fotoPerfilUrl?: string };
 
