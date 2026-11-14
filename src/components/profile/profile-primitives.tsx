@@ -1,36 +1,48 @@
-import { StyleSheet, View, type ViewProps } from 'react-native';
+import { StyleSheet, View, type StyleProp, type TextStyle, type ViewProps, type ViewStyle } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
 import { ProfileIcon, type ProfileIconName } from '@/components/profile/profile-icons';
 import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 
-type StatusVariant = 'neutral' | 'accent' | 'success' | 'warning' | 'error';
+export type StatusVariant = 'neutral' | 'accent' | 'success' | 'warning' | 'error';
 
-/** Pill de estado: "SOCIO ACTIVO", "IA Verified", "Verificado", "WhatsApp". */
-export function StatusPill({
-  label,
-  variant = 'neutral',
-  icon,
-}: {
-  label: string;
-  variant?: StatusVariant;
-  icon?: ProfileIconName;
-}) {
+/** Colores (fondo, borde, texto) de cada variante de `StatusPill` — exportado para que otros
+ * elementos (p.ej. el avatar de la tarjeta del muro) usen la misma paleta que su pill. */
+export function useStatusPalette(variant: StatusVariant) {
   const theme = useTheme();
-  const palette = {
+  return {
     neutral: { bg: theme.surfaceInset, border: theme.surfaceBorder, fg: theme.textMuted },
     accent: { bg: theme.accentSoft, border: theme.accentSoft, fg: theme.accent },
     success: { bg: theme.successSurface, border: theme.successBorder, fg: theme.success },
     warning: { bg: theme.warningSoft, border: theme.warningBorder, fg: theme.warningText },
     error: { bg: theme.errorSoft, border: theme.errorBorder, fg: theme.error },
   }[variant];
+}
+
+/** Pill de estado: "SOCIO ACTIVO", "IA Verified", "Verificado", "WhatsApp". `style`/`labelStyle`
+ * opcionales para ajustar tamaño y padding (p.ej. chip de rubro del muro) sin tocar el default. */
+export function StatusPill({
+  label,
+  variant = 'neutral',
+  icon,
+  style,
+  labelStyle,
+}: {
+  label: string;
+  variant?: StatusVariant;
+  icon?: ProfileIconName;
+  style?: StyleProp<ViewStyle>;
+  labelStyle?: StyleProp<TextStyle>;
+}) {
+  const theme = useTheme();
+  const palette = useStatusPalette(variant);
   const iconColor = variant === 'success' ? theme.success : palette.fg;
 
   return (
-    <View style={[styles.pill, { backgroundColor: palette.bg, borderColor: palette.border }]}>
+    <View style={[styles.pill, { backgroundColor: palette.bg, borderColor: palette.border }, style]}>
       {icon && <ProfileIcon name={icon} color={iconColor} width={12} height={12} />}
-      <ThemedText type="small" style={[styles.pillLabel, { color: palette.fg }]} numberOfLines={1}>
+      <ThemedText type="small" style={[styles.pillLabel, { color: palette.fg }, labelStyle]} numberOfLines={1}>
         {label}
       </ThemedText>
     </View>

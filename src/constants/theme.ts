@@ -66,6 +66,15 @@ export const Colors = {
     warningSurface: '#fffbeb',
     errorSoft: '#fef2f2',
     errorBorder: '#fca5a5',
+    // Muro/Inicio (Figma 2043:1778 claro / 2043:3343 oscuro): fondo de la tarjeta de post y texto
+    // de cuerpo (descripción, etiqueta secundaria) — azul intermedio entre textPrimary y textMuted.
+    feedCard: '#ffffff',
+    textBody: '#3a5878',
+    // Color de la sombra de la tarjeta del feed (opacidad 0.05 y radio 2 en el estilo).
+    cardShadow: '#000000',
+    // Badge "+N" sobre la media del feed: fondo y texto (Figma: negro 60% / #05101E al 80%).
+    mediaScrim: 'rgba(0, 0, 0, 0.6)',
+    onMedia: '#ffffff',
   },
   dark: {
     text: '#ffffff',
@@ -113,6 +122,11 @@ export const Colors = {
     warningSurface: 'rgba(233, 168, 59, 0.12)',
     errorSoft: 'rgba(249, 112, 102, 0.12)',
     errorBorder: 'rgba(249, 112, 102, 0.35)',
+    feedCard: '#0d2130',
+    textBody: '#afc3d6',
+    cardShadow: '#000000',
+    mediaScrim: 'rgba(5, 16, 30, 0.8)',
+    onMedia: '#ffffff',
   },
 } as const;
 

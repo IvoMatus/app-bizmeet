@@ -1,10 +1,12 @@
 import { router } from 'expo-router';
 import { SymbolView } from 'expo-symbols';
-import { Pressable, StyleSheet, View } from 'react-native';
+import type { ComponentProps } from 'react';
+import { Pressable, StyleSheet, View, type ViewStyle } from 'react-native';
 
 import { POST_TYPE_LABEL, timeAgo } from '@/components/post/post-data';
-import { PostAttachments } from '@/components/post/post-attachments';
+import { PostMediaHero } from '@/components/post/post-attachments';
 import { rubroNombre } from '@/components/post/use-rubros-catalog';
+import { StatusPill, useStatusPalette, type StatusVariant } from '@/components/profile/profile-primitives';
 import { ThemedText } from '@/components/themed-text';
 import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
@@ -36,11 +38,50 @@ function IndustryBadge({ label }: { label: string }) {
   );
 }
 
-/** Tarjeta completa del feed (vista "COMPLETA" de GET /posts/feed): autor, título, copy,
- * adjuntos reales (ver `post-attachments.tsx`) y barra de interacciones estática. */
+type SymbolName = ComponentProps<typeof SymbolView>['name'];
+
+/** Paleta del chip de rubro y del avatar (Figma: cian / ámbar / verde). Los rubros SCIAN no traen
+ * color, así que sale determinística del código del primer rubro — mismo rubro, mismo color.
+ * ponytail: suma de char codes mod 3; mapear sector → color si diseño lo define. */
+const RUBRO_PALETTES = ['accent', 'warning', 'success'] as const;
+function rubroPalette(codigo: string | undefined): StatusVariant {
+  if (!codigo) return 'accent';
+  let sum = 0;
+  for (const ch of codigo) sum += ch.charCodeAt(0);
+  return RUBRO_PALETTES[sum % RUBRO_PALETTES.length];
+}
+
+// ponytail: el slop de like/comentario se pisa en los 16px de gap entre ellos — inofensivo
+// mientras estén deshabilitados; al habilitarlos con contadores el ancho crece y deja de pisarse.
+const ACTION_HIT_SLOP = 15; // ícono de 15 + 2×15 ≈ 44 de target sin inflar la barra
+
+/** Acción de la barra social — deshabilitada hasta que existan likes/comentarios/guardar/compartir. */
+function BarAction({ label, icon, text, style }: { label: string; icon: SymbolName; text?: string; style?: ViewStyle }) {
+  const theme = useTheme();
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={label}
+      disabled
+      accessibilityState={{ disabled: true }}
+      hitSlop={ACTION_HIT_SLOP}
+      style={[styles.barAction, style]}>
+      <SymbolView tintColor={theme.textMuted} name={icon} size={15} />
+      {text && <ThemedText style={[styles.barActionLabel, { color: theme.textMuted }]}>{text}</ThemedText>}
+    </Pressable>
+  );
+}
+
+/** Tarjeta completa del feed (vista "COMPLETA" de GET /posts/feed, Figma 2043:1778 / 2043:3343):
+ * autor + chip de rubro, título, copy, hero con el primer adjunto (ver `post-attachments.tsx`) y
+ * barra social estática. Regla del usuario: la escala tipográfica es la del "Nuevo Modo Oscuro"
+ * en los dos modos; solo los colores cambian por modo. */
 export function PostCard({ post, rubros }: { post: PostView; rubros: Rubro[] | null }) {
   const theme = useTheme();
-  const companyName = post.empresa.name;
+  // Figma muestra un solo chip: el primer rubro manda (chip y color del avatar).
+  const firstRubro = post.rubros[0];
+  const variant = rubroPalette(firstRubro);
+  const palette = useStatusPalette(variant);
 
   return (
     <Pressable
@@ -49,73 +90,84 @@ export function PostCard({ post, rubros }: { post: PostView; rubros: Rubro[] | n
       onPress={() => router.push(`/publicacion/${post.id}`)}
       style={({ pressed }) => [
         styles.card,
-        { backgroundColor: theme.cardElevated, borderColor: theme.surfaceBorder, opacity: pressed ? 0.95 : 1 },
+        { backgroundColor: theme.feedCard, borderColor: theme.surfaceBorder, shadowColor: theme.cardShadow, opacity: pressed ? 0.95 : 1 },
       ]}>
-      <View style={styles.header}>
-        <View style={[styles.avatar, { backgroundColor: theme.surfaceInset, borderColor: theme.surfaceBorder }]}>
-          <SymbolView tintColor={theme.textMuted} name={{ ios: 'building.2', android: 'business', web: 'business' }} size={16} />
+      <View style={styles.author}>
+        <View style={[styles.avatar, { backgroundColor: palette.bg, borderColor: palette.border }]}>
+          <SymbolView tintColor={palette.fg} name={{ ios: 'building.2', android: 'business', web: 'business' }} size={17} />
         </View>
-        <View style={styles.headerText}>
-          <ThemedText type="smallBold" style={{ color: theme.textPrimary }}>
-            {companyName}
-          </ThemedText>
-          <ThemedText type="small" style={{ color: theme.textMuted }}>
-            {timeAgo(post.createdAt)}
-          </ThemedText>
+        <View style={styles.authorText}>
+          <View style={styles.nameRow}>
+            <View style={styles.nameWrap}>
+              <ThemedText numberOfLines={1} style={[styles.companyName, { color: theme.textPrimary }]}>
+                {post.empresa.name}
+              </ThemedText>
+              {/* Decisión pendiente (brief): check solo si la empresa está verificada. */}
+              {post.empresa.verified && (
+                <SymbolView
+                  accessibilityLabel="Empresa verificada"
+                  tintColor={theme.accent}
+                  name={{ ios: 'checkmark.seal.fill', android: 'verified', web: 'verified' }}
+                  size={14}
+                />
+              )}
+            </View>
+            {firstRubro && (
+              <StatusPill
+                label={rubroNombre(rubros, firstRubro)}
+                variant={variant}
+                style={styles.rubroChip}
+                labelStyle={styles.rubroChipLabel}
+              />
+            )}
+          </View>
+          <View style={styles.metaRow}>
+            <ThemedText numberOfLines={1} style={[styles.meta, { color: theme.textMuted }]}>
+              {timeAgo(post.createdAt)}
+            </ThemedText>
+            <ThemedText style={[styles.metaDot, { color: theme.textMuted }]}>•</ThemedText>
+            {/* Slot "Proyecto Alpha" de Figma: la API no tiene proyecto/división, va el tipo. */}
+            <ThemedText numberOfLines={1} style={[styles.metaSecondary, { color: theme.textBody }]}>
+              {POST_TYPE_LABEL[post.tipo]}
+            </ThemedText>
+          </View>
         </View>
       </View>
 
-      <View style={styles.badgeRow}>
-        <TypeBadge tipo={post.tipo} />
-        {post.rubros.map((codigo) => (
-          <IndustryBadge key={codigo} label={rubroNombre(rubros, codigo)} />
-        ))}
+      <View style={styles.copy}>
+        <ThemedText numberOfLines={2} style={[styles.feedTitle, { color: theme.textPrimary }]}>
+          {post.titulo}
+        </ThemedText>
+        <ThemedText type="small" numberOfLines={3} style={[styles.description, { color: theme.textBody }]}>
+          {post.descripcion}
+        </ThemedText>
       </View>
 
-      <ThemedText style={[styles.title, { color: theme.textPrimary }]}>{post.titulo}</ThemedText>
-      <ThemedText type="small" numberOfLines={3} style={{ color: theme.textMuted }}>
-        {post.descripcion}
-      </ThemedText>
+      <PostMediaHero adjuntos={post.adjuntos} />
 
-      <PostAttachments adjuntos={post.adjuntos} />
-
-      <View style={[styles.footer, { borderTopColor: theme.surfaceBorder }]}>
-        {/* TODO T3.3: likes/comentarios reales — el backend hoy no expone contadores. */}
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Me gusta (próximamente)"
-          disabled
-          accessibilityState={{ disabled: true }}
-          style={styles.footerAction}>
-          <SymbolView tintColor={theme.textMuted} name={{ ios: 'heart', android: 'favorite_border', web: 'favorite' }} size={16} />
-        </Pressable>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Comentar (próximamente)"
-          disabled
-          accessibilityState={{ disabled: true }}
-          style={styles.footerAction}>
-          <SymbolView tintColor={theme.textMuted} name={{ ios: 'bubble.right', android: 'chat_bubble_outline', web: 'chat_bubble' }} size={16} />
-        </Pressable>
-        <View style={styles.footerSpacer} />
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Guardar publicación (próximamente)"
-          // TODO: guardar publicación — fuera de alcance T3.1/T3.2.
-          disabled
-          accessibilityState={{ disabled: true }}
-          style={styles.footerAction}>
-          <SymbolView tintColor={theme.textMuted} name={{ ios: 'bookmark', android: 'bookmark_border', web: 'bookmark' }} size={16} />
-        </Pressable>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Compartir publicación (próximamente)"
-          // TODO: compartir publicación — fuera de alcance T3.1/T3.2.
-          disabled
-          accessibilityState={{ disabled: true }}
-          style={styles.footerAction}>
-          <SymbolView tintColor={theme.textMuted} name={{ ios: 'square.and.arrow.up', android: 'share', web: 'share' }} size={16} />
-        </Pressable>
+      {/* TODO T3.3: contadores de likes/comentarios — el backend hoy no los expone, así que van
+          solo los íconos (sin "0" ni números falsos). Guardar/Compartir sin endpoint todavía. */}
+      <View style={[styles.socialBar, { borderTopColor: theme.surfaceInset }]}>
+        <View style={styles.socialLeft}>
+          <BarAction label="Me gusta (próximamente)" icon={{ ios: 'heart', android: 'favorite_border', web: 'favorite' }} />
+          <BarAction
+            label="Comentar (próximamente)"
+            icon={{ ios: 'bubble.right', android: 'chat_bubble_outline', web: 'chat_bubble' }}
+          />
+        </View>
+        <View style={styles.socialRight}>
+          {/* Decisión pendiente (brief): Guardar siempre visible, deshabilitado. */}
+          <BarAction
+            label="Guardar publicación (próximamente)"
+            icon={{ ios: 'bookmark', android: 'bookmark_border', web: 'bookmark' }}
+            style={styles.saveAction}
+          />
+          <BarAction
+            label="Compartir publicación (próximamente)"
+            icon={{ ios: 'square.and.arrow.up', android: 'share', web: 'share' }}
+            text="Compartir"
+          />
+        </View>
       </View>
     </Pressable>
   );
@@ -153,11 +205,16 @@ export function PostCardBasic({ post, rubros }: { post: PostSinDetalleView; rubr
 }
 
 const styles = StyleSheet.create({
+  // Radio 12 (frame oscuro, el más nuevo; el claro usa 16) — decisión del brief.
   card: {
     borderRadius: 12,
     borderWidth: 1,
     padding: Spacing.three,
-    gap: Spacing.two,
+    gap: Spacing.two + Spacing.one,
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    shadowOffset: { width: 0, height: 1 },
+    elevation: 1,
   },
   cardBasic: {
     borderRadius: 12,
@@ -166,22 +223,116 @@ const styles = StyleSheet.create({
     gap: Spacing.two,
     maxWidth: 320,
   },
-  header: {
+  author: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: Spacing.two,
+    gap: Spacing.two + Spacing.one,
   },
   avatar: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    width: 40,
+    height: 40,
+    borderRadius: 12,
     borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  headerText: {
+  authorText: {
+    flex: 1,
     gap: Spacing.half,
   },
+  nameRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: Spacing.two,
+  },
+  nameWrap: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.one,
+    flexShrink: 1,
+  },
+  companyName: {
+    flexShrink: 1,
+    fontSize: 15,
+    lineHeight: 20,
+    fontWeight: '600',
+  },
+  rubroChip: {
+    paddingHorizontal: Spacing.two + Spacing.half,
+    paddingVertical: Spacing.one,
+    maxWidth: '50%',
+  },
+  rubroChipLabel: {
+    flexShrink: 1,
+    fontSize: 11,
+    lineHeight: 14,
+    fontWeight: '600',
+  },
+  metaRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.one + Spacing.half,
+  },
+  meta: {
+    fontSize: 12,
+    lineHeight: 16,
+    fontWeight: '400',
+  },
+  metaDot: {
+    fontSize: 8,
+    lineHeight: 16,
+    fontWeight: '400',
+  },
+  metaSecondary: {
+    flexShrink: 1,
+    fontSize: 12,
+    lineHeight: 16,
+    fontWeight: '500',
+  },
+  copy: {
+    gap: Spacing.one,
+  },
+  feedTitle: {
+    fontSize: 18,
+    lineHeight: 24,
+    fontWeight: '600',
+  },
+  description: {
+    fontWeight: '400',
+  },
+  socialBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingTop: Spacing.one + Spacing.half,
+    borderTopWidth: 1,
+  },
+  socialLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.three,
+  },
+  socialRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.two + Spacing.one,
+  },
+  barAction: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.one,
+  },
+  barActionLabel: {
+    fontSize: 12,
+    lineHeight: 16,
+    fontWeight: '400',
+  },
+  saveAction: {
+    padding: Spacing.one,
+    borderRadius: 6,
+  },
+  // PostCardBasic (sin cambios)
   badgeRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
@@ -200,21 +351,6 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 15,
     fontWeight: '700',
-  },
-  footer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingTop: Spacing.two,
-    borderTopWidth: 1,
-  },
-  footerSpacer: {
-    flex: 1,
-  },
-  footerAction: {
-    width: 44,
-    height: 44,
-    alignItems: 'center',
-    justifyContent: 'center',
   },
   ctaRow: {
     minHeight: 44,

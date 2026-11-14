@@ -49,7 +49,7 @@ function AttachmentSlide({ adjunto, index, total, width, height }: { adjunto: Ad
 
 /**
  * Galería hero de adjuntos del Detalle de Publicación (ocupa el ancho de la card, a diferencia
- * de `PostAttachments`, que sigue siendo la miniatura en fila del feed). Diseño sacado a ojo del
+ * de `PostMediaHero` del feed, que muestra solo el primer adjunto + "+N"). Diseño sacado a ojo del
  * screenshot del usuario — MCP de Figma limitado por plan Starter. FlatList horizontal con
  * paging nativo, sin dependencia nueva. El chip "Certificación…" del screenshot no se implementa:
  * la API no tiene ese dato. RN-PUB-06: sin adjuntos no renderiza nada (SIN_DETALLE viene vacío).

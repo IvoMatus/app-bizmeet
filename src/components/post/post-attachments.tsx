@@ -2,79 +2,87 @@ import { Image } from 'expo-image';
 import { SymbolView } from 'expo-symbols';
 import { Linking, Pressable, StyleSheet, View } from 'react-native';
 
+import { ThemedText } from '@/components/themed-text';
 import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { withStableCacheKey } from '@/utils/image';
 import type { AdjuntoView } from '@/utils/api';
 
-/** Miniatura de un adjunto. Imagen real vía `expo-image`; video sin librería de reproducción
- * instalada todavía, así que muestra un placeholder con ícono "play" — tocarlo abre el archivo
- * en el reproductor nativo/navegador vía `Linking` en vez de reproducirlo inline.
- * ponytail: sin expo-video, abrir afuera cubre el caso; sumar reproducción inline si se pide. */
-function AttachmentThumb({ adjunto, size }: { adjunto: AdjuntoView; size: number }) {
-  const theme = useTheme();
-
-  if (adjunto.tipo === 'IMAGEN' && adjunto.url) {
-    return (
-      <Image
-        source={withStableCacheKey({ uri: adjunto.url })}
-        accessibilityLabel="Imagen adjunta a la publicación"
-        style={[styles.thumb, { width: size, height: size, backgroundColor: theme.surfaceInset }]}
-        contentFit="cover"
-        onError={(event) => console.warn('[post][diag] <Image> no pudo cargar', adjunto.url, event.error)}
-      />
-    );
-  }
-
-  return (
-    <Pressable
-      accessibilityRole="button"
-      accessibilityLabel={adjunto.tipo === 'VIDEO' ? 'Reproducir video adjunto' : 'Adjunto'}
-      disabled={!adjunto.url}
-      onPress={() => adjunto.url && Linking.openURL(adjunto.url)}
-      style={[styles.thumb, styles.placeholder, { width: size, height: size, backgroundColor: theme.surfaceInset, borderColor: theme.surfaceBorder }]}>
-      <SymbolView
-        tintColor={theme.textMuted}
-        name={{
-          ios: adjunto.tipo === 'VIDEO' ? 'play.fill' : 'photo',
-          android: adjunto.tipo === 'VIDEO' ? 'play_arrow' : 'image',
-          web: adjunto.tipo === 'VIDEO' ? 'play_arrow' : 'image',
-        }}
-        size={Math.round(size * 0.3)}
-      />
-    </Pressable>
-  );
-}
-
 /**
- * Fila de adjuntos de una publicación (`GET /posts/feed` vista COMPLETA y `GET /posts/:id`).
- * RN-PUB-06: puede venir vacía en la vista SIN_DETALLE del perfil básico — se trata como caso
- * normal sin adjuntos, no como error.
+ * Hero de media de la tarjeta del muro (Figma 2043:1778): solo el **primer** adjunto, a ancho
+ * completo 16:9, con "+N" si hay más. La galería completa con swipe vive en el detalle
+ * (`PostAttachmentGallery`) — no se reusa acá porque es un FlatList horizontal dentro del
+ * FlatList del feed. Imagen vía `expo-image`; video sin librería de reproducción instalada, así
+ * que muestra un placeholder "play" que abre el archivo afuera vía `Linking`.
+ * ponytail: sin expo-video, abrir afuera cubre el caso; sumar reproducción inline si se pide.
+ * RN-PUB-06: sin adjuntos (p.ej. vista SIN_DETALLE) no renderiza nada.
  */
-export function PostAttachments({ adjuntos, size = 80 }: { adjuntos: AdjuntoView[]; size?: number }) {
-  if (adjuntos.length === 0) return null;
+export function PostMediaHero({ adjuntos }: { adjuntos: AdjuntoView[] }) {
+  const theme = useTheme();
+  const first = adjuntos[0];
+  if (!first) return null;
+  const extra = adjuntos.length - 1;
+
   return (
-    <View style={styles.row}>
-      {adjuntos.map((adjunto, index) => (
-        <AttachmentThumb key={`${adjunto.key}-${index}`} adjunto={adjunto} size={size} />
-      ))}
+    <View style={[styles.hero, { backgroundColor: theme.surfaceInset }]}>
+      {first.tipo === 'IMAGEN' && first.url ? (
+        <Image
+          source={withStableCacheKey({ uri: first.url })}
+          accessibilityLabel="Imagen adjunta a la publicación"
+          style={StyleSheet.absoluteFill}
+          contentFit="cover"
+          onError={(event) => console.warn('[post][diag] <Image> no pudo cargar', first.url, event.error)}
+        />
+      ) : (
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={first.tipo === 'VIDEO' ? 'Reproducir video adjunto' : 'Adjunto'}
+          disabled={!first.url}
+          onPress={() => first.url && Linking.openURL(first.url)}
+          style={styles.placeholder}>
+          <SymbolView
+            tintColor={theme.textMuted}
+            name={{
+              ios: first.tipo === 'VIDEO' ? 'play.fill' : 'photo',
+              android: first.tipo === 'VIDEO' ? 'play_arrow' : 'image',
+              web: first.tipo === 'VIDEO' ? 'play_arrow' : 'image',
+            }}
+            size={36}
+          />
+        </Pressable>
+      )}
+      {extra > 0 && (
+        <View style={[styles.moreBadge, { backgroundColor: theme.mediaScrim }]} accessibilityLabel={`${extra} adjuntos más`}>
+          <ThemedText style={[styles.moreLabel, { color: theme.onMedia }]}>+{extra}</ThemedText>
+        </View>
+      )}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  row: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: Spacing.two,
-  },
-  thumb: {
-    borderRadius: Spacing.two,
+  hero: {
+    width: '100%',
+    aspectRatio: 16 / 9,
+    borderRadius: 12,
     overflow: 'hidden',
   },
   placeholder: {
+    flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 1,
+  },
+  moreBadge: {
+    position: 'absolute',
+    bottom: Spacing.two + Spacing.half,
+    right: Spacing.two + Spacing.half,
+    paddingHorizontal: Spacing.two + Spacing.half,
+    paddingVertical: Spacing.one,
+    borderRadius: 6,
+  },
+  moreLabel: {
+    fontSize: 11,
+    lineHeight: 16,
+    fontWeight: '500',
   },
 });
