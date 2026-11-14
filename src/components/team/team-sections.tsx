@@ -139,7 +139,7 @@ export function InviteFormCard({
             accessibilityLabel="Enviar invitación por correo"
             onPress={onSubmit}
             style={({ pressed }) => [styles.primaryButton, { backgroundColor: theme.accent, opacity: pressed ? 0.85 : 1 }]}>
-            <ThemedText type="smallBold" style={styles.onAccent}>
+            <ThemedText type="smallBold" style={{ color: theme.onButtonDark }}>
               Enviar invitación por correo
             </ThemedText>
           </Pressable>
@@ -288,7 +288,7 @@ export function MemberCard({
           accessibilityLabel={`Reenviar invitación a ${member.email}`}
           onPress={() => onResend?.(member)}
           style={({ pressed }) => [styles.primaryButtonSm, { backgroundColor: theme.accent, opacity: pressed ? 0.85 : 1 }]}>
-          <ThemedText type="small" style={styles.onAccent}>
+          <ThemedText type="small" style={{ color: theme.onButtonDark }}>
             Reenviar invitación
           </ThemedText>
         </Pressable>
@@ -316,7 +316,6 @@ export function SafeguardCard() {
 
 const styles = StyleSheet.create({
   flex1: { flex: 1 },
-  onAccent: { color: '#ffffff' },
   divider: { height: 1 },
   dot: { width: 8, height: 8, borderRadius: 4 },
   quotaHeaderRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: Spacing.two },

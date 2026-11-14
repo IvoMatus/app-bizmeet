@@ -56,7 +56,7 @@ export function PendingInvitationCard({
         accessibilityLabel={`Aceptar invitación de ${invitation.companyName}`}
         onPress={() => onAccept(invitation)}
         style={({ pressed }) => [styles.primaryButton, { backgroundColor: theme.accent, opacity: pressed ? 0.85 : 1 }]}>
-        <ThemedText type="smallBold" style={styles.onAccent}>
+        <ThemedText type="smallBold" style={{ color: theme.onButtonDark }}>
           Aceptar Invitación
         </ThemedText>
       </Pressable>
@@ -109,9 +109,9 @@ export function LinkedCompanyCard({ company, onRevoke }: { company: LinkedCompan
           accessibilityRole="button"
           accessibilityLabel="Administrar Equipo e Invitaciones"
           onPress={() => router.push(`/empresa/equipo?companyId=${company.id}`)}
-          // ponytail: #15406a del Figma es el valor dark de buttonDark, no el light (#0c1d32) —
-          // posible inconsistencia del diseño, se mantiene theme.buttonDark (el token real de
-          // este modo) salvo que el diseñador confirme que debe ser fijo. Ver brief.
+          // ponytail: el Figma claro pinta este botón con el valor dark de buttonDark — posible
+          // inconsistencia del diseño, se mantiene theme.buttonDark (el token real de este modo)
+          // salvo que el diseñador confirme que debe ser fijo. Ver brief.
           style={({ pressed }) => [styles.darkButton, { backgroundColor: theme.buttonDark, opacity: pressed ? 0.85 : 1 }]}>
           <ThemedText type="smallBold" style={{ color: theme.onButtonDark }}>
             Administrar Equipo e Invitaciones
@@ -160,7 +160,6 @@ export function InviteFromCompanyBanner() {
 
 const styles = StyleSheet.create({
   flex1: { flex: 1 },
-  onAccent: { color: '#ffffff' },
   card: { borderRadius: 16, borderWidth: 1, padding: Spacing.three, gap: Spacing.three },
   headerRow: { flexDirection: 'row', gap: Spacing.two, alignItems: 'flex-start' },
   avatar: { width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center' },

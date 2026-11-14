@@ -20,7 +20,7 @@ export function AttachmentThumbnail({
   onRetry: () => void;
 }) {
   const theme = useTheme();
-  const overlayBg = theme.screenBackground + 'CC'; // ~80% opacidad, confirmado en el brief.
+  const overlayBg = theme.screenOverlay;
 
   return (
     <View style={styles.slot}>
@@ -60,7 +60,7 @@ export function AttachmentThumbnail({
         onPress={onRemove}
         hitSlop={12}
         style={[styles.removeButton, { backgroundColor: theme.error }]}>
-        <SymbolView tintColor="#fff" name={{ ios: 'xmark', android: 'close', web: 'close' }} size={12} />
+        <SymbolView tintColor={theme.onButtonDark} name={{ ios: 'xmark', android: 'close', web: 'close' }} size={12} />
       </Pressable>
     </View>
   );

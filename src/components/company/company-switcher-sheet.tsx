@@ -22,7 +22,7 @@ export function CompanySwitcherSheet({ visible, onClose }: CompanySwitcherSheetP
 
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
-      <Pressable style={styles.backdrop} onPress={onClose}>
+      <Pressable style={[styles.backdrop, { backgroundColor: theme.modalBackdrop }]} onPress={onClose}>
         <Pressable onPress={() => {}}>
           <SafeAreaView edges={['bottom']} style={[styles.sheet, { backgroundColor: theme.card, borderColor: theme.border }]}>
             <View style={styles.header}>
@@ -110,7 +110,6 @@ export function CompanySwitcherSheet({ visible, onClose }: CompanySwitcherSheetP
 const styles = StyleSheet.create({
   backdrop: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)',
     justifyContent: 'flex-end',
   },
   sheet: {

@@ -180,7 +180,7 @@ export default function InicioScreen() {
           accessibilityLabel={blocked ? 'Publicar (empresa bloqueada)' : 'Publicar'}
           accessibilityHint={blocked ? 'Tu empresa está bloqueada y no puede publicar' : 'Abre el formulario para crear una nueva publicación'}
           onPress={onPublish}
-          style={[styles.fab, { backgroundColor: blocked ? theme.textMuted : theme.accent, bottom: BottomTabInset + Spacing.three }]}>
+          style={[styles.fab, { backgroundColor: blocked ? theme.textMuted : theme.accent, shadowColor: theme.cardShadow, bottom: BottomTabInset + Spacing.three }]}>
           <SymbolView tintColor={theme.screenBackground} name={{ ios: 'plus', android: 'add', web: 'add' }} size={24} />
         </Pressable>
       )}
@@ -245,7 +245,6 @@ const styles = StyleSheet.create({
     borderRadius: 28,
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#000',
     shadowOpacity: 0.2,
     shadowRadius: 8,
     shadowOffset: { width: 0, height: 4 },

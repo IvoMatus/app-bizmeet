@@ -165,7 +165,7 @@ export default function EquipoScreen() {
                 styles.invitePill,
                 { backgroundColor: theme.accent, opacity: atLimit ? 0.5 : pressed ? 0.85 : 1 },
               ]}>
-              <ThemedText type="smallBold" style={{ color: '#ffffff' }}>
+              <ThemedText type="smallBold" style={{ color: theme.onButtonDark }}>
                 + Invitar
               </ThemedText>
             </Pressable>

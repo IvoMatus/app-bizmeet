@@ -30,7 +30,7 @@ export const ThemedText = forwardRef<Text, ThemedTextProps>(function ThemedText(
   return (
     <Text
       ref={ref}
-      style={[{ color: theme[themeColor ?? 'text'] }, finalStyle]}
+      style={[{ color: theme[themeColor ?? (type === 'linkPrimary' ? 'linkPrimary' : 'text')] }, finalStyle]}
       {...rest}
     />
   );
@@ -92,7 +92,6 @@ const styles = StyleSheet.create({
   linkPrimary: {
     lineHeight: 30,
     fontSize: 14,
-    color: '#3c87f7',
   },
   code: {
     fontFamily: Fonts.mono,

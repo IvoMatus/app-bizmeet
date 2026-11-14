@@ -53,7 +53,7 @@ export function AppAlertHost() {
 
   return (
     <Modal transparent animationType="fade" visible onRequestClose={() => setLocalState(null)}>
-      <View style={styles.backdrop}>
+      <View style={[styles.backdrop, { backgroundColor: theme.modalBackdrop }]}>
         <View
           style={[styles.card, { backgroundColor: theme.card, borderColor: theme.border }]}
           accessibilityViewIsModal
@@ -104,7 +104,6 @@ export function AppAlertHost() {
 const styles = StyleSheet.create({
   backdrop: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
     justifyContent: 'center',
     alignItems: 'center',
     padding: Spacing.four,

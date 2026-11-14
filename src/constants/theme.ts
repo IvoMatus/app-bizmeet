@@ -7,6 +7,44 @@ import '@/global.css';
 
 import { Platform, type TextStyle } from 'react-native';
 
+// Bienvenida (welcome.tsx): pantalla siempre oscura sobre la foto de fondo, igual en claro y
+// oscuro — por eso un solo objeto que se esparce en los dos modos. Paleta slate/sky/emerald/
+// amber/purple de Tailwind del diseño; el par chip/ícono de "Rubro" y "Match" está cruzado a
+// propósito (así se ve hoy).
+const WelcomeColors = {
+  welcomeBackground: '#020617',
+  welcomeScrimTop: 'rgba(2, 6, 23, 0.6)',
+  welcomeScrimMid: 'rgba(2, 6, 23, 0.4)',
+  welcomeScrimClear: 'rgba(2, 6, 23, 0)',
+  welcomePanelTop: 'rgba(15, 23, 42, 0.88)',
+  welcomePanelBottom: 'rgba(10, 17, 32, 0.97)',
+  welcomePanelBorder: 'rgba(255, 255, 255, 0.2)',
+  welcomeHandle: 'rgba(255, 255, 255, 0.3)',
+  welcomeLogoCard: 'rgba(15, 23, 42, 0.65)',
+  welcomeLogoBorder: 'rgba(255, 255, 255, 0.12)',
+  welcomeSubtitle: 'rgba(203, 213, 225, 0.8)',
+  welcomeGoogleLabel: '#0f172a',
+  welcomeButton: 'rgba(30, 41, 59, 0.8)',
+  welcomeButtonBorder: 'rgba(255, 255, 255, 0.15)',
+  welcomeKeyChip: 'rgba(255, 255, 255, 0.1)',
+  welcomeText: '#e2e8f0',
+  welcomeFooter: '#94a3b8',
+  welcomeArrowIcon: '#7dd3fc',
+  welcomeArrowChip: 'rgba(14, 165, 233, 0.2)',
+  welcomeSkyIcon: '#38bdf8',
+  welcomeSkySoft: 'rgba(14, 165, 233, 0.15)',
+  welcomeSkyBorder: 'rgba(56, 189, 248, 0.3)',
+  welcomeEmeraldIcon: '#34d399',
+  welcomeEmeraldSoft: 'rgba(16, 185, 129, 0.15)',
+  welcomeEmeraldBorder: 'rgba(52, 211, 153, 0.3)',
+  welcomeAmberIcon: '#fbbf24',
+  welcomeAmberSoft: 'rgba(245, 158, 11, 0.15)',
+  welcomeAmberBorder: 'rgba(251, 191, 36, 0.3)',
+  welcomePurpleIcon: '#d8b4fe',
+  welcomePurpleSoft: 'rgba(168, 85, 247, 0.15)',
+  welcomePurpleBorder: 'rgba(192, 132, 252, 0.3)',
+} as const;
+
 export const Colors = {
   // T1.7 (AA): error/textMuted/warning/eyebrow/warningText ajustados (mismo tono, apenas más
   // oscuros en claro / más claros en oscuro) para llegar a 4.5:1 como texto sobre todos los fondos
@@ -75,6 +113,17 @@ export const Colors = {
     // Badge "+N" sobre la media del feed: fondo y texto (Figma: negro 60% / #05101E al 80%).
     mediaScrim: 'rgba(0, 0, 0, 0.6)',
     onMedia: '#ffffff',
+    // Fondo de pantalla al 80%: contador "1/3" de la galería y overlay de subida/error de la
+    // miniatura de adjunto.
+    screenOverlay: 'rgba(244, 249, 252, 0.8)',
+    // Fondo detrás de modales y bottom sheets.
+    modalBackdrop: 'rgba(0, 0, 0, 0.5)',
+    // ThemedText type="linkPrimary".
+    linkPrimary: '#3c87f7',
+    // Overlay animado del splash (animated-icon.tsx): igual al backgroundColor de
+    // expo-splash-screen en app.json — si cambia uno, cambiar el otro.
+    splashBackground: '#208AEF',
+    ...WelcomeColors,
   },
   dark: {
     text: '#ffffff',
@@ -127,6 +176,11 @@ export const Colors = {
     cardShadow: '#000000',
     mediaScrim: 'rgba(5, 16, 30, 0.8)',
     onMedia: '#ffffff',
+    screenOverlay: 'rgba(1, 21, 35, 0.8)',
+    modalBackdrop: 'rgba(0, 0, 0, 0.5)',
+    linkPrimary: '#3c87f7',
+    splashBackground: '#208AEF',
+    ...WelcomeColors,
   },
 } as const;
 

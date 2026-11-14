@@ -89,7 +89,7 @@ export function PostAttachmentGallery({ adjuntos }: { adjuntos: AdjuntoView[] })
         />
       )}
       {adjuntos.length > 1 && width > 0 && (
-        <View style={[styles.counter, { backgroundColor: theme.screenBackground + 'CC' }]}>
+        <View style={[styles.counter, { backgroundColor: theme.screenOverlay }]}>
           <SymbolView tintColor={theme.textPrimary} name={{ ios: 'photo.on.rectangle', android: 'photo_library', web: 'photo_library' }} size={12} />
           <ThemedText type="small" style={{ color: theme.textPrimary }}>
             {index + 1}/{adjuntos.length}
