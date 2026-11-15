@@ -37,7 +37,7 @@ export function PendingPaymentBanner() {
           accessibilityRole="button"
           accessibilityLabel={`Pagar plan de ${name}`}
           hitSlop={Spacing.two}
-          onPress={() => router.push(`/empresa/plan?companyId=${id}`)}
+          onPress={() => router.push(`/empresa/plan?companyId=${id}`, { withAnchor: true })}
           style={styles.cta}>
           <ThemedText type="smallBold" themeColor="warningText">
             Pagar plan

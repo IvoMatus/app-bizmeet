@@ -1,68 +1,35 @@
 import { Tabs } from 'expo-router';
-import { useState } from 'react';
 
-import { CompanySwitcherSheet } from '@/components/company/company-switcher-sheet';
-import { PendingPaymentBanner } from '@/components/company/pending-payment-banner';
 import { BottomTabBar } from '@/components/navigation/bottom-tab-bar';
-import { ProfileTopBar } from '@/components/profile/profile-chrome';
-import { useUnreadNotifications } from '@/components/notifications/unread-notifications';
+import { TabHeader } from '@/components/navigation/tab-stack';
 import { MOCK_PROFILE } from '@/components/profile/profile-data';
-import { useActiveCompany } from '@/hooks/use-active-company';
 import { useProfileAvatar } from '@/hooks/use-profile-avatar';
 
 export default function AppTabs() {
   const avatar = useProfileAvatar();
-  const { unread } = useUnreadNotifications();
-  const { companies } = useActiveCompany();
-  const [switcherOpen, setSwitcherOpen] = useState(false);
 
   return (
-    <>
-      <Tabs
-        screenOptions={{
-          // Topbar compartido: UNA instancia por el layout de tabs, no una por pantalla —
-          // cada tab solo define su `title` (estático u override dinámico vía
-          // `navigation.setOptions`, ver index.tsx) y este header lo renderiza igual para todas.
-          // El subtítulo es tocable cuando el usuario tiene al menos una empresa: abre el
-          // selector de empresa activa (T2.5), disponible desde cualquier tab.
-          // El aviso de pago pendiente de la empresa activa va debajo del topbar, en todas las tabs.
-          header: ({ options }) => (
-            <>
-              <ProfileTopBar
-                avatar={avatar}
-                companyLogo={MOCK_PROFILE.companyLogoUri}
-                hasUnread={unread > 0}
-                subtitle={options.title}
-                onPressSubtitle={companies && companies.length > 0 ? () => setSwitcherOpen(true) : undefined}
-              />
-              <PendingPaymentBanner />
-            </>
-          ),
-        }}
-        tabBar={({ state }) => {
-          const activeRoute = state.routes[state.index];
-          // "editar" cuelga del Stack interno de la tab "perfil" (ver perfil/_layout.tsx) y por
-          // pedido del usuario también lleva esta barra, con "Perfil" activa — sin excepción.
-          return (
-            <BottomTabBar
-              activeKey={activeRoute.name}
-              avatar={avatar}
-              companyLogo={MOCK_PROFILE.companyLogoUri}
-            />
-          );
-        }}>
-        <Tabs.Screen name="index" options={{ title: 'Muro General' }} />
-        <Tabs.Screen name="company" options={{ title: 'Mis Empresas' }} />
-        <Tabs.Screen name="network" options={{ title: 'Red' }} />
-        <Tabs.Screen name="messages" options={{ title: 'Mensajes' }} />
-        <Tabs.Screen name="benefits" options={{ title: 'Beneficios' }} />
-        {/* "Perfil" trae su propio Stack interno (vista + editar) con su propio topbar/header
-            por pantalla (ver perfil/_layout.tsx) — este nivel no le pone header, para no duplicar. */}
-        <Tabs.Screen name="perfil" options={{ headerShown: false }} />
-        {/* Explore se conserva como ruta pero fuera de la barra. */}
-        <Tabs.Screen name="explore" options={{ href: null }} />
-      </Tabs>
-      <CompanySwitcherSheet visible={switcherOpen} onClose={() => setSwitcherOpen(false)} />
-    </>
+    <Tabs
+      // Header acá solo para las tabs de una sola pantalla (Mensajes, Red). Las que tienen Stack
+      // propio ((home), (company), (benefits), perfil) lo ponen en su pantalla raíz (ver
+      // tab-stack.tsx y perfil/_layout.tsx): así sus hijas, con header propio, no lo heredan.
+      screenOptions={{ header: ({ options }) => <TabHeader title={options.title} /> }}
+      tabBar={({ state, navigation }) => (
+        <BottomTabBar
+          state={state}
+          navigation={navigation}
+          avatar={avatar}
+          companyLogo={MOCK_PROFILE.companyLogoUri}
+        />
+      )}>
+      <Tabs.Screen name="(home)" options={{ headerShown: false }} />
+      <Tabs.Screen name="(company)" options={{ headerShown: false }} />
+      <Tabs.Screen name="network" options={{ title: 'Red' }} />
+      <Tabs.Screen name="messages" options={{ title: 'Mensajes' }} />
+      <Tabs.Screen name="(benefits)" options={{ headerShown: false }} />
+      <Tabs.Screen name="perfil" options={{ headerShown: false }} />
+      {/* Explore se conserva como ruta pero fuera de la barra. */}
+      <Tabs.Screen name="explore" options={{ href: null }} />
+    </Tabs>
   );
 }

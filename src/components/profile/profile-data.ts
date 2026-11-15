@@ -120,8 +120,8 @@ export function buildEditProfileForm(api: UserProfileView, email: string): EditP
   };
 }
 
-/** Chrome compartido sin fuente propia todavía: logo de la empresa activa. Ver app-tabs.tsx, perfil/_layout.tsx y
- * RootBottomTabBar en el root _layout.tsx. */
+/** Chrome compartido sin fuente propia todavía: logo de la empresa activa. Ver app-tabs.tsx, tab-stack.tsx y
+ * perfil/_layout.tsx. */
 export const MOCK_PROFILE = {
   avatarUri: require('../../../assets/figma/perfil/shared/avatar-alejandro.jpg') as ImageSourcePropType,
   companyLogoUri: require('../../../assets/figma/perfil/shared/empresa-activa-logo.jpg') as number,

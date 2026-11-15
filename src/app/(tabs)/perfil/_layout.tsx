@@ -1,27 +1,19 @@
 import { Stack } from 'expo-router';
 
-import { useUnreadNotifications } from '@/components/notifications/unread-notifications';
-import { ProfileTopBar } from '@/components/profile/profile-chrome';
-import { MOCK_PROFILE } from '@/components/profile/profile-data';
-import { useProfileAvatar } from '@/hooks/use-profile-avatar';
+import { TabHeader } from '@/components/navigation/tab-stack';
 
-/** Stack propio de la tab "Perfil": vista (con el topbar compartido) + editar (headerless,
- * trae su propio EditTopBar a pantalla completa). */
+// Deep link en frío a una hija (ej. /perfil/editar): Mi Perfil queda debajo para poder volver.
+export const unstable_settings = { anchor: 'index' };
+
+/** Stack propio de la tab "Perfil": vista + pestañas hermanas (con el topbar compartido) y las
+ * hijas headerless (editar trae su propio EditTopBar a pantalla completa). */
 export default function PerfilLayout() {
-  const avatar = useProfileAvatar();
-  const { unread } = useUnreadNotifications();
-
   return (
     <Stack
       screenOptions={{
-        header: ({ options }) => (
-          <ProfileTopBar
-            avatar={avatar}
-            companyLogo={MOCK_PROFILE.companyLogoUri}
-            hasUnread={unread > 0}
-            subtitle={options.title}
-          />
-        ),
+        animation: 'slide_from_right',
+        // Mismo header que la raíz de las demás pestañas (aviso de pago + selector de empresa).
+        header: ({ options }) => <TabHeader title={options.title} />,
       }}>
       <Stack.Screen name="index" options={{ title: 'Mi Perfil' }} />
       <Stack.Screen name="editar" options={{ headerShown: false }} />

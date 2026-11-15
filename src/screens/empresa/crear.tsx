@@ -289,7 +289,7 @@ const styles = StyleSheet.create({
     padding: Spacing.three,
     gap: Spacing.three,
   },
-  // Sin inset inferior propio: la BottomTabBar global (root _layout.tsx) ya lo pone debajo.
+  // Sin inset inferior propio: la barra inferior de (tabs) (app-tabs.tsx) ya lo pone debajo.
   footer: {
     flexDirection: 'row',
     gap: Spacing.two,

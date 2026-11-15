@@ -53,7 +53,9 @@ export default function BillingReturnScreen() {
     if (estado === 'success') reload();
   }, [estado, reload]);
 
-  const irAEmpresa = () => router.replace(companyId ? `/empresa/${companyId}` : '/company');
+  // Sin companyId (deep link en frío) el Stack es [Mis Empresas (anchor), esta]: volver a la raíz
+  // en vez de `replace`, que la apilaría dos veces.
+  const irAEmpresa = () => (companyId ? router.replace(`/empresa/${companyId}`) : router.dismissTo('/company'));
 
   return (
     <ThemedView type="screenBackground" style={styles.flex}>

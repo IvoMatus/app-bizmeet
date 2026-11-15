@@ -1,5 +1,5 @@
 import { Image } from 'expo-image';
-import { router, type Href } from 'expo-router';
+import type { BottomTabBarProps as TabsBarProps } from 'expo-router/tabs';
 import { useEffect, useState } from 'react';
 import { ImageSourcePropType, Keyboard, Pressable, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -10,41 +10,25 @@ import { Spacing } from '@/constants/theme';
 import { confirmExitIfNeeded } from '@/hooks/use-discard-guard';
 import { useTheme } from '@/hooks/use-theme';
 
-type NavItem = { key: string; label: string; href: Href; icon?: ProfileIconName };
+/** key = nombre de la ruta en el Tabs de (tabs) (los grupos con Stack propio van con paréntesis). */
+type NavItem = { key: string; label: string; icon?: ProfileIconName };
 
-/** key = nombre de ruta (en (tabs)) o 'perfil' para la ruta fuera de tabs. */
-export const BOTTOM_NAV_ITEMS: NavItem[] = [
-  { key: 'index', label: 'Inicio', href: '/', icon: 'home' },
-  { key: 'messages', label: 'Mensajes', href: '/messages', icon: 'chat' },
-  { key: 'benefits', label: 'Beneficios', href: '/benefits', icon: 'gift' },
-  { key: 'network', label: 'Red', href: '/network', icon: 'network' },
-  { key: 'company', label: 'Empresa', href: '/company' },
-  { key: 'perfil', label: 'Perfil', href: '/perfil' },
+const BOTTOM_NAV_ITEMS: NavItem[] = [
+  { key: '(home)', label: 'Inicio', icon: 'home' },
+  { key: 'messages', label: 'Mensajes', icon: 'chat' },
+  { key: '(benefits)', label: 'Beneficios', icon: 'gift' },
+  { key: 'network', label: 'Red', icon: 'network' },
+  { key: '(company)', label: 'Empresa' },
+  { key: 'perfil', label: 'Perfil' },
 ];
 
-type BottomTabBarProps = {
-  activeKey?: string;
+type BottomTabBarProps = Pick<TabsBarProps, 'state' | 'navigation'> & {
   avatar: ImageSourcePropType;
   companyLogo: number;
-  /**
-   * Cómo navegar al tocar un ítem. Default `router.navigate`: dentro de (tabs) (ver
-   * app-tabs.tsx) el destino vive en el mismo navigator de tabs, y `navigate` ya hace el
-   * JUMP_TO correcto sin tocar el stack.
-   *
-   * Desde una pantalla fuera de (tabs) (ver RootBottomTabBar en el root `_layout.tsx`) el
-   * destino está en otra rama del Stack raíz: ahí hay que pasar `router.dismissTo` en su lugar.
-   * `navigate` resuelve ese salto con un StackRouter 'NAVIGATE' que, si la ruta destino ya
-   * existe más abajo en el stack, la reordena al tope SIN remover la pantalla actual del
-   * array de rutas — como ninguna ruta se remueve, `beforeRemove`/`usePreventRemove` (el guard
-   * de "descartar publicación" de publicacion/crear) nunca se dispara, y la navegación lo
-   * saltea. `dismissTo` dispara un 'POP_TO' real: descarta las pantallas hasta la de destino,
-   * lo cual sí pasa por `beforeRemove` en cada una — igual que el back nativo.
-   */
-  onNavigate?: (href: Href) => void;
 };
 
 /** Barra inferior compartida de 6 destinos. "Empresa" usa el logo y "Perfil" el avatar. */
-export function BottomTabBar({ activeKey, avatar, companyLogo, onNavigate = router.navigate }: BottomTabBarProps) {
+export function BottomTabBar({ state, navigation, avatar, companyLogo }: BottomTabBarProps) {
   const theme = useTheme();
   // Equivalente a `tabBarHideOnKeyboard` (no aplica con `tabBar` custom): con el
   // KeyboardAvoidingView del root `_layout.tsx` la barra subiría sobre el teclado, con su inset
@@ -70,21 +54,32 @@ export function BottomTabBar({ activeKey, avatar, companyLogo, onNavigate = rout
       ]}>
       <View style={styles.bar}>
         {BOTTOM_NAV_ITEMS.map((item) => {
-          const active = item.key === activeKey;
+          const route = state.routes.find((r) => r.name === item.key);
+          if (!route) return null;
+          const active = state.routes[state.index].key === route.key;
           const color = active ? theme.accent : theme.textMuted;
+          // Press canónico de tabs: `tabPress` + navigate si no es la activa. En la activa, el
+          // Stack de la pestaña escucha `tabPress` y vuelve a su raíz (popToTop) — eso remueve
+          // pantallas, así que una hija con cambios sin guardar lo frena con su propio
+          // `beforeRemove` (useDiscardGuard). Cambiar a OTRA tab no remueve nada (solo cambia el
+          // foco), por eso ahí pasa antes por confirmExitIfNeeded.
+          const emitTabPress = () =>
+            navigation.emit({ type: 'tabPress', target: route.key, canPreventDefault: true });
+          const onPress = active
+            ? emitTabPress
+            : () =>
+                confirmExitIfNeeded(() => {
+                  if (!emitTabPress().defaultPrevented) navigation.navigate(route.name);
+                });
           return (
             <Pressable
               key={item.key}
               accessibilityRole="tab"
               accessibilityLabel={item.label}
               accessibilityState={{ selected: active }}
-              // confirmExitIfNeeded: cubre el caso que ni `navigate` ni `dismissTo` resuelven —
-              // tocar otra tab mientras hay cambios sin guardar en una pantalla anidada dentro de
-              // (tabs) (ver perfil/editar.tsx) no remueve nada, solo cambia el foco del Tabs
-              // navigator, así que `beforeRemove` nunca se dispara ahí (ver use-discard-guard.ts).
-              onPress={() => confirmExitIfNeeded(() => onNavigate(item.href))}
+              onPress={onPress}
               style={styles.item}>
-              {item.key === 'company' ? (
+              {item.key === '(company)' ? (
                 <View style={[styles.circle, { backgroundColor: theme.buttonDark }]}>
                   <Image source={companyLogo} style={styles.companyLogo} contentFit="cover" />
                   <View style={[styles.badge, { backgroundColor: theme.surface, borderColor: theme.surfaceBorder }]} />

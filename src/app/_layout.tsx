@@ -8,14 +8,11 @@ import { useEffect, useRef } from 'react';
 import { KeyboardAvoidingView, useColorScheme, View } from 'react-native';
 
 import { AnimatedSplashOverlay } from '@/components/animated-icon';
-import { BottomTabBar } from '@/components/navigation/bottom-tab-bar';
-import { CHILD_ROUTE_TAB_KEY } from '@/components/navigation/tab-route-map';
 import { UnreadNotificationsProvider } from '@/components/notifications/unread-notifications';
-import { MOCK_PROFILE } from '@/components/profile/profile-data';
 import { AppAlertHost } from '@/components/ui/app-alert';
 import { ActiveCompanyProvider } from '@/hooks/use-active-company';
 import { useAuthToken } from '@/hooks/use-auth-token';
-import { ProfileAvatarProvider, useProfileAvatar } from '@/hooks/use-profile-avatar';
+import { ProfileAvatarProvider } from '@/hooks/use-profile-avatar';
 import { useTheme } from '@/hooks/use-theme';
 import { hasUserProfile } from '@/utils/api';
 
@@ -79,34 +76,6 @@ function AuthGuard() {
   return null;
 }
 
-/**
- * Barra inferior para rutas que cuelgan del Stack raíz (fuera de (tabs)): `publicacion/*` y
- * `empresa/*`. Se renderiza como sibling del Stack, no como pantalla dentro de él, así el stack
- * nativo de esas rutas queda intacto (back, historial y animaciones no cambian) — meterlas
- * dentro de `<Tabs>` como ocultas (`href: null`) para esto rompe el back, por eso no se hizo así.
- * Las rutas de (tabs) ya traen su propia barra (ver app-tabs.tsx) y no entran en
- * `CHILD_ROUTE_TAB_KEY`, así que esta nunca se duplica con esa.
- */
-function RootBottomTabBar() {
-  const avatar = useProfileAvatar();
-  const segments = useSegments();
-  const activeKey = CHILD_ROUTE_TAB_KEY[segments.join('/')];
-  if (!activeKey) return null;
-
-  return (
-    <BottomTabBar
-      activeKey={activeKey}
-      avatar={avatar}
-      companyLogo={MOCK_PROFILE.companyLogoUri}
-      // dismissTo (no navigate): el destino está en otra rama del Stack raíz — ver el porqué
-      // en el comment de `onNavigate` en bottom-tab-bar.tsx. Esto es lo que hace que CUALQUIER
-      // guard de salida en esta rama (no solo el de publicacion/crear) se respete al tocar la
-      // barra, igual que con el back nativo.
-      onNavigate={router.dismissTo}
-    />
-  );
-}
-
 export default function RootLayout() {
   const colorScheme = useColorScheme();
   const theme = useTheme();
@@ -128,11 +97,10 @@ export default function RootLayout() {
       <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
         <AnimatedSplashOverlay />
         <AuthGuard />
-        {/* Arriba del Stack entero (no solo de (tabs)): pantallas de stack como
-            publicacion/crear también dependen de `useActiveCompany` (ver useCompanyBlocked). */}
+        {/* Arriba del Stack entero: lo usan (tabs) y sus Stacks por pestaña (ej. publicacion/crear
+            vía useCompanyBlocked). */}
         <ActiveCompanyProvider>
-          {/* Un solo fetch de avatar por sesión, compartido por la barra de (tabs) (app-tabs.tsx)
-              y por RootBottomTabBar de aquí abajo — por eso vive arriba del Stack entero. */}
+          {/* Un solo fetch de avatar por sesión, compartido por la barra inferior y los headers. */}
           <ProfileAvatarProvider>
             <UnreadNotificationsProvider>
               {/* Fondo del tema: en la transición nativa la pantalla saliente se desliza y deja ver
@@ -143,15 +111,14 @@ export default function RootLayout() {
                     ya no achica la ventana, así que sin esto el teclado tapa cualquier input.
                     `padding` encoge el Stack hasta el borde del teclado y el ScrollView de cada
                     pantalla lleva solo el input enfocado a la vista. Va acá y no por pantalla.
-                    RootBottomTabBar queda afuera a propósito: el teclado la tapa en vez de
-                    empujarla, así no le resta alto al formulario. */}
+                    La barra inferior se oculta sola con el teclado (ver bottom-tab-bar.tsx). */}
                 <KeyboardAvoidingView behavior="padding" style={{ flex: 1 }}>
                   {/* 'slide_from_right': push opaco clásico. El default de Android (la pantalla saliente
                       se corre a la izquierda + cross-fade de la entrante encima) se veía como un
-                      "pestañeo" que se mueve de lado. Solo el Stack raíz; los anidados no se tocan. */}
+                      "pestañeo" que se mueve de lado. Los Stacks por pestaña usan el mismo
+                      (tab-stack.tsx, perfil/_layout.tsx). */}
                   <Stack screenOptions={{ headerShown: false, animation: 'slide_from_right' }} />
                 </KeyboardAvoidingView>
-                <RootBottomTabBar />
               </View>
             </UnreadNotificationsProvider>
           </ProfileAvatarProvider>

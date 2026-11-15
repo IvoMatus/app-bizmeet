@@ -1,4 +1,4 @@
-import { useNavigation } from 'expo-router';
+import { useFocusEffect, useNavigation } from 'expo-router';
 import { useCallback, useEffect, useRef } from 'react';
 
 import { showAlert } from '@/components/ui/app-alert';
@@ -6,11 +6,12 @@ import { showAlert } from '@/components/ui/app-alert';
 type ExitGuard = { hasUnsavedChanges: () => boolean; confirm: (onConfirm: () => void) => void };
 
 // ponytail: singleton a nivel de módulo (mismo patrón que el cache de use-auth-token.ts), no un
-// Context — solo una pantalla a la vez puede tener cambios sin guardar que proteger. Existe
-// porque `beforeRemove` únicamente se dispara cuando el NAVEGADOR PROPIO de la pantalla remueve
-// su ruta (back nativo, gesto, header): un tab distinto del mismo <Tabs> (ver bottom-tab-bar.tsx)
-// solo cambia de foco, no remueve nada del stack anidado de "editar" — por eso la barra inferior
-// consulta esta guardia directamente antes de navegar, en vez de depender de ese evento.
+// Context — es de la pantalla ENFOCADA (se registra al enfocar y se suelta al perderlo): con un
+// Stack por pestaña puede haber varios formularios montados a la vez, pero solo el visible cuenta.
+// Existe porque `beforeRemove` únicamente se dispara cuando el NAVEGADOR PROPIO de la pantalla
+// remueve su ruta (back nativo, gesto, header, tocar la tab activa): ir a OTRA tab (ver
+// bottom-tab-bar.tsx) solo cambia de foco, no remueve nada del Stack de la pestaña — por eso la
+// barra inferior consulta esta guardia directamente antes de navegar.
 let activeGuard: ExitGuard | null = null;
 
 /** Llamado por BottomTabBar antes de navegar: si hay una guardia activa con cambios sin guardar,
@@ -69,12 +70,24 @@ export function useDiscardGuard(
     [navigation, confirmDiscard],
   );
 
-  useEffect(() => {
-    activeGuard = { hasUnsavedChanges: () => hasUnsavedChangesRef.current, confirm: confirmDiscard };
-    return () => {
-      if (activeGuard?.confirm === confirmDiscard) activeGuard = null;
-    };
-  }, [confirmDiscard]);
+  useFocusEffect(
+    useCallback(() => {
+      const guard: ExitGuard = {
+        hasUnsavedChanges: () => hasUnsavedChangesRef.current,
+        // Descartar desde la barra inferior: además de cambiar de tab, saca esta pantalla de su
+        // Stack — si no, al volver a la pestaña el formulario seguiría ahí con lo "descartado".
+        confirm: (onConfirm) =>
+          confirmDiscard(() => {
+            navigation.goBack();
+            onConfirm();
+          }),
+      };
+      activeGuard = guard;
+      return () => {
+        if (activeGuard === guard) activeGuard = null;
+      };
+    }, [navigation, confirmDiscard]),
+  );
 
   /** Para salidas propias (ej. guardado con éxito) que no deben disparar el confirm. */
   return () => {

@@ -78,7 +78,7 @@ export function CompanySwitcherSheet({ visible, onClose }: CompanySwitcherSheetP
                           accessibilityLabel={`Pagar plan de ${company.name}`}
                           onPress={() => {
                             onClose();
-                            router.push(`/empresa/plan?companyId=${company.id}`);
+                            router.push(`/empresa/plan?companyId=${company.id}`, { withAnchor: true });
                           }}
                           style={styles.payCta}>
                           <ThemedText type="small" style={{ color: theme.warning }}>
