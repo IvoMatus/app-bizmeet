@@ -99,7 +99,7 @@ export function ProfileTabs({ activeKey = 'perfil' }: { activeKey?: string }) {
   const tabs = useMemo(() => {
     if (!active) return PROFILE_TABS;
     return PROFILE_TABS.map((tab) =>
-      tab.key === 'pago' ? { ...tab, href: `/empresa/pagos?companyId=${active.company.id}` } : tab
+      tab.key === 'pago' ? { ...tab, href: `/perfil/pagos?companyId=${active.company.id}` } : tab
     );
   }, [active]);
 

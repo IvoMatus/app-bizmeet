@@ -55,6 +55,12 @@ export default function BillingReturnScreen() {
 
   // Sin companyId (deep link en frío) el Stack es [Mis Empresas (anchor), esta]: volver a la raíz
   // en vez de `replace`, que la apilaría dos veces.
+  // Pagos vive en Perfil (otra pestaña): un `replace` no sacaría esta pantalla del Stack de acá
+  // (entre pestañas es un salto, no un reemplazo) — se la saca con back y se abre Pagos.
+  const verPagos = () => {
+    router.back();
+    router.push(`/perfil/pagos?companyId=${companyId}`, { withAnchor: true });
+  };
   const irAEmpresa = () => (companyId ? router.replace(`/empresa/${companyId}`) : router.dismissTo('/company'));
 
   return (
@@ -80,7 +86,7 @@ export default function BillingReturnScreen() {
                 <PrimaryButton label="Intentar de nuevo" onPress={() => router.replace(`/empresa/plan?companyId=${companyId}`)} />
               )}
               {estado === 'error' && companyId && (
-                <DiscardButton label="Ver historial de pagos" onPress={() => router.replace(`/empresa/pagos?companyId=${companyId}`)} />
+                <DiscardButton label="Ver historial de pagos" onPress={verPagos} />
               )}
               <DiscardButton label={companyId ? 'Volver a la empresa' : 'Ir a Mis Empresas'} onPress={irAEmpresa} />
             </>

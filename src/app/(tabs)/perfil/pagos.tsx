@@ -32,7 +32,7 @@ const PAYMENTS_VIEW_OPTIONS: { value: PaymentsViewMode; label: string }[] = [
 
 /**
  * Vista Pagos — "Historial de Pagos de la Empresa" (Figma 2036:2). Recibe `id` de empresa por
- * query, igual que `/empresa/equipo`.
+ * query, igual que `/perfil/equipo`.
  *
  * ponytail: el MCP de Figma llegó al rate limit a mitad del relevamiento de este nodo — solo
  * hay descripción estructural de alto nivel (resumen de facturación arriba + listado

@@ -26,7 +26,7 @@ function actionFor(item: NotificationItemView): { actionLabel?: string; actionRo
     case 'invitation':
       return { actionLabel: 'Ver invitación', actionRoute: '/perfil/invitaciones' };
     case 'payment':
-      return { actionLabel: 'Ver pagos', actionRoute: `/empresa/pagos?companyId=${item.companyId}` };
+      return { actionLabel: 'Ver pagos', actionRoute: `/perfil/pagos?companyId=${item.companyId}` };
     case 'team':
       return {};
   }

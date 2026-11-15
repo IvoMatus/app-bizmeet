@@ -108,7 +108,7 @@ export function LinkedCompanyCard({ company, onRevoke }: { company: LinkedCompan
         <Pressable
           accessibilityRole="button"
           accessibilityLabel="Administrar Equipo e Invitaciones"
-          onPress={() => router.push(`/empresa/equipo?companyId=${company.id}`)}
+          onPress={() => router.push(`/perfil/equipo?companyId=${company.id}`)}
           // ponytail: el Figma claro pinta este botón con el valor dark de buttonDark — posible
           // inconsistencia del diseño, se mantiene theme.buttonDark (el token real de este modo)
           // salvo que el diseñador confirme que debe ser fijo. Ver brief.

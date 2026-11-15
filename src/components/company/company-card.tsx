@@ -77,7 +77,7 @@ export function CompanyCard({ company }: { company: Company }) {
         <Pressable
           accessibilityRole="button"
           accessibilityLabel={`Ver pagos de ${company.name}`}
-          onPress={() => router.push(`/empresa/pagos?companyId=${company.id}`)}
+          onPress={() => router.push(`/perfil/pagos?companyId=${company.id}`, { withAnchor: true })}
           style={({ pressed }) => [styles.secondaryButton, { backgroundColor: theme.surfaceInset, opacity: pressed ? 0.85 : 1 }]}>
           <ProfileIcon name="card" color={theme.textMuted} width={14} height={11} />
           <ThemedText style={[styles.secondaryLabel, { color: theme.textMuted }]}>Ver pagos</ThemedText>
@@ -97,7 +97,7 @@ export function CompanyCard({ company }: { company: Company }) {
           <Pressable
             accessibilityRole="button"
             accessibilityLabel={`Gestionar equipo de ${company.name}`}
-            onPress={() => router.push(`/empresa/equipo?companyId=${company.id}`)}
+            onPress={() => router.push(`/perfil/equipo?companyId=${company.id}`, { withAnchor: true })}
             style={({ pressed }) => [styles.secondaryButton, { backgroundColor: theme.surfaceInset, opacity: pressed ? 0.85 : 1 }]}>
             <CompanyIcon name="team" color={theme.textMuted} width={13} height={11} />
             <ThemedText style={[styles.secondaryLabel, { color: theme.textMuted }]}>Gestionar equipo</ThemedText>

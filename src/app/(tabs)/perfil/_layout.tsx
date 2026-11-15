@@ -24,6 +24,9 @@ export default function PerfilLayout() {
       {/* Centro de Notificaciones B2B (T2.5, Figma 2046:558/2046:2): misma lógica que
           "invitaciones" arriba — tab hermana dentro del mismo stack/header compartido. */}
       <Stack.Screen name="notificaciones" options={{ title: 'Notificaciones' }} />
+      {/* Pagos y Equipo de la empresa: hijas con header propio (volver + título). */}
+      <Stack.Screen name="pagos" options={{ headerShown: false }} />
+      <Stack.Screen name="equipo" options={{ headerShown: false }} />
     </Stack>
   );
 }
