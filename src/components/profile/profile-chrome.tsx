@@ -2,7 +2,7 @@ import { Image } from 'expo-image';
 import { SymbolView } from 'expo-symbols';
 import { router, type Href } from 'expo-router';
 import { ImageSourcePropType, Pressable, ScrollView, StyleSheet, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useMemo } from 'react';
 
@@ -26,9 +26,13 @@ type ProfileChromeProps = {
 /** Header fijo compartido: marca BizAInet + PRO, subtítulo, notificaciones y avatar. */
 export function ProfileTopBar({ avatar, hasUnread, subtitle = 'Mi Perfil', onPressSubtitle }: ProfileChromeProps) {
   const theme = useTheme();
+  // Inset por hook y no con <SafeAreaView> nativo: cada pantalla raíz monta su propia instancia
+  // de este header, y el nativo mide el inset recién después de montarse — el primer frame salía
+  // con 0 y la barra saltaba hacia abajo (pestañeo en la primera visita a cada pestaña).
+  const insets = useSafeAreaInsets();
 
   return (
-    <SafeAreaView edges={['top']} style={{ backgroundColor: theme.navBackground }}>
+    <View style={{ paddingTop: insets.top, backgroundColor: theme.navBackground }}>
       <View style={[styles.topBar, { borderBottomColor: theme.surfaceBorder }]}>
         <View style={styles.brandRow}>
           <View style={[styles.brandMark, { backgroundColor: theme.accentSoft }]}>
@@ -70,12 +74,18 @@ export function ProfileTopBar({ avatar, hasUnread, subtitle = 'Mi Perfil', onPre
           <Image
             source={withStableCacheKey(avatar)}
             accessibilityLabel="Foto de perfil"
-            style={[styles.topAvatar, { borderColor: theme.accent }]}
+            // Fondo: en la raíz de un Stack expo-image recién carga cuando la vista nativa tiene
+            // tamaño (un frame después de montar) — ese frame muestra el círculo lleno y no un
+            // hueco blanco.
+            style={[styles.topAvatar, { borderColor: theme.accent, backgroundColor: theme.surfaceInset }]}
             contentFit="cover"
+            // En memoria (no solo disco, el default): la instancia nueva del header de cada
+            // pestaña la toma ya decodificada en vez de quedar vacía unos frames.
+            cachePolicy="memory-disk"
           />
         </View>
       </View>
-    </SafeAreaView>
+    </View>
   );
 }
 
