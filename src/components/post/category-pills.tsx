@@ -52,6 +52,9 @@ export function CategoryPills({ industries, selected, onSelect, allLabel = 'Gene
 const styles = StyleSheet.create({
   wrap: {
     flexGrow: 0,
+    // ScrollView trae flexShrink:1 por defecto (RN y RN-web): en una columna con un feed largo
+    // debajo, Yoga le recortaba unos px de abajo a los chips. La fila no se encoge nunca.
+    flexShrink: 0,
   },
   content: {
     paddingHorizontal: Spacing.three,

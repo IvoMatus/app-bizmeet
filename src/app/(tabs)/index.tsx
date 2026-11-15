@@ -12,7 +12,7 @@ import { useCompanyBlocked } from '@/components/post/use-company-blocked';
 import { useRubrosCatalog } from '@/components/post/use-rubros-catalog';
 import { showAlert } from '@/components/ui/app-alert';
 import { ThemedText } from '@/components/themed-text';
-import { BottomTabInset, Spacing } from '@/constants/theme';
+import { Spacing } from '@/constants/theme';
 import { useActiveCompany } from '@/hooks/use-active-company';
 import { useTheme } from '@/hooks/use-theme';
 import { fetchPostsFeed, type FeedView, type PostSinDetalleView, type PostView } from '@/utils/api';
@@ -133,6 +133,16 @@ export default function InicioScreen() {
               size={18}
             />
           </Pressable>
+          {active !== undefined && active && (
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={blocked ? 'Publicar (empresa bloqueada)' : 'Publicar'}
+              accessibilityHint={blocked ? 'Tu empresa está bloqueada y no puede publicar' : 'Abre el formulario para crear una nueva publicación'}
+              onPress={onPublish}
+              style={[styles.iconButton, { backgroundColor: blocked ? theme.textMuted : theme.accent }]}>
+              <SymbolView tintColor={theme.screenBackground} name={{ ios: 'plus', android: 'add', web: 'add' }} size={20} />
+            </Pressable>
+          )}
         </View>
       </View>
 
@@ -172,17 +182,6 @@ export default function InicioScreen() {
             )
           }
         />
-      )}
-
-      {active !== undefined && active && (
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={blocked ? 'Publicar (empresa bloqueada)' : 'Publicar'}
-          accessibilityHint={blocked ? 'Tu empresa está bloqueada y no puede publicar' : 'Abre el formulario para crear una nueva publicación'}
-          onPress={onPublish}
-          style={[styles.fab, { backgroundColor: blocked ? theme.textMuted : theme.accent, shadowColor: theme.cardShadow, bottom: BottomTabInset + Spacing.three }]}>
-          <SymbolView tintColor={theme.screenBackground} name={{ ios: 'plus', android: 'add', web: 'add' }} size={24} />
-        </Pressable>
       )}
 
       <PostFiltersSheet
@@ -236,18 +235,5 @@ const styles = StyleSheet.create({
   },
   footerLoading: {
     marginVertical: Spacing.three,
-  },
-  fab: {
-    position: 'absolute',
-    right: Spacing.three,
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 4 },
-    elevation: 4,
   },
 });
