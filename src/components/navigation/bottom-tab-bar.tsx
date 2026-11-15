@@ -1,6 +1,7 @@
 import { Image } from 'expo-image';
 import { router, type Href } from 'expo-router';
-import { ImageSourcePropType, Pressable, StyleSheet, View } from 'react-native';
+import { useEffect, useState } from 'react';
+import { ImageSourcePropType, Keyboard, Pressable, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ProfileIcon, type ProfileIconName } from '@/components/profile/profile-icons';
@@ -45,6 +46,20 @@ type BottomTabBarProps = {
 /** Barra inferior compartida de 6 destinos. "Empresa" usa el logo y "Perfil" el avatar. */
 export function BottomTabBar({ activeKey, avatar, companyLogo, onNavigate = router.navigate }: BottomTabBarProps) {
   const theme = useTheme();
+  // Equivalente a `tabBarHideOnKeyboard` (no aplica con `tabBar` custom): con el
+  // KeyboardAvoidingView del root `_layout.tsx` la barra subiría sobre el teclado, con su inset
+  // inferior, y le comería alto al formulario.
+  const [keyboardOpen, setKeyboardOpen] = useState(false);
+  useEffect(() => {
+    const show = Keyboard.addListener('keyboardDidShow', () => setKeyboardOpen(true));
+    const hide = Keyboard.addListener('keyboardDidHide', () => setKeyboardOpen(false));
+    return () => {
+      show.remove();
+      hide.remove();
+    };
+  }, []);
+
+  if (keyboardOpen) return null;
 
   return (
     <SafeAreaView

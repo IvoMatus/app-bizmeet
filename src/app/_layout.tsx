@@ -5,7 +5,7 @@ import { useFonts } from 'expo-font';
 import { DarkTheme, DefaultTheme, router, Stack, ThemeProvider, useSegments } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { useEffect, useRef } from 'react';
-import { useColorScheme, View } from 'react-native';
+import { KeyboardAvoidingView, useColorScheme, View } from 'react-native';
 
 import { AnimatedSplashOverlay } from '@/components/animated-icon';
 import { BottomTabBar } from '@/components/navigation/bottom-tab-bar';
@@ -134,7 +134,15 @@ export default function RootLayout() {
           <ProfileAvatarProvider>
             <UnreadNotificationsProvider>
               <View style={{ flex: 1 }}>
-                <Stack screenOptions={{ headerShown: false }} />
+                {/* Teclado para TODA la app: en Android edge-to-edge (Expo SDK 57) `adjustResize`
+                    ya no achica la ventana, así que sin esto el teclado tapa cualquier input.
+                    `padding` encoge el Stack hasta el borde del teclado y el ScrollView de cada
+                    pantalla lleva solo el input enfocado a la vista. Va acá y no por pantalla.
+                    RootBottomTabBar queda afuera a propósito: el teclado la tapa en vez de
+                    empujarla, así no le resta alto al formulario. */}
+                <KeyboardAvoidingView behavior="padding" style={{ flex: 1 }}>
+                  <Stack screenOptions={{ headerShown: false }} />
+                </KeyboardAvoidingView>
                 <RootBottomTabBar />
               </View>
             </UnreadNotificationsProvider>

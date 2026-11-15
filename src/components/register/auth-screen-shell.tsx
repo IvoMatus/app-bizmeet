@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet } from 'react-native';
+import { ScrollView, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { RegisterHeader } from '@/components/register/register-header';
@@ -14,23 +14,17 @@ type AuthScreenShellProps = {
 
 /**
  * Shared shell for the login/register screens: themed background, back-button header,
- * and a keyboard-avoiding scroll area so fields near the bottom (e.g. "repetir contraseña")
- * don't end up hidden behind the keyboard.
+ * and a scroll area. Keyboard avoidance lives in the root `_layout.tsx` (one
+ * KeyboardAvoidingView for the whole app) — don't nest another one here or the padding doubles.
  */
 export function AuthScreenShell({ onBack, title, children }: AuthScreenShellProps) {
   return (
     <ThemedView type="screenBackground" style={styles.flex}>
       <SafeAreaView style={styles.flex}>
         <RegisterHeader title={title} onBack={onBack} />
-        <KeyboardAvoidingView
-          style={styles.flex}
-          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-          keyboardVerticalOffset={Platform.OS === 'ios' ? 64 : 0}
-        >
-          <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-            {children}
-          </ScrollView>
-        </KeyboardAvoidingView>
+        <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+          {children}
+        </ScrollView>
       </SafeAreaView>
     </ThemedView>
   );
