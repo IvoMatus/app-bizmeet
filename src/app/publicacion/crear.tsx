@@ -68,7 +68,21 @@ function QuotaBadge({ chip, quota, error, onRetry }: { chip: PostTypeChip; quota
     );
   }
   if (!quota) {
-    return <ActivityIndicator color={theme.accent} style={{ marginBottom: Spacing.three }} />;
+    // Reserva el alto del badge mientras carga (mismo texto, invisible, con el spinner encima):
+    // si no, al llegar el saldo el badge empujaba todo el formulario hacia abajo.
+    // ponytail: alto calcado del caso "Te quedan X de Y"; con un `motivo` largo puede variar una línea.
+    return (
+      <View style={[styles.quotaBadge, { backgroundColor: theme.accentSoft, borderColor: theme.accent }]}>
+        <ThemedText
+          type="small"
+          style={{ fontWeight: '700', opacity: 0 }}
+          accessibilityElementsHidden
+          importantForAccessibility="no-hide-descendants">
+          Te quedan 0 de 0 publicaciones de este tipo este mes.
+        </ThemedText>
+        <ActivityIndicator color={theme.accent} style={StyleSheet.absoluteFill} accessibilityLabel="Cargando saldo de publicaciones" />
+      </View>
+    );
   }
 
   const { permitida, saldo, limite, motivo } = quota.cupos[chip.tipo];

@@ -16,6 +16,7 @@ import { AppAlertHost } from '@/components/ui/app-alert';
 import { ActiveCompanyProvider } from '@/hooks/use-active-company';
 import { useAuthToken } from '@/hooks/use-auth-token';
 import { ProfileAvatarProvider, useProfileAvatar } from '@/hooks/use-profile-avatar';
+import { useTheme } from '@/hooks/use-theme';
 import { hasUserProfile } from '@/utils/api';
 
 const publishableKey = process.env.EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY!;
@@ -108,6 +109,7 @@ function RootBottomTabBar() {
 
 export default function RootLayout() {
   const colorScheme = useColorScheme();
+  const theme = useTheme();
   // Mantiene el splash (preventAutoHideAsync arriba) hasta que Inter cargue — AnimatedSplashOverlay
   // recién monta y dispara hideAsync cuando este componente deja de devolver null.
   const [fontsLoaded, fontsError] = useFonts({
@@ -133,7 +135,10 @@ export default function RootLayout() {
               y por RootBottomTabBar de aquí abajo — por eso vive arriba del Stack entero. */}
           <ProfileAvatarProvider>
             <UnreadNotificationsProvider>
-              <View style={{ flex: 1 }}>
+              {/* Fondo del tema: en la transición nativa la pantalla saliente se desliza y deja ver
+                  lo que hay detrás del Stack — sin esto asomaba el fondo claro de la ventana (franja
+                  que destellaba en modo oscuro). */}
+              <View style={{ flex: 1, backgroundColor: theme.screenBackground }}>
                 {/* Teclado para TODA la app: en Android edge-to-edge (Expo SDK 57) `adjustResize`
                     ya no achica la ventana, así que sin esto el teclado tapa cualquier input.
                     `padding` encoge el Stack hasta el borde del teclado y el ScrollView de cada
@@ -141,7 +146,10 @@ export default function RootLayout() {
                     RootBottomTabBar queda afuera a propósito: el teclado la tapa en vez de
                     empujarla, así no le resta alto al formulario. */}
                 <KeyboardAvoidingView behavior="padding" style={{ flex: 1 }}>
-                  <Stack screenOptions={{ headerShown: false }} />
+                  {/* 'slide_from_right': push opaco clásico. El default de Android (la pantalla saliente
+                      se corre a la izquierda + cross-fade de la entrante encima) se veía como un
+                      "pestañeo" que se mueve de lado. Solo el Stack raíz; los anidados no se tocan. */}
+                  <Stack screenOptions={{ headerShown: false, animation: 'slide_from_right' }} />
                 </KeyboardAvoidingView>
                 <RootBottomTabBar />
               </View>
