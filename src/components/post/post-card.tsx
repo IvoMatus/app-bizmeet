@@ -1,7 +1,7 @@
 import { router } from 'expo-router';
 import { SymbolView } from 'expo-symbols';
-import type { ComponentProps } from 'react';
-import { Pressable, StyleSheet, View, type ViewStyle } from 'react-native';
+import { useState, type ComponentProps } from 'react';
+import { Pressable, StyleSheet, View, type TextLayoutEventData, type ViewStyle } from 'react-native';
 
 import { POST_TYPE_LABEL, timeAgo } from '@/components/post/post-data';
 import { PostMediaHero } from '@/components/post/post-attachments';
@@ -72,6 +72,66 @@ function BarAction({ label, icon, text, style }: { label: string; icon: SymbolNa
   );
 }
 
+const DESCRIPTION_LINES = 3;
+const MORE_SUFFIX = '… ver más';
+
+/** Primeras DESCRIPTION_LINES líneas del texto medido, con la última recortada (a palabra entera)
+ * para que "… ver más" entre en la misma línea. null si el texto no llega a truncarse. */
+function collapseDescription(lines: TextLayoutEventData['lines']): string | null {
+  if (lines.length <= DESCRIPTION_LINES) return null;
+  const last = lines[DESCRIPTION_LINES - 1];
+  const lastText = last.text.trimEnd();
+  // ponytail: ancho promedio por carácter de la línea, no glifo a glifo. Si un caso raro se pasa,
+  // numberOfLines corta con "…" y se pierde el "ver más" (como antes); medir el sufijo con otro
+  // Text oculto si pasa en la práctica.
+  const charWidth = last.width / Math.max(lastText.length, 1);
+  const lineWidth = Math.max(...lines.map((l) => l.width)); // ≈ ancho del contenedor
+  const room = Math.floor(lineWidth / charWidth) - MORE_SUFFIX.length - 1;
+  // +1: si el corte cae justo en un espacio la última palabra queda entera; si no, se descarta a medias.
+  const cut = room >= lastText.length ? lastText : lastText.slice(0, room + 1).replace(/\s*\S*$/, '');
+  return lines.slice(0, DESCRIPTION_LINES - 1).map((l) => l.text).join('') + cut;
+}
+
+/** Descripción truncada con "ver más"/"ver menos" inline. El truncado se detecta midiendo una
+ * copia invisible sin límite de líneas (onTextLayout del texto visible, con numberOfLines, en
+ * Android solo reporta las líneas visibles). En web no hay onTextLayout: queda el corte con "…". */
+function PostDescription({ text }: { text: string }) {
+  const theme = useTheme();
+  const [collapsed, setCollapsed] = useState<string | null>(null);
+  const [expanded, setExpanded] = useState(false);
+
+  // Text anidado con onPress: toma el toque él mismo, así que no dispara la navegación de la tarjeta.
+  const toggle = (
+    <ThemedText
+      type="smallBold"
+      accessibilityRole="button"
+      accessibilityLabel={expanded ? 'Ver menos texto' : 'Ver texto completo'}
+      onPress={() => setExpanded(!expanded)}
+      style={{ color: theme.accentText }}>
+      {expanded ? 'ver menos' : 'ver más'}
+    </ThemedText>
+  );
+
+  return (
+    <View>
+      <ThemedText
+        type="small"
+        numberOfLines={expanded ? undefined : DESCRIPTION_LINES}
+        style={[styles.description, { color: theme.textBody }]}>
+        {collapsed === null ? text : expanded ? <>{text} {toggle}</> : <>{collapsed}{'… '}{toggle}</>}
+      </ThemedText>
+      <View aria-hidden style={styles.measure}>
+        <ThemedText
+          type="small"
+          onTextLayout={(e) => setCollapsed(collapseDescription(e.nativeEvent.lines))}
+          style={styles.description}>
+          {text}
+        </ThemedText>
+      </View>
+    </View>
+  );
+}
+
 /** Tarjeta completa del feed (vista "COMPLETA" de GET /posts/feed, Figma 2043:1778 / 2043:3343):
  * autor + chip de rubro, título, copy, hero con el primer adjunto (ver `post-attachments.tsx`) y
  * barra social estática. Regla del usuario: la escala tipográfica es la del "Nuevo Modo Oscuro"
@@ -138,9 +198,7 @@ export function PostCard({ post, rubros }: { post: PostView; rubros: Rubro[] | n
         <ThemedText numberOfLines={2} style={[styles.feedTitle, { color: theme.textPrimary }]}>
           {post.titulo}
         </ThemedText>
-        <ThemedText type="small" numberOfLines={3} style={[styles.description, { color: theme.textBody }]}>
-          {post.descripcion}
-        </ThemedText>
+        <PostDescription text={post.descripcion} />
       </View>
 
       <PostMediaHero adjuntos={post.adjuntos} />
@@ -300,6 +358,14 @@ const styles = StyleSheet.create({
   },
   description: {
     fontWeight: '400',
+  },
+  // Copia de medición: mismo ancho que la descripción, fuera del flujo, invisible y sin toques.
+  measure: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    opacity: 0,
+    pointerEvents: 'none',
   },
   socialBar: {
     flexDirection: 'row',
