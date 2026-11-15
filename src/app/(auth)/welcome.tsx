@@ -22,6 +22,9 @@ const GOOGLE_ICON_XML = `<svg width="16" height="16" viewBox="0 0 16 16" fill="n
 <path d="M8 3.16667C9.18 3.16667 10.2333 3.57333 11.0667 4.36667L13.3467 2.08667C11.9667 0.793333 10.16 0 8 0C4.88667 0 2.16667 1.75333 0.84 4.38667L3.52 6.48667C4.15333 4.6 5.92 3.16667 8 3.16667V3.16667" fill="#EA4335"/>
 </svg>`;
 
+// Google SSO oculto por ahora (useSSO y la ruta sso-callback siguen vivos): poner en true para volver a mostrarlo.
+const SHOW_GOOGLE_SSO = false;
+
 const KEY_ICON_XML = `<svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
 <path d="M8.75 4.08333C9.3939 4.08333 9.91667 4.6061 9.91667 5.25M12.25 5.25C12.2503 6.35858 11.7254 7.40177 10.835 8.06218C9.94464 8.72259 8.79402 8.92213 7.73325 8.60008L6.41667 9.91667H5.25V11.0833H4.08333V12.25H2.33333C2.01138 12.25 1.75 11.9886 1.75 11.6667V10.1582C1.75003 10.0035 1.81151 9.85512 1.92092 9.74575L5.39992 6.26675C5.0023 4.95228 5.41014 3.52674 6.44282 2.62147C7.47549 1.71621 8.94216 1.49851 10.1933 2.0648C11.4444 2.63109 12.2487 3.87671 12.25 5.25L8.75 4.08333" stroke="currentColor" stroke-width="1.16667" stroke-linecap="round" stroke-linejoin="round"/>
 </svg>`;
@@ -113,31 +116,41 @@ export default function HomeScreen() {
             Conecta, colabora y expande tus oportunidades
           </ThemedText>
 
-          <Pressable
-            style={[styles.googleButton, { backgroundColor: theme.onMedia }]}
-            accessibilityRole="button"
-            accessibilityState={{ disabled: googleLoading, busy: googleLoading }}
-            disabled={googleLoading}
-            onPress={continueWithGoogle}>
-            {googleLoading ? <ActivityIndicator size="small" /> : <SvgXml xml={GOOGLE_ICON_XML} width={16} height={16} />}
-            <ThemedText style={[styles.googleButtonLabel, { color: theme.welcomeGoogleLabel }]}>Continuar con Google</ThemedText>
-          </Pressable>
+          <View style={styles.actions}>
+            {SHOW_GOOGLE_SSO && (
+              <Pressable
+                style={[styles.primaryButton, { backgroundColor: theme.onMedia }]}
+                accessibilityRole="button"
+                accessibilityState={{ disabled: googleLoading, busy: googleLoading }}
+                disabled={googleLoading}
+                onPress={continueWithGoogle}>
+                {googleLoading ? <ActivityIndicator size="small" /> : <SvgXml xml={GOOGLE_ICON_XML} width={16} height={16} />}
+                <ThemedText style={[styles.primaryButtonLabel, { color: theme.welcomeGoogleLabel }]}>Continuar con Google</ThemedText>
+              </Pressable>
+            )}
 
-          <Pressable
-            style={[styles.generalButton, { backgroundColor: theme.welcomeButton, borderColor: theme.welcomeButtonBorder }]}
-            onPress={() => router.push('/(auth)/register/aviso-privacidad')}>
-            <View style={styles.generalButtonLeft}>
-              <View style={[styles.keyChip, { backgroundColor: theme.welcomeKeyChip }]}>
-                <SvgXml xml={tint(KEY_ICON_XML, theme.welcomeText)} width={14} height={14} />
+            <Pressable
+              style={[styles.primaryButton, { backgroundColor: theme.onMedia }]}
+              accessibilityRole="button"
+              onPress={() => router.push('/(auth)/register/aviso-privacidad')}>
+              <ThemedText style={[styles.primaryButtonLabel, { color: theme.welcomeGoogleLabel }]}>Registro</ThemedText>
+            </Pressable>
+
+            <Pressable
+              style={[styles.generalButton, { backgroundColor: theme.welcomeButton, borderColor: theme.welcomeButtonBorder }]}
+              accessibilityRole="button"
+              onPress={() => router.push('/(auth)/login')}>
+              <View style={styles.generalButtonLeft}>
+                <View style={[styles.keyChip, { backgroundColor: theme.welcomeKeyChip }]}>
+                  <SvgXml xml={tint(KEY_ICON_XML, theme.welcomeText)} width={14} height={14} />
+                </View>
+                <ThemedText style={[styles.generalButtonLabel, { color: theme.onMedia }]}>Login</ThemedText>
               </View>
-              <ThemedText style={[styles.generalButtonLabel, { color: theme.onMedia }]}>
-                Continuar con acceso general
-              </ThemedText>
-            </View>
-            <View style={[styles.arrowChip, { backgroundColor: theme.welcomeArrowChip, borderColor: theme.welcomeSkyBorder }]}>
-              <SvgXml xml={tint(ARROW_ICON_XML, theme.welcomeArrowIcon)} width={14} height={14} />
-            </View>
-          </Pressable>
+              <View style={[styles.arrowChip, { backgroundColor: theme.welcomeArrowChip, borderColor: theme.welcomeSkyBorder }]}>
+                <SvgXml xml={tint(ARROW_ICON_XML, theme.welcomeArrowIcon)} width={14} height={14} />
+              </View>
+            </Pressable>
+          </View>
 
           <View style={styles.benefitsRow}>
             <View style={styles.benefitColumn}>
@@ -247,7 +260,10 @@ const styles = StyleSheet.create({
     lineHeight: 18,
     marginBottom: 16,
   },
-  googleButton: {
+  actions: {
+    gap: 10,
+  },
+  primaryButton: {
     width: '100%',
     height: 48,
     borderRadius: 16,
@@ -256,12 +272,11 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 12,
   },
-  googleButtonLabel: {
+  primaryButtonLabel: {
     fontSize: 14,
     fontWeight: '700',
   },
   generalButton: {
-    marginTop: 10,
     width: '100%',
     height: 48,
     borderWidth: 1,
