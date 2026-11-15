@@ -110,7 +110,8 @@ export default function InicioScreen() {
           <ThemedText type="subtitle" style={{ fontSize: 22, lineHeight: 28, color: theme.textPrimary }}>
             Muro General
           </ThemedText>
-          <ThemedText type="small" style={{ color: theme.textMuted }}>
+          {/* Una sola línea: a 360dp, con los botones al lado, el texto largo partía en dos. */}
+          <ThemedText type="small" numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8} style={{ color: theme.textMuted }}>
             {active ? 'Publicaciones de todo el club' : 'Requerimientos disponibles para tu perfil'}
           </ThemedText>
         </View>
@@ -119,6 +120,7 @@ export default function InicioScreen() {
             accessibilityRole="button"
             accessibilityLabel="Ver mis publicaciones"
             onPress={() => router.push('/publicacion/mis-publicaciones')}
+            hitSlop={Spacing.one}
             style={[styles.iconButton, { backgroundColor: theme.surfaceInset }]}>
             <SymbolView tintColor={theme.textMuted} name={{ ios: 'list.bullet', android: 'list', web: 'list' }} size={18} />
           </Pressable>
@@ -126,6 +128,7 @@ export default function InicioScreen() {
             accessibilityRole="button"
             accessibilityLabel="Filtrar publicaciones"
             onPress={() => setFiltersOpen(true)}
+            hitSlop={Spacing.one}
             style={[styles.iconButton, { backgroundColor: theme.surfaceInset }]}>
             <SymbolView
               tintColor={theme.textMuted}
@@ -139,6 +142,7 @@ export default function InicioScreen() {
               accessibilityLabel={blocked ? 'Publicar (empresa bloqueada)' : 'Publicar'}
               accessibilityHint={blocked ? 'Tu empresa está bloqueada y no puede publicar' : 'Abre el formulario para crear una nueva publicación'}
               onPress={onPublish}
+              hitSlop={Spacing.one}
               style={[styles.iconButton, { backgroundColor: blocked ? theme.textMuted : theme.accent }]}>
               <SymbolView tintColor={theme.screenBackground} name={{ ios: 'plus', android: 'add', web: 'add' }} size={20} />
             </Pressable>
@@ -219,6 +223,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: Spacing.two,
   },
+  // 40px visibles + hitSlop={Spacing.one} = 48px de área táctil.
   iconButton: {
     width: 40,
     height: 40,
