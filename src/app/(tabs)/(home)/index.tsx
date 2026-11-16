@@ -16,6 +16,9 @@ import { Spacing } from '@/constants/theme';
 import { useActiveCompany } from '@/hooks/use-active-company';
 import { useTheme } from '@/hooks/use-theme';
 import { fetchPostsFeed, type FeedView, type PostSinDetalleView, type PostView } from '@/utils/api';
+import { bootLog } from '@/utils/boot-log';
+
+let feedBootLogged = false;
 
 export default function InicioScreen() {
   const theme = useTheme();
@@ -39,6 +42,12 @@ export default function InicioScreen() {
   const [loadingMore, setLoadingMore] = useState(false);
 
   const companyId = active?.company.id;
+
+  useEffect(() => {
+    if (!feed || feedBootLogged) return;
+    feedBootLogged = true;
+    bootLog(`primer render del feed con datos (${feed.items.length} publicaciones)`);
+  }, [feed]);
 
   const loadFeed = useCallback(
     (cursor?: string) => {

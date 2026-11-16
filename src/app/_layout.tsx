@@ -15,6 +15,7 @@ import { useAuthToken } from '@/hooks/use-auth-token';
 import { ProfileAvatarProvider } from '@/hooks/use-profile-avatar';
 import { useTheme } from '@/hooks/use-theme';
 import { hasUserProfile } from '@/utils/api';
+import { bootLog } from '@/utils/boot-log';
 
 const publishableKey = process.env.EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY!;
 if (!publishableKey) {
@@ -22,6 +23,8 @@ if (!publishableKey) {
 }
 
 SplashScreen.preventAutoHideAsync();
+
+bootLog('módulo raíz cargado');
 
 // ponytail: guard by segment; the whole register flow is exempt, not just step-4. Clerk's
 // `isSignedIn` flips true inside step-3a's `signUp.finalize()`, *before* it awaits
@@ -39,6 +42,10 @@ function AuthGuard() {
   // Cuenta de Clerk cuyo perfil de BizMeet ya se confirmó: se chequea una sola vez por sesión.
   // Solo se guarda el "sí" — un "no" se vuelve a preguntar al salir del registro (ya completado).
   const confirmedUserId = useRef<string | null>(null);
+
+  useEffect(() => {
+    bootLog(`Clerk isLoaded=${isLoaded} isSignedIn=${isSignedIn}`);
+  }, [isLoaded, isSignedIn]);
 
   useEffect(() => {
     if (!isLoaded) return;
@@ -88,6 +95,10 @@ export default function RootLayout() {
     Inter_700Bold,
     Inter_800ExtraBold,
   });
+
+  useEffect(() => {
+    if (fontsLoaded || fontsError) bootLog('fuentes listas');
+  }, [fontsLoaded, fontsError]);
 
   if (fontsError) console.warn('[fonts][diag] Inter no pudo cargar, se usa la fuente del sistema', fontsError);
   if (!fontsLoaded && !fontsError) return null;

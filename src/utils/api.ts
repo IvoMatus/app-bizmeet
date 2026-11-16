@@ -1,4 +1,5 @@
 import { reportAuthOutcome } from '@/hooks/use-auth-token';
+import { bootLog, bootTimer } from '@/utils/boot-log';
 
 const API_URL = process.env.EXPO_PUBLIC_API_URL;
 
@@ -10,7 +11,13 @@ if (!g.__bizmeetFetchPatched) {
   g.__bizmeetFetchPatched = true;
   const originalFetch: typeof globalThis.fetch = globalThis.fetch;
   globalThis.fetch = (async (...args: Parameters<typeof globalThis.fetch>) => {
+    const target = typeof args[0] === 'string' ? args[0] : args[0] instanceof URL ? args[0].href : args[0].url;
+    const traced = __DEV__ && !!API_URL && target.startsWith(API_URL);
+    const label = traced ? `${args[1]?.method ?? (args[0] instanceof Request ? args[0].method : 'GET')} ${target.slice(API_URL!.length)}` : '';
+    const elapsed = bootTimer();
+    if (traced) bootLog(`→ ${label}`);
     const response = await originalFetch(...args);
+    if (traced) bootLog(`← ${label} ${response.status} ${elapsed()}`);
     // Solo nos interesa si NUESTRA API rechazó el token — el patch es sobre `global.fetch`
     // completo, así que también pasan por acá la telemetría de Clerk, Spaces, etc. Sin este
     // filtro, un 4xx/5xx de cualquier otro dominio (p.ej. clerk-telemetry.com, que no afecta
@@ -120,11 +127,26 @@ export type UserProfileView = {
   documentoIdentidad?: DocumentoIdentidad;
 };
 
+// GET /users/:id en vuelo, compartido: en frío lo piden a la vez AuthGuard (¿existe el perfil?)
+// y ProfileAvatarProvider (la foto), y el effect de AuthGuard puede volver a correr mientras
+// espera el token — cada corrida sumaba otra request igual (se vieron 4). Una sola request; no
+// es un cache: se suelta al resolverse, así Perfil/Editar siguen trayendo datos frescos.
+const userProfileInFlight = new Map<string, Promise<Response>>();
+function getUserProfileResponse(clerkUserId: string, token: string): Promise<Response> {
+  let request = userProfileInFlight.get(clerkUserId);
+  if (!request) {
+    request = fetch(`${API_URL}/users/${clerkUserId}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    }).finally(() => userProfileInFlight.delete(clerkUserId));
+    userProfileInFlight.set(clerkUserId, request);
+  }
+  // clone: cada llamador lee su propio body.
+  return request.then((response) => response.clone());
+}
+
 /** Trae el perfil del usuario logueado desde api-bizmeet. */
 export async function fetchUserProfile(clerkUserId: string, token: string): Promise<UserProfileView> {
-  const response = await fetch(`${API_URL}/users/${clerkUserId}`, {
-    headers: { Authorization: `Bearer ${token}` },
-  });
+  const response = await getUserProfileResponse(clerkUserId, token);
   if (!response.ok) {
     const body = await response.json().catch(() => null);
     throw new Error(body?.message ?? `No se pudo cargar el perfil (${response.status}).`);
@@ -135,9 +157,7 @@ export async function fetchUserProfile(clerkUserId: string, token: string): Prom
 /** ¿La cuenta de Clerk ya tiene perfil de BizMeet? GET /users/:id responde 404 si no (p. ej. alta
  * con Google, o un registro cuyo POST /users falló). Otros errores se propagan. */
 export async function hasUserProfile(clerkUserId: string, token: string): Promise<boolean> {
-  const response = await fetch(`${API_URL}/users/${clerkUserId}`, {
-    headers: { Authorization: `Bearer ${token}` },
-  });
+  const response = await getUserProfileResponse(clerkUserId, token);
   if (response.status === 404) return false;
   if (!response.ok) throw new Error(`No se pudo verificar el perfil (${response.status}).`);
   return true;

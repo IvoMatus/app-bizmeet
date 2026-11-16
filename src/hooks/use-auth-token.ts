@@ -1,6 +1,8 @@
 import { getClerkInstance } from '@clerk/expo';
 import { useCallback } from 'react';
 
+import { bootLog, bootTimer } from '@/utils/boot-log';
+
 // ponytail: módulo, no estado de React — el cache, el in-flight y el contador de 401
 // consecutivos deben compartirse entre los ~18 call-sites de la app (cada uno llama al hook,
 // pero todos apuntan a la misma sesión singleton de Clerk) Y con `api.ts`, que es quien de
@@ -33,21 +35,31 @@ let consecutive401s = 0;
  */
 function waitForClerkLoaded(clerk: ReturnType<typeof getClerkInstance>): Promise<void> {
   if (clerk.loaded) return Promise.resolve();
+  // `on('status')` y no `addListener`: `loaded` sale de `status` (ready/degraded), y el cambio de
+  // status va por el event bus — `addListener` solo avisa cambios de recursos (sesión/usuario).
+  // Con `addListener` la espera quedaba colgada hasta el siguiente evento de recursos: ~45s en
+  // frío sin pedirle nada a la API. 'error' también suelta (sin sesión → token null), así no
+  // se cuelga para siempre.
   return new Promise((resolve) => {
-    const unsubscribe = clerk.addListener(() => {
-      if (clerk.loaded) {
-        unsubscribe();
-        resolve();
-      }
-    });
+    const onStatus = (status: string) => {
+      if (status === 'loading') return;
+      clerk.off('status', onStatus);
+      resolve();
+    };
+    clerk.on('status', onStatus, { notify: true });
   });
 }
 
 async function refreshToken(): Promise<string | null> {
   try {
     const clerk = getClerkInstance();
+    const waitTime = bootTimer();
+    bootLog(`getToken() pedido (Clerk loaded=${clerk.loaded})`);
     await waitForClerkLoaded(clerk);
+    const waited = waitTime();
+    const tokenTime = bootTimer();
     const token = await clerk.session?.getToken({ skipCache: true });
+    bootLog(`getToken() resuelto ${token ? 'ok' : 'null'} — espera a Clerk cargado ${waited}, session.getToken ${tokenTime()}`);
     if (!token) return null;
     cached = { token, expiresAt: Date.now() + TOKEN_TTL_MS };
     return token;

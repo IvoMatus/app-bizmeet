@@ -6,6 +6,7 @@ import Animated, { Easing, Keyframe } from 'react-native-reanimated';
 import { scheduleOnRN } from 'react-native-worklets';
 
 import { useTheme } from '@/hooks/use-theme';
+import { bootLog } from '@/utils/boot-log';
 
 const DURATION = 600;
 
@@ -52,6 +53,7 @@ export function AnimatedSplashOverlay() {
     <View
       onLayout={() => {
         SplashScreen.hideAsync().finally(() => {
+          bootLog('splash oculto');
           setAnimate(true);
         });
       }}
