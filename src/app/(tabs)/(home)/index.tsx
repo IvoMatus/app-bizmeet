@@ -6,12 +6,13 @@ import { ActivityIndicator, FlatList, Pressable, StyleSheet, View } from 'react-
 import { useAuthToken } from '@/hooks/use-auth-token';
 
 import { CategoryPills, GENERAL_FEED } from '@/components/post/category-pills';
-import { PostCard, PostCardBasic } from '@/components/post/post-card';
+import { PostCard, PostCardBasic, PostCardSkeleton } from '@/components/post/post-card';
 import { EMPTY_FILTERS, PostFiltersSheet, type AppliedFilters } from '@/components/post/post-filters-sheet';
 import { useCompanyBlocked } from '@/components/post/use-company-blocked';
 import { useRubrosCatalog } from '@/components/post/use-rubros-catalog';
 import { showAlert } from '@/components/ui/app-alert';
 import { ThemedText } from '@/components/themed-text';
+import { SkeletonGroup } from '@/components/ui/skeleton';
 import { Spacing } from '@/constants/theme';
 import { useActiveCompany } from '@/hooks/use-active-company';
 import { useTheme } from '@/hooks/use-theme';
@@ -159,7 +160,18 @@ export default function InicioScreen() {
         </View>
       </View>
 
-      {active !== undefined && active && <CategoryPills industries={catalog} selected={category} onSelect={setCategory} />}
+      {active !== undefined && active && (
+        <CategoryPills
+          industries={catalog}
+          selected={category}
+          // Vacía el feed al cambiar de rubro: así se ven los esqueletos y no el rubro anterior.
+          onSelect={(next) => {
+            if (next === category) return; // mismo rubro: no recarga, no hay que vaciar
+            setFeed(null);
+            setCategory(next);
+          }}
+        />
+      )}
 
       {error && (
         <Pressable onPress={onRetry} accessibilityRole="button" accessibilityLabel="Reintentar">
@@ -169,7 +181,12 @@ export default function InicioScreen() {
         </Pressable>
       )}
 
-      {loadingInitial && !error && <ActivityIndicator color={theme.accent} style={styles.initialLoading} />}
+      {loadingInitial && !error && (
+        <SkeletonGroup label="Cargando publicaciones" style={styles.list}>
+          <PostCardSkeleton />
+          <PostCardSkeleton />
+        </SkeletonGroup>
+      )}
 
       {!loadingInitial && (
         <FlatList
@@ -243,9 +260,6 @@ const styles = StyleSheet.create({
   list: {
     padding: Spacing.three,
     gap: Spacing.three,
-  },
-  initialLoading: {
-    marginTop: Spacing.five,
   },
   footerLoading: {
     marginVertical: Spacing.three,

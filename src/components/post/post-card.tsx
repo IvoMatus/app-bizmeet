@@ -8,6 +8,7 @@ import { PostMediaHero } from '@/components/post/post-attachments';
 import { rubroNombre } from '@/components/post/use-rubros-catalog';
 import { StatusPill, useStatusPalette, type StatusVariant } from '@/components/profile/profile-primitives';
 import { ThemedText } from '@/components/themed-text';
+import { SkeletonBlock, skeletonLine } from '@/components/ui/skeleton';
 import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import type { PostSinDetalleView, PostView, Rubro } from '@/utils/api';
@@ -232,6 +233,51 @@ export function PostCard({ post, rubros }: { post: PostView; rubros: Rubro[] | n
 }
 
 /**
+ * Esqueleto de PostCard (usar dentro de un SkeletonGroup): mismos estilos de tarjeta, fila de
+ * autor, copy y barra — y cada bloque con el alto de la línea real — para que no salte el
+ * layout cuando llegan los datos. Siempre con imagen (el caso más alto).
+ */
+export function PostCardSkeleton() {
+  const theme = useTheme();
+  return (
+    <View style={[styles.card, { backgroundColor: theme.feedCard, borderColor: theme.surfaceBorder, shadowColor: theme.cardShadow }]}>
+      <View style={styles.author}>
+        <SkeletonBlock style={styles.skeletonAvatar} />
+        <View style={styles.authorText}>
+          <View style={styles.nameRow}>
+            <SkeletonBlock style={skeletonLine(20, '45%')} />
+            <SkeletonBlock style={styles.skeletonPill} />
+          </View>
+          <SkeletonBlock style={skeletonLine(16, '35%')} />
+        </View>
+      </View>
+      <View style={styles.copy}>
+        <View>
+          <SkeletonBlock style={skeletonLine(24, '90%')} />
+          <SkeletonBlock style={skeletonLine(24, '60%')} />
+        </View>
+        <View>
+          <SkeletonBlock style={skeletonLine(20, '100%')} />
+          <SkeletonBlock style={skeletonLine(20, '95%')} />
+          <SkeletonBlock style={skeletonLine(20, '70%')} />
+        </View>
+      </View>
+      <SkeletonBlock style={styles.skeletonHero} />
+      <View style={[styles.socialBar, { borderTopColor: theme.surfaceInset }]}>
+        <View style={styles.socialLeft}>
+          <SkeletonBlock style={styles.skeletonIcon} />
+          <SkeletonBlock style={styles.skeletonIcon} />
+        </View>
+        <View style={styles.socialRight}>
+          <SkeletonBlock style={[styles.skeletonIcon, styles.skeletonSaveIcon]} />
+          <SkeletonBlock style={[styles.skeletonIcon, styles.skeletonShare]} />
+        </View>
+      </View>
+    </View>
+  );
+}
+
+/**
  * RN-PUB-06: variante reducida para perfil básico viendo el muro de requerimientos (vista
  * "SIN_DETALLE" de GET /posts/feed) — sin imagen, sin autor, sin descripción.
  */
@@ -397,6 +443,34 @@ const styles = StyleSheet.create({
   saveAction: {
     padding: Spacing.one,
     borderRadius: 6,
+  },
+  // PostCardSkeleton: mismas medidas que lo real (avatar 40, pill 22 = 4+14+4, imagen 16:9,
+  // íconos 15 y "Guardar" con su padding de 4).
+  skeletonAvatar: {
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+  },
+  skeletonPill: {
+    width: 72,
+    height: 22,
+    borderRadius: 999,
+  },
+  skeletonHero: {
+    width: '100%',
+    aspectRatio: 16 / 9,
+    borderRadius: 12,
+  },
+  skeletonIcon: {
+    width: 15,
+    height: 15,
+    borderRadius: 4,
+  },
+  skeletonSaveIcon: {
+    margin: Spacing.one,
+  },
+  skeletonShare: {
+    width: 72,
   },
   // PostCardBasic (sin cambios)
   badgeRow: {
