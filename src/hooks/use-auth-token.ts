@@ -21,7 +21,9 @@ import { bootLog, bootTimer } from '@/utils/boot-log';
 //    response. Dos 401 reales consecutivos (no dos intentos de refresh — dos respuestas reales
 //    del backend) fuerzan sign-out, en vez de reintentar para siempre con una sesión rota.
 const TOKEN_TTL_MS = 30_000; // bien debajo de la vida del JWT de Clerk (~60s)
-let cached: { token: string; expiresAt: number } | null = null;
+// `sessionId`: el cache es de una sesión — tras cerrar sesión y entrar con otra cuenta, el token
+// de la anterior seguiría "vigente" hasta 30s y las requests saldrían a nombre de esa cuenta.
+let cached: { token: string; expiresAt: number; sessionId: string } | null = null;
 let inFlight: Promise<string | null> | null = null;
 let consecutive401s = 0;
 
@@ -60,8 +62,8 @@ async function refreshToken(): Promise<string | null> {
     const tokenTime = bootTimer();
     const token = await clerk.session?.getToken({ skipCache: true });
     bootLog(`getToken() resuelto ${token ? 'ok' : 'null'} — espera a Clerk cargado ${waited}, session.getToken ${tokenTime()}`);
-    if (!token) return null;
-    cached = { token, expiresAt: Date.now() + TOKEN_TTL_MS };
+    if (!token || !clerk.session) return null;
+    cached = { token, expiresAt: Date.now() + TOKEN_TTL_MS, sessionId: clerk.session.id };
     return token;
   } catch (err) {
     if (__DEV__) console.warn('[auth][diag] getToken() reventó, se trata como sesión no disponible', err);
@@ -70,7 +72,7 @@ async function refreshToken(): Promise<string | null> {
 }
 
 async function getAuthToken(): Promise<string | null> {
-  if (cached && cached.expiresAt > Date.now()) return cached.token;
+  if (cached && cached.expiresAt > Date.now() && cached.sessionId === getClerkInstance().session?.id) return cached.token;
   if (!inFlight) {
     inFlight = refreshToken().finally(() => {
       inFlight = null;

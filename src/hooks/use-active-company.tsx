@@ -1,3 +1,4 @@
+import { useAuth } from '@clerk/expo';
 import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from 'react';
 
 import { useAuthToken } from '@/hooks/use-auth-token';
@@ -32,7 +33,12 @@ const ActiveCompanyContext = createContext<ActiveCompanyState | null>(null);
  */
 export function ActiveCompanyProvider({ children }: { children: ReactNode }) {
   const getToken = useAuthToken();
-  const [companies, setCompanies] = useState<MyCompany[] | null>(null);
+  // Este provider vive en la raíz, arriba de (auth): monta antes del login. Sin sesión no se
+  // pide nada (antes cargaba una vez al montar, sin token → quedaba "No se pudo obtener la
+  // sesión." para siempre tras registrarse o loguearse) y se vuelve a pedir al cambiar de cuenta.
+  const { userId } = useAuth();
+  // De qué cuenta son las empresas cargadas: al cambiar de cuenta no se exponen las de la anterior.
+  const [loaded, setLoaded] = useState<{ userId: string; companies: MyCompany[] } | null>(null);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [context, setContext] = useState<CompanyContext | null>(null);
   // Para qué empresa vale `context` — si no coincide con `activeId` todavía no llegó la
@@ -42,20 +48,23 @@ export function ActiveCompanyProvider({ children }: { children: ReactNode }) {
   const [error, setError] = useState<string | null>(null);
 
   const load = useCallback(() => {
+    if (!userId) return;
     getToken()
       .then((token) => {
         if (!token) throw new Error('No se pudo obtener la sesión.');
         return fetchMyCompanies(token);
       })
       .then((mine) => {
-        setCompanies(mine);
+        setLoaded({ userId, companies: mine });
         setError(null);
         setActiveId((current) => (current && mine.some((m) => m.company.id === current) ? current : mine[0]?.company.id ?? null));
       })
       .catch((e: Error) => setError(e.message));
-  }, [getToken]);
+  }, [getToken, userId]);
 
   useEffect(load, [load]);
+
+  const companies = loaded && loaded.userId === userId ? loaded.companies : null;
 
   // Recalcula menú/permisos (contexto) cada vez que cambia la empresa activa.
   useEffect(() => {

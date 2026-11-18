@@ -4,6 +4,7 @@ import { useRef, useState } from 'react';
 import { AccessibilityInfo, ScrollView, StyleSheet, View } from 'react-native';
 import { Controller, useForm, useWatch } from 'react-hook-form';
 
+import { useActiveCompany } from '@/hooks/use-active-company';
 import { useAuthToken } from '@/hooks/use-auth-token';
 import { useDiscardGuard } from '@/hooks/use-discard-guard';
 import { useTheme } from '@/hooks/use-theme';
@@ -52,6 +53,7 @@ const REQUIRED = { required: 'Requerido' };
 export default function CrearEmpresaScreen() {
   const theme = useTheme();
   const getToken = useAuthToken();
+  const { reload: reloadCompanies } = useActiveCompany();
   const scrollRef = useRef<ScrollView>(null);
   const [submitting, setSubmitting] = useState(false);
   const [documentos, setDocumentos] = useState<KybDocuments>({});
@@ -107,6 +109,8 @@ export default function CrearEmpresaScreen() {
       if (fallidos.length > 0) {
         showAlert('Empresa creada, pero faltan documentos', `No se pudieron subir: ${fallidos.join(', ')}.`);
       }
+      // La empresa nueva tiene que aparecer ya en Mis Empresas, el Muro y el aviso de pago pendiente.
+      reloadCompanies();
       allowExit();
       router.back();
     } catch (e) {
