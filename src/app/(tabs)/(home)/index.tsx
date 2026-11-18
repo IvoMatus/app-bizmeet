@@ -1,4 +1,4 @@
-import { router, useNavigation } from 'expo-router';
+import { router, useLocalSearchParams, useNavigation } from 'expo-router';
 import { SymbolView } from 'expo-symbols';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, FlatList, Pressable, StyleSheet, View } from 'react-native';
@@ -25,6 +25,8 @@ export default function InicioScreen() {
   const theme = useTheme();
   const getToken = useAuthToken();
   const navigation = useNavigation();
+  // Id de la última publicación creada (lo pone publicacion/crear al volver): recarga el feed.
+  const { publicada } = useLocalSearchParams<{ publicada?: string }>();
   const { active, error: companyError, reload: reloadCompany } = useActiveCompany();
   const { rubros: catalog } = useRubrosCatalog();
   const { blocked } = useCompanyBlocked(active?.company.id);
@@ -76,7 +78,7 @@ export default function InicioScreen() {
     if (active === undefined) return;
     loadFeed();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [active, category]);
+  }, [active, category, publicada]);
 
   const items = useMemo(() => {
     if (!feed) return [];

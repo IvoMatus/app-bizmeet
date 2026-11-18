@@ -332,13 +332,15 @@ export default function CrearPublicacionScreen() {
           token
         );
       })
-      .then(() => {
+      .then((post) => {
         showAlert('Publicación creada', `"${data.title}" se publicó como ${selectedType.label}.`, [
           {
             text: 'OK',
             onPress: () => {
               allowExit();
-              router.back();
+              // Vuelve al Muro con `publicada`: el Muro recarga el feed (con el rubro activo) al
+              // cambiar ese param — un back() pelado lo dejaba con la lista vieja.
+              router.dismissTo({ pathname: '/', params: { publicada: post.id } });
             },
           },
         ]);
