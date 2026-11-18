@@ -12,13 +12,15 @@ export default function Step4Screen() {
       <SafeAreaView style={styles.flex}>
         <ScrollView contentContainerStyle={styles.content}>
           <Step4Success
-            // Muro primero y Crear Empresa encima: el "atrás" de Crear Empresa vuelve al Muro, no al registro.
+            // Muro primero (anchor) y Crear Empresa encima, en el Stack de Inicio: el "atrás" vuelve al
+            // Muro, no al registro. Una sola navegación con el grupo explícito: antes era replace('/') +
+            // push('/empresa/crear') en el mismo tick — el push se resolvía con los segmentos de (auth)
+            // y caía en (company) (desempate alfabético de la ruta compartida) sin Mis Empresas debajo;
+            // el "atrás" saltaba al Muro y Crear Empresa quedaba solo en el Stack de Empresa: tocar esa
+            // pestaña después abría el formulario.
             // ponytail: "Persona Premium" (plan individual) no tiene flujo propio todavía — este CTA lleva a
             // Crear Empresa, que es el único alta de plan pago que existe hoy.
-            onUpgrade={() => {
-              router.replace('/');
-              router.push('/empresa/crear');
-            }}
+            onUpgrade={() => router.replace('/(tabs)/(home)/empresa/crear', { withAnchor: true })}
             onContinueBasic={() => router.replace('/')}
           />
         </ScrollView>

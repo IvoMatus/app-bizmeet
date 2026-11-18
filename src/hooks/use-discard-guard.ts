@@ -3,7 +3,12 @@ import { useCallback, useEffect, useRef } from 'react';
 
 import { showAlert } from '@/components/ui/app-alert';
 
-type ExitGuard = { hasUnsavedChanges: () => boolean; confirm: (onConfirm: () => void) => void };
+type ExitGuard = {
+  hasUnsavedChanges: () => boolean;
+  confirm: (onConfirm: () => void) => void;
+  /** Saca la pantalla de su Stack. */
+  close: () => void;
+};
 
 // ponytail: singleton a nivel de módulo (mismo patrón que el cache de use-auth-token.ts), no un
 // Context — es de la pantalla ENFOCADA (se registra al enfocar y se suelta al perderlo): con un
@@ -15,13 +20,20 @@ type ExitGuard = { hasUnsavedChanges: () => boolean; confirm: (onConfirm: () => 
 let activeGuard: ExitGuard | null = null;
 
 /** Llamado por BottomTabBar antes de navegar: si hay una guardia activa con cambios sin guardar,
- * confirma con el usuario; si no, deja pasar la navegación sin preguntar. */
+ * confirma con el usuario; si no, deja pasar la navegación sin preguntar.
+ *
+ * Irse de un formulario por la barra lo abandona — con o sin cambios —, así que además de cambiar
+ * de tab se saca del Stack de su pestaña: si no, al volver a esa pestaña seguía abierto en vez de
+ * su vista (ej. Empresa → "Registrar Nueva Empresa" → Inicio → Empresa abría el formulario). */
 export function confirmExitIfNeeded(onConfirm: () => void) {
-  if (activeGuard?.hasUnsavedChanges()) {
-    activeGuard.confirm(onConfirm);
-  } else {
+  const guard = activeGuard;
+  if (!guard) return onConfirm();
+  const leave = () => {
+    guard.close();
     onConfirm();
-  }
+  };
+  if (guard.hasUnsavedChanges()) guard.confirm(leave);
+  else leave();
 }
 
 /**
@@ -74,13 +86,8 @@ export function useDiscardGuard(
     useCallback(() => {
       const guard: ExitGuard = {
         hasUnsavedChanges: () => hasUnsavedChangesRef.current,
-        // Descartar desde la barra inferior: además de cambiar de tab, saca esta pantalla de su
-        // Stack — si no, al volver a la pestaña el formulario seguiría ahí con lo "descartado".
-        confirm: (onConfirm) =>
-          confirmDiscard(() => {
-            navigation.goBack();
-            onConfirm();
-          }),
+        confirm: confirmDiscard,
+        close: () => navigation.goBack(),
       };
       activeGuard = guard;
       return () => {
