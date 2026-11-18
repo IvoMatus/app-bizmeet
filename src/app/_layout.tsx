@@ -12,7 +12,6 @@ import { UnreadNotificationsProvider } from '@/components/notifications/unread-n
 import { AppAlertHost } from '@/components/ui/app-alert';
 import { ActiveCompanyProvider } from '@/hooks/use-active-company';
 import { useAuthToken } from '@/hooks/use-auth-token';
-import { ProfileAvatarProvider } from '@/hooks/use-profile-avatar';
 import { useTheme } from '@/hooks/use-theme';
 import { hasUserProfile } from '@/utils/api';
 import { bootLog } from '@/utils/boot-log';
@@ -111,28 +110,25 @@ export default function RootLayout() {
         {/* Arriba del Stack entero: lo usan (tabs) y sus Stacks por pestaña (ej. publicacion/crear
             vía useCompanyBlocked). */}
         <ActiveCompanyProvider>
-          {/* Un solo fetch de avatar por sesión, compartido por la barra inferior y los headers. */}
-          <ProfileAvatarProvider>
-            <UnreadNotificationsProvider>
-              {/* Fondo del tema: en la transición nativa la pantalla saliente se desliza y deja ver
-                  lo que hay detrás del Stack — sin esto asomaba el fondo claro de la ventana (franja
-                  que destellaba en modo oscuro). */}
-              <View style={{ flex: 1, backgroundColor: theme.screenBackground }}>
-                {/* Teclado para TODA la app: en Android edge-to-edge (Expo SDK 57) `adjustResize`
-                    ya no achica la ventana, así que sin esto el teclado tapa cualquier input.
-                    `padding` encoge el Stack hasta el borde del teclado y el ScrollView de cada
-                    pantalla lleva solo el input enfocado a la vista. Va acá y no por pantalla.
-                    La barra inferior se oculta sola con el teclado (ver bottom-tab-bar.tsx). */}
-                <KeyboardAvoidingView behavior="padding" style={{ flex: 1 }}>
-                  {/* 'slide_from_right': push opaco clásico. El default de Android (la pantalla saliente
-                      se corre a la izquierda + cross-fade de la entrante encima) se veía como un
-                      "pestañeo" que se mueve de lado. Los Stacks por pestaña usan el mismo
-                      (tab-stack.tsx, perfil/_layout.tsx). */}
-                  <Stack screenOptions={{ headerShown: false, animation: 'slide_from_right' }} />
-                </KeyboardAvoidingView>
-              </View>
-            </UnreadNotificationsProvider>
-          </ProfileAvatarProvider>
+          <UnreadNotificationsProvider>
+            {/* Fondo del tema: en la transición nativa la pantalla saliente se desliza y deja ver
+                lo que hay detrás del Stack — sin esto asomaba el fondo claro de la ventana (franja
+                que destellaba en modo oscuro). */}
+            <View style={{ flex: 1, backgroundColor: theme.screenBackground }}>
+              {/* Teclado para TODA la app: en Android edge-to-edge (Expo SDK 57) `adjustResize`
+                  ya no achica la ventana, así que sin esto el teclado tapa cualquier input.
+                  `padding` encoge el Stack hasta el borde del teclado y el ScrollView de cada
+                  pantalla lleva solo el input enfocado a la vista. Va acá y no por pantalla.
+                  La barra inferior se oculta sola con el teclado (ver bottom-tab-bar.tsx). */}
+              <KeyboardAvoidingView behavior="padding" style={{ flex: 1 }}>
+                {/* 'slide_from_right': push opaco clásico. El default de Android (la pantalla saliente
+                    se corre a la izquierda + cross-fade de la entrante encima) se veía como un
+                    "pestañeo" que se mueve de lado. Los Stacks por pestaña usan el mismo
+                    (tab-stack.tsx, perfil/_layout.tsx). */}
+                <Stack screenOptions={{ headerShown: false, animation: 'slide_from_right' }} />
+              </KeyboardAvoidingView>
+            </View>
+          </UnreadNotificationsProvider>
         </ActiveCompanyProvider>
         <AppAlertHost />
       </ThemeProvider>

@@ -26,6 +26,7 @@ import { showAlert } from '@/components/ui/app-alert';
 import { COUNTRIES, LANGUAGES } from '@/constants/catalogs';
 import { Spacing } from '@/constants/theme';
 import { ThemedText } from '@/components/themed-text';
+import { useSetProfileAvatarUrl } from '@/hooks/use-profile-avatar';
 import { useTheme } from '@/hooks/use-theme';
 import { fetchUserProfile, updateUserProfile, uploadProfilePhoto, type UpdateUserProfileInput, type UserProfileView } from '@/utils/api';
 
@@ -58,6 +59,7 @@ export default function EditarPerfilScreen() {
   const [saveError, setSaveError] = useState<string | null>(null);
 
   const [avatar, setAvatar] = useState<ImageSourcePropType>(MOCK_PROFILE.avatarUri);
+  const setProfileAvatarUrl = useSetProfileAvatarUrl();
   const [uploading, setUploading] = useState(false);
   const [photoError, setPhotoError] = useState<string | null>(null);
 
@@ -119,7 +121,10 @@ export default function EditarPerfilScreen() {
       const token = await getToken();
       if (!token) throw new Error('No se pudo obtener la sesión.');
       const uploaded = await uploadProfilePhoto(user.id, asset.uri, token, asset.mimeType);
-      if (uploaded.fotoPerfilUrl) setAvatar({ uri: uploaded.fotoPerfilUrl });
+      if (uploaded.fotoPerfilUrl) {
+        setAvatar({ uri: uploaded.fotoPerfilUrl });
+        setProfileAvatarUrl(uploaded.fotoPerfilUrl); // barra inferior y topbars
+      }
     } catch (e) {
       console.error('[editar-perfil] pickAndUploadPhoto failed', e);
       setPhotoError(e instanceof Error ? e.message : 'No se pudo subir la foto de perfil.');

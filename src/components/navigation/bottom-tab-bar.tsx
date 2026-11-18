@@ -1,13 +1,14 @@
 import { Image } from 'expo-image';
 import type { BottomTabBarProps as TabsBarProps } from 'expo-router/tabs';
 import { useEffect, useState } from 'react';
-import { ImageSourcePropType, Keyboard, Pressable, StyleSheet, View } from 'react-native';
+import { Keyboard, Pressable, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ProfileIcon, type ProfileIconName } from '@/components/profile/profile-icons';
 import { ThemedText } from '@/components/themed-text';
 import { Spacing } from '@/constants/theme';
 import { confirmExitIfNeeded } from '@/hooks/use-discard-guard';
+import { useProfileAvatar } from '@/hooks/use-profile-avatar';
 import { useTheme } from '@/hooks/use-theme';
 
 /** key = nombre de la ruta en el Tabs de (tabs) (los grupos con Stack propio van con paréntesis). */
@@ -23,13 +24,13 @@ const BOTTOM_NAV_ITEMS: NavItem[] = [
 ];
 
 type BottomTabBarProps = Pick<TabsBarProps, 'state' | 'navigation'> & {
-  avatar: ImageSourcePropType;
   companyLogo: number;
 };
 
 /** Barra inferior compartida de 6 destinos. "Empresa" usa el logo y "Perfil" el avatar. */
-export function BottomTabBar({ state, navigation, avatar, companyLogo }: BottomTabBarProps) {
+export function BottomTabBar({ state, navigation, companyLogo }: BottomTabBarProps) {
   const theme = useTheme();
+  const avatar = useProfileAvatar();
   // Equivalente a `tabBarHideOnKeyboard` (no aplica con `tabBar` custom): con el
   // KeyboardAvoidingView del root `_layout.tsx` la barra subiría sobre el teclado, con su inset
   // inferior, y le comería alto al formulario.
