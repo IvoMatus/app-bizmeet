@@ -1,7 +1,7 @@
 import { router, useLocalSearchParams, useNavigation } from 'expo-router';
 import { SymbolView } from 'expo-symbols';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, FlatList, Pressable, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, FlatList, Pressable, RefreshControl, StyleSheet, View } from 'react-native';
 
 import { useAuthToken } from '@/hooks/use-auth-token';
 
@@ -43,6 +43,7 @@ export default function InicioScreen() {
   const [feed, setFeed] = useState<FeedView | null>(null);
   const [feedError, setFeedError] = useState<string | null>(null);
   const [loadingMore, setLoadingMore] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
 
   const companyId = active?.company.id;
 
@@ -53,7 +54,7 @@ export default function InicioScreen() {
   }, [feed]);
 
   const loadFeed = useCallback(
-    (cursor?: string) => {
+    (cursor?: string) =>
       getToken()
         .then((token) => {
           if (!token) throw new Error('No se pudo obtener la sesión.');
@@ -67,9 +68,9 @@ export default function InicioScreen() {
           );
           setFeedError(null);
         })
+        // Si falla (también en un pull-to-refresh) la lista ya cargada se queda: solo se muestra el error.
         .catch((e: Error) => setFeedError(e.message))
-        .finally(() => setLoadingMore(false));
-    },
+        .finally(() => setLoadingMore(false)),
     [category, companyId, getToken]
   );
 
@@ -94,6 +95,13 @@ export default function InicioScreen() {
       setLoadingMore(true);
       loadFeed(feed.nextCursor);
     }
+  }
+
+  // Pull-to-refresh: primera página con el rubro activo; el feed no se vacía, así que el spinner
+  // nativo es el único indicador (los esqueletos son solo para la carga sin datos).
+  function onRefresh() {
+    setRefreshing(true);
+    loadFeed().finally(() => setRefreshing(false));
   }
 
   function onPublish() {
@@ -198,6 +206,15 @@ export default function InicioScreen() {
           contentContainerStyle={styles.list}
           onEndReachedThreshold={0.4}
           onEndReached={onEndReached}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={onRefresh}
+              tintColor={theme.accent}
+              colors={[theme.accent]}
+              progressBackgroundColor={theme.surface}
+            />
+          }
           ListEmptyComponent={
             <ThemedText style={{ color: theme.textMuted, textAlign: 'center', marginTop: Spacing.five }}>
               Todavía no hay publicaciones en este rubro.
