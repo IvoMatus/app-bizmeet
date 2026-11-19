@@ -16,7 +16,7 @@ type NavItem = { key: string; label: string; icon?: ProfileIconName };
 
 const BOTTOM_NAV_ITEMS: NavItem[] = [
   { key: '(home)', label: 'Inicio', icon: 'home' },
-  { key: 'messages', label: 'Mensajes', icon: 'chat' },
+  { key: '(messages)', label: 'Mensajes', icon: 'chat' },
   { key: '(benefits)', label: 'Beneficios', icon: 'gift' },
   { key: 'network', label: 'Red', icon: 'network' },
   { key: '(company)', label: 'Empresa' },

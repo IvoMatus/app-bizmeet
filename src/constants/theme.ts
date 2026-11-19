@@ -120,6 +120,10 @@ export const Colors = {
     modalBackdrop: 'rgba(0, 0, 0, 0.5)',
     // ThemedText type="linkPrimary".
     linkPrimary: '#3c87f7',
+    // Mensajes (Figma 2046:1408 / 2046:1552, provisorio): burbuja enviada con texto `onButtonDark`.
+    // `accent`/`accentStrong` oscuro (#1d96ac) quedan en ~3.5:1 con blanco (no AA para 14px):
+    // se usa el `accentStrong` claro en los dos modos (5.9:1).
+    chatSentBubble: '#0c6e7f',
     // Overlay animado del splash (animated-icon.tsx): igual al backgroundColor de
     // expo-splash-screen en app.json — si cambia uno, cambiar el otro.
     splashBackground: '#208AEF',
@@ -179,6 +183,7 @@ export const Colors = {
     screenOverlay: 'rgba(1, 21, 35, 0.8)',
     modalBackdrop: 'rgba(0, 0, 0, 0.5)',
     linkPrimary: '#3c87f7',
+    chatSentBubble: '#0c6e7f',
     splashBackground: '#208AEF',
     ...WelcomeColors,
   },

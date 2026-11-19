@@ -52,7 +52,16 @@ export function AppAlertHost() {
   if (!state) return null;
 
   return (
-    <Modal transparent animationType="fade" visible onRequestClose={() => setLocalState(null)}>
+    <Modal
+      transparent
+      animationType="fade"
+      visible
+      // "Atrás" de Android = el botón cancel (si hay): quien espera la respuesta (p.ej. una
+      // confirmación envuelta en una Promise) no se queda colgado.
+      onRequestClose={() => {
+        setLocalState(null);
+        state.buttons.find((b) => b.style === 'cancel')?.onPress?.();
+      }}>
       <View style={[styles.backdrop, { backgroundColor: theme.modalBackdrop }]}>
         <View
           style={[styles.card, { backgroundColor: theme.card, borderColor: theme.border }]}

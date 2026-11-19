@@ -6,6 +6,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { useAuthToken } from '@/hooks/use-auth-token';
 
+import { ContactButton } from '@/components/messages/contact-button';
 import { PostAttachmentGallery } from '@/components/post/post-attachment-gallery';
 import { POST_TYPE_LABEL, timeAgo } from '@/components/post/post-data';
 import { rubroNombre, useRubrosCatalog } from '@/components/post/use-rubros-catalog';
@@ -167,6 +168,8 @@ export default function PublicacionDetalleScreen() {
               </ThemedText>
             </View>
           </Pressable>
+
+          <ContactButton post={post} />
 
           <View style={[styles.card, styles.descriptionCard, { backgroundColor: theme.cardElevated, borderColor: theme.surfaceBorder }]}>
             <ThemedText type="h3" style={{ color: theme.textPrimary }}>

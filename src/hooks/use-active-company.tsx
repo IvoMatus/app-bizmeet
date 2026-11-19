@@ -46,6 +46,9 @@ export function ActiveCompanyProvider({ children }: { children: ReactNode }) {
   // sin necesitar un setContext(null) síncrono dentro del efecto (lint react-hooks/set-state-in-effect).
   const [contextCompanyId, setContextCompanyId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  // `reload` también vuelve a pedir el contexto aunque la empresa activa no cambie (p.ej. tras
+  // consumir un cupo de conversación, para que `derechos` refleje el saldo nuevo).
+  const [contextTick, setContextTick] = useState(0);
 
   const load = useCallback(() => {
     if (!userId) return;
@@ -79,7 +82,7 @@ export function ActiveCompanyProvider({ children }: { children: ReactNode }) {
         setContextCompanyId(activeId);
       })
       .catch((e: Error) => setError(e.message));
-  }, [activeId, getToken]);
+  }, [activeId, getToken, contextTick]);
 
   const active = companies === null ? undefined : companies.find((m) => m.company.id === activeId) ?? null;
   // Mientras llega el context de la nueva empresa activa, no exponer el de la anterior.
@@ -87,9 +90,14 @@ export function ActiveCompanyProvider({ children }: { children: ReactNode }) {
 
   const pendingPayment = active?.company.estado === 'PENDIENTE_PAGO';
 
+  const reload = useCallback(() => {
+    setContextTick((t) => t + 1);
+    load();
+  }, [load]);
+
   return (
     <ActiveCompanyContext.Provider
-      value={{ companies, active, context: safeContext, pendingPayment, error, setActiveCompanyId: setActiveId, reload: load }}>
+      value={{ companies, active, context: safeContext, pendingPayment, error, setActiveCompanyId: setActiveId, reload }}>
       {children}
     </ActiveCompanyContext.Provider>
   );

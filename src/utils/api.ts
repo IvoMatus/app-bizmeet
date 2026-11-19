@@ -970,3 +970,184 @@ export async function uploadIdentityDocument(
 export function identityDocumentSource(documento: DocumentoIdentidad, token: string) {
   return { uri: `${API_URL}${documento.url}`, headers: { Authorization: `Bearer ${token}` } };
 }
+
+// --- Mensajes / Conversaciones (módulo `conversation` de api-bizmeet, contrato d2bb99a) ---
+// `companyId` es siempre la empresa ACTIVA (el extremo desde el que escribo). Errores: `message`
+// de Nest, ya en español — se muestra tal cual.
+
+/** Persona + empresa: un extremo de la conversación (RN-MSG-01). */
+export type Participante = { userId: string; companyId: string };
+
+/** Widget de cupos de la bandeja. `saldo`/`limite` null = el plan no permite iniciar. */
+export type CupoConversaciones = {
+  permitida: boolean;
+  saldo: number | null;
+  limite: number | null;
+  /** `YYYY-MM-DD` (CDMX). */
+  renuevaEl: string;
+};
+
+export type ConversacionEnBandeja = {
+  id: string;
+  noLeidos: number;
+  iniciadaPorMi: boolean;
+  /** `vistaPrevia` ya viene armada ("📷 Imagen" / "📄 nombre.pdf" si es un adjunto). */
+  ultimoMensaje: { id: string; vistaPrevia: string; createdAt: string; esMio: boolean };
+  contraparte: {
+    userId: string;
+    /** null si la persona no completó (o borró) su perfil. */
+    nombre: string | null;
+    cargo: string | null;
+    fotoUrl: string | null;
+    /** null = empresa no disponible (eliminada). */
+    empresa: { id: string; name: string; verified: boolean; logoUrl: string | null } | null;
+  };
+};
+
+export type Bandeja = { cupo: CupoConversaciones; items: ConversacionEnBandeja[] };
+
+/** Adjunto de un mensaje. `url` firmada: vence a los 15 min y se regenera en cada lectura — si
+ * una descarga falla, volver a pedir los mensajes. Las imágenes vuelven como image/webp. */
+export type AdjuntoMensaje = {
+  tipo: 'IMAGEN' | 'DOCUMENTO';
+  key: string;
+  nombre: string | null;
+  bytes: number;
+  contentType: string;
+  url: string;
+};
+
+export type MensajeView = {
+  id: string;
+  conversationId: string;
+  autor: Participante;
+  texto: string | null;
+  adjuntos: AdjuntoMensaje[];
+  createdAt: string;
+};
+
+export type MensajesDeConversacion = {
+  /** Cronológico (el más viejo primero). */
+  items: MensajeView[];
+  /** Mis mensajes con id <= este ya los leyó la contraparte; null = ninguno. */
+  leidoHastaContraparte: string | null;
+};
+
+/** Antes de iniciar: si ya existe abre esa; si no, cuánto cupo consume (DC-14). */
+export type PreviewConversation = {
+  conversationId: string | null;
+  requiereCupo: boolean;
+  saldo: number | null;
+  /** false = cupo agotado: deshabilitar el envío y ofrecer subir de plan. */
+  puedeIniciar: boolean;
+};
+
+export type StartConversationResult = { conversationId: string; mensaje: MensajeView; cupoConsumido: boolean };
+
+/** Los adjuntos van SIN `url` (máx. 5), tal como los devolvió `uploadConversationMedia`. */
+export type MensajeInput = { texto?: string; adjuntos?: Omit<AdjuntoMensaje, 'url'>[] };
+
+async function conversationsRequest<T>(path: string, token: string, fallback: string, init?: RequestInit): Promise<T> {
+  const response = await fetch(`${API_URL}/conversations${path}`, {
+    ...init,
+    headers: { ...(init?.body ? { 'Content-Type': 'application/json' } : {}), Authorization: `Bearer ${token}` },
+  });
+  if (!response.ok) {
+    const body = await response.json().catch(() => null);
+    throw Object.assign(new Error(body?.message ?? `${fallback} (${response.status}).`), { status: response.status });
+  }
+  return response.json();
+}
+
+/** GET /conversations?companyId= — bandeja + cupos de la empresa activa. */
+export async function fetchConversations(companyId: string, token: string): Promise<Bandeja> {
+  const bandeja = await conversationsRequest<Bandeja | null>(`?companyId=${companyId}`, token, 'No se pudieron cargar tus conversaciones');
+  return bandeja ?? { cupo: { permitida: false, saldo: null, limite: null, renuevaEl: '' }, items: [] };
+}
+
+/** GET /conversations/:id/messages — sin cursor: los últimos `limit`; `after`: polling; `before`:
+ * historial. Orden ascendente. 404 si no soy un extremo, 403 si ya no soy miembro. */
+export async function fetchConversationMessages(
+  conversationId: string,
+  companyId: string,
+  token: string,
+  range: { after?: string; before?: string; limit: number },
+): Promise<MensajesDeConversacion> {
+  const qs = new URLSearchParams({ companyId, limit: String(range.limit) });
+  if (range.after) qs.set('after', range.after);
+  if (range.before) qs.set('before', range.before);
+  return conversationsRequest(`/${conversationId}/messages?${qs}`, token, 'No se pudieron cargar los mensajes');
+}
+
+/** POST /conversations/:id/messages — nunca consume cupo. 403 en perfil básico o bloqueada. */
+export async function sendConversationMessage(
+  conversationId: string,
+  companyId: string,
+  input: MensajeInput,
+  token: string,
+): Promise<MensajeView> {
+  return conversationsRequest(`/${conversationId}/messages`, token, 'No se pudo enviar el mensaje', {
+    method: 'POST',
+    body: JSON.stringify({ companyId, ...input }),
+  });
+}
+
+/** POST /conversations/:id/read (204) — marca leída hasta el último mensaje. */
+export async function markConversationRead(conversationId: string, companyId: string, token: string): Promise<void> {
+  await conversationsRequest(`/${conversationId}/read`, token, 'No se pudo marcar como leída', {
+    method: 'POST',
+    body: JSON.stringify({ companyId }),
+  });
+}
+
+/** GET /conversations/preview — solo lee, no consume cupo. 400/403/404 como `startConversation`. */
+export async function previewConversation(companyId: string, destinatario: Participante, token: string): Promise<PreviewConversation> {
+  const qs = new URLSearchParams({
+    companyId,
+    destinatarioUserId: destinatario.userId,
+    destinatarioCompanyId: destinatario.companyId,
+  });
+  return conversationsRequest(`/preview?${qs}`, token, 'No se pudo preparar la conversación');
+}
+
+/** POST /conversations (201) — primer mensaje. 403 (plan, bloqueada, fuera de red, destinatario no
+ * recibe), 404 (la persona no es miembro activo), 409 (cupo agotado). */
+export async function startConversation(
+  companyId: string,
+  destinatario: Participante,
+  input: MensajeInput,
+  token: string,
+): Promise<StartConversationResult> {
+  return conversationsRequest('', token, 'No se pudo iniciar la conversación', {
+    method: 'POST',
+    body: JSON.stringify({ companyId, destinatario, ...input }),
+  });
+}
+
+/** POST /conversations/media — multipart (`file` + companyId), antes de enviar el mensaje. 413/415
+ * si pasa de 10 MB o el tipo no se admite (ver `MESSAGE_ATTACHMENT_TYPES` en chat-input-dock.tsx). */
+export async function uploadConversationMedia(
+  companyId: string,
+  file: { uri: string; mimeType: string },
+  token: string,
+): Promise<AdjuntoMensaje> {
+  const { File, UploadType } = await import('expo-file-system');
+  const { status, body } = await new File(file.uri).upload(`${API_URL}/conversations/media`, {
+    httpMethod: 'POST',
+    uploadType: UploadType.MULTIPART,
+    fieldName: 'file',
+    mimeType: file.mimeType,
+    parameters: { companyId },
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  let parsed: (AdjuntoMensaje & { message?: string }) | null = null;
+  try {
+    parsed = JSON.parse(body);
+  } catch {
+    // body no-JSON: mensaje genérico
+  }
+  if (status < 200 || status >= 300 || !parsed?.key) {
+    throw new Error(parsed?.message ?? `No se pudo subir el archivo (${status}).`);
+  }
+  return parsed;
+}
