@@ -13,6 +13,8 @@ import { useAuthToken } from '@/hooks/use-auth-token';
 import { useTheme } from '@/hooks/use-theme';
 import { previewConversation, type PostView, type PreviewConversation } from '@/utils/api';
 
+const NO_QUOTA = 'Sin cupos de conversación este mes.';
+
 /**
  * "Contactar" al autor de una publicación (sin diseño en Figma). Oculto si el post es de la
  * empresa activa, del propio usuario o de una empresa que ya no existe (`empresa` null). Se habilita según GET /conversations/preview (no según
@@ -54,6 +56,7 @@ export function ContactButton({ post }: { post: PostView }) {
   if (hidden) return null;
 
   const enabled = !!preview?.puedeIniciar && !error;
+  const noQuota = !!preview && !preview.puedeIniciar;
 
   function onPress() {
     if (!preview || !empresa) return;
@@ -79,8 +82,10 @@ export function ContactButton({ post }: { post: PostView }) {
       <Pressable
         accessibilityRole="button"
         accessibilityLabel={`Contactar a ${empresa.name}`}
+        accessibilityHint={error ?? (noQuota ? NO_QUOTA : undefined)}
         accessibilityState={{ disabled: !enabled, busy: !preview && !error }}
         disabled={!enabled}
+        hitSlop={Spacing.half}
         onPress={onPress}
         style={[styles.button, { borderColor: theme.accentText, opacity: enabled ? 1 : 0.5 }]}>
         <SymbolView tintColor={theme.accentText} name={{ ios: 'bubble.left', android: 'chat_bubble_outline', web: 'chat_bubble' }} size={18} />
@@ -91,8 +96,8 @@ export function ContactButton({ post }: { post: PostView }) {
       {error ? (
         // 403 del preview: plan sin el derecho → CTA de plan; fuera de red / destinatario no recibe → solo el mensaje.
         <PlanNotice message={error} planCta={context?.derechos['start-conversation']?.motivo === 'PLAN'} />
-      ) : preview && !preview.puedeIniciar ? (
-        <PlanNotice message="Sin cupos de conversación este mes." planCta />
+      ) : noQuota ? (
+        <PlanNotice message={NO_QUOTA} planCta />
       ) : null}
     </View>
   );

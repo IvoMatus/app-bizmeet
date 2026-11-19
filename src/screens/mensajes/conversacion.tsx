@@ -1,6 +1,6 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
-import { ActivityIndicator, FlatList, Linking, Pressable, StyleSheet, View } from 'react-native';
+import { AccessibilityInfo, ActivityIndicator, FlatList, Linking, Pressable, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ChatInputDock } from '@/components/messages/chat-input-dock';
@@ -21,6 +21,7 @@ import { useTheme } from '@/hooks/use-theme';
 import { startConversation, type AdjuntoMensaje, type MensajeInput } from '@/utils/api';
 
 const READ_ONLY = 'Tu empresa no puede enviar mensajes con su plan actual.';
+const NO_QUOTA = 'Sin cupos de conversación este mes.';
 
 /** showAlert como Promise: true = "Enviar". */
 function confirmFirstMessage(saldo: string | undefined): Promise<boolean> {
@@ -83,9 +84,14 @@ export default function ConversacionScreen() {
       return true;
     } catch (e) {
       const { status, message } = e as Error & { status?: number };
-      if (status === 409) setNoQuota(true);
-      else if (status === 403 && !isNew) setForbidden(message);
-      else showAlert('No se pudo enviar', message);
+      // 409/403 solo cambian el aviso y deshabilitan el dock: sin anuncio, el lector no se entera.
+      if (status === 409) {
+        setNoQuota(true);
+        AccessibilityInfo.announceForAccessibility(NO_QUOTA);
+      } else if (status === 403 && !isNew) {
+        setForbidden(message);
+        AccessibilityInfo.announceForAccessibility(message);
+      } else showAlert('No se pudo enviar', message);
       return false;
     }
   }
@@ -101,7 +107,7 @@ export default function ConversacionScreen() {
   const notice = readOnly ? (
     <PlanNotice message={readOnly} planCta />
   ) : noQuota ? (
-    <PlanNotice message="Sin cupos de conversación este mes." planCta />
+    <PlanNotice message={NO_QUOTA} planCta />
   ) : requiresQuota && active ? (
     <PlanNotice
       message={`Al enviar el primer mensaje se usará 1 cupo de conversación de ${active.company.name}.${params.saldo ? ` Te quedan ${params.saldo} este mes.` : ''}`}
@@ -116,7 +122,10 @@ export default function ConversacionScreen() {
       <SafeAreaView edges={['top']} style={styles.flex}>
         <DetailHeader title={empresa} />
         {header && (
-          <View style={[styles.context, { borderBottomColor: theme.surfaceBorder }]}>
+          <View
+            accessible
+            accessibilityLabel={[empresa, header.verificada ? 'verificada' : null, header.persona].filter(Boolean).join(', ')}
+            style={[styles.context, { borderBottomColor: theme.surfaceBorder }]}>
             <ConversationAvatar logoUrl={header.logo} fotoUrl={header.foto} size={40} />
             <View style={styles.contextText}>
               <View style={styles.contextName}>
@@ -135,7 +144,7 @@ export default function ConversacionScreen() {
         )}
 
         {!isNew && error && messages === null ? (
-          <Pressable onPress={retry} accessibilityRole="button" accessibilityLabel="Reintentar" style={styles.flex}>
+          <Pressable onPress={retry} accessibilityRole="button" accessibilityLabel={`${error} Reintentar`} accessibilityLiveRegion="polite" style={styles.flex}>
             <ThemedText style={[styles.centered, { color: theme.textMuted }]}>{error} Toca para reintentar.</ThemedText>
           </Pressable>
         ) : !isNew && messages === null ? (
@@ -149,7 +158,7 @@ export default function ConversacionScreen() {
             contentContainerStyle={styles.list}
             onEndReached={loadOlder}
             onEndReachedThreshold={0.3}
-            ListFooterComponent={hasOlder ? <ActivityIndicator color={theme.accent} /> : null}
+            ListFooterComponent={hasOlder ? <ActivityIndicator color={theme.accent} accessibilityLabel="Cargando mensajes anteriores" /> : null}
             renderItem={({ item, index }) => {
               const older = data[index + 1];
               const mine = isMine(item);
@@ -161,6 +170,7 @@ export default function ConversacionScreen() {
                     mine={mine}
                     read={mine && leidoHasta !== null && item.id <= leidoHasta}
                     fotoUrl={header?.foto}
+                    autorNombre={header?.persona || empresa}
                     onDownload={(adjunto) => openAttachment(item.id, adjunto)}
                   />
                 </View>
@@ -170,7 +180,7 @@ export default function ConversacionScreen() {
         )}
 
         {notice && <View style={styles.notices}>{notice}</View>}
-        {companyId && <ChatInputDock companyId={companyId} disabled={!!readOnly || noQuota} onSend={onSend} />}
+        {companyId && <ChatInputDock companyId={companyId} disabledReason={readOnly ?? (noQuota ? NO_QUOTA : null)} onSend={onSend} />}
       </SafeAreaView>
     </ThemedView>
   );

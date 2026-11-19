@@ -1,7 +1,7 @@
 import { useAuth } from '@clerk/expo';
 import { useFocusEffect } from 'expo-router';
 import { useCallback, useRef, useState } from 'react';
-import { AppState } from 'react-native';
+import { AccessibilityInfo, AppState } from 'react-native';
 
 import { useAuthToken } from '@/hooks/use-auth-token';
 import {
@@ -58,7 +58,7 @@ export function useConversationMessages(conversationId: string | null, companyId
     try {
       const t = await token();
       const first = !loaded.current;
-      let incoming = false;
+      const incoming: MensajeView[] = [];
       let page;
       // Primera carga: los últimos PAGE. Después: `after`, repitiendo mientras venga la página llena.
       do {
@@ -68,7 +68,7 @@ export function useConversationMessages(conversationId: string | null, companyId
         if (items.length) {
           lastId.current = items[items.length - 1].id;
           setMessages((prev) => mergeById(prev, items));
-          incoming ||= items.some((m) => !isMine(m));
+          incoming.push(...items.filter((m) => !isMine(m)));
         }
         if (first) setHasOlder(items.length === PAGE);
       } while (!first && page.items.length === PAGE);
@@ -76,7 +76,13 @@ export function useConversationMessages(conversationId: string | null, companyId
       setMessages((prev) => prev ?? []);
       setLeidoHasta(page.leidoHastaContraparte);
       setError(null);
-      if (first || incoming) markConversationRead(conversationId, companyId, t).catch(() => {});
+      if (first || incoming.length) markConversationRead(conversationId, companyId, t).catch(() => {});
+      // Solo lo que llegó de la contraparte después de abrir (no la carga inicial ni cada poll vacío).
+      if (!first && incoming.length) {
+        AccessibilityInfo.announceForAccessibility(
+          incoming.length === 1 ? `Mensaje nuevo: ${incoming[0].texto ?? 'archivo adjunto'}` : `${incoming.length} mensajes nuevos`
+        );
+      }
     } catch (e) {
       setError((e as Error).message);
     } finally {

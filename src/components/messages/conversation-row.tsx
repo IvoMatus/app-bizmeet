@@ -23,6 +23,7 @@ export function ConversationRow({ item, onPress }: { item: ConversacionEnBandeja
       accessibilityRole="button"
       accessibilityLabel={[
         `Conversación con ${empresa}`,
+        contraparte.empresa?.verified ? 'verificada' : null,
         persona,
         unread ? `${noLeidos} sin leer` : null,
         `${ultimoMensaje.esMio ? 'Tú: ' : ''}${ultimoMensaje.vistaPrevia}`,

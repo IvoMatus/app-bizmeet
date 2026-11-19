@@ -2,7 +2,7 @@ import { File } from 'expo-file-system';
 import * as ImagePicker from 'expo-image-picker';
 import { SymbolView } from 'expo-symbols';
 import { useState } from 'react';
-import { ActivityIndicator, Pressable, StyleSheet, View } from 'react-native';
+import { AccessibilityInfo, ActivityIndicator, Pressable, StyleSheet, View } from 'react-native';
 
 import { FileAttachmentCard } from '@/components/messages/file-attachment-card';
 import { AttachmentThumbnail } from '@/components/post/attachment-thumbnail';
@@ -36,7 +36,9 @@ type Pending = Picked & { status: AttachmentStatus; adjunto?: NonNullable<Mensaj
 
 type ChatInputDockProps = {
   companyId: string;
-  disabled?: boolean;
+  /** Motivo por el que no se puede escribir (solo lectura, sin cupo): deshabilita el dock y se
+   * lee como hint del input y de los botones. */
+  disabledReason?: string | null;
   /** true = enviado (limpia el dock). Los errores los muestra quien llama. */
   onSend: (input: MensajeInput) => Promise<boolean>;
 };
@@ -47,12 +49,14 @@ type ChatInputDockProps = {
  * ponytail: un adjunto por mensaje (el backend acepta 5) — sumar una fila si producto lo pide.
  * El teclado lo resuelve el KeyboardAvoidingView global de _layout.tsx.
  */
-export function ChatInputDock({ companyId, disabled, onSend }: ChatInputDockProps) {
+export function ChatInputDock({ companyId, disabledReason, onSend }: ChatInputDockProps) {
   const theme = useTheme();
   const getToken = useAuthToken();
   const [text, setText] = useState('');
   const [pending, setPending] = useState<Pending | null>(null);
   const [sending, setSending] = useState(false);
+  const disabled = !!disabledReason;
+  const hint = disabledReason ?? undefined;
 
   async function upload(file: Picked) {
     setPending({ ...file, status: 'uploading' });
@@ -62,8 +66,11 @@ export function ChatInputDock({ companyId, disabled, onSend }: ChatInputDockProp
       const { tipo, key, nombre, bytes, contentType } = await uploadConversationMedia(companyId, file, token);
       const adjunto = { tipo, key, nombre, bytes, contentType };
       setPending((cur) => (cur?.uri === file.uri ? { ...file, status: 'done', adjunto } : cur));
+      // La subida termina sin que el foco se mueva: avisar que ya se puede enviar.
+      AccessibilityInfo.announceForAccessibility('Archivo adjunto listo para enviar');
     } catch (e) {
       setPending((cur) => (cur?.uri === file.uri ? { ...file, status: 'error', error: (e as Error).message } : cur));
+      AccessibilityInfo.announceForAccessibility(`No se pudo subir el archivo. ${(e as Error).message}`);
     }
   }
 
@@ -138,7 +145,8 @@ export function ChatInputDock({ companyId, disabled, onSend }: ChatInputDockProp
         <Pressable
           accessibilityRole="button"
           accessibilityLabel="Adjuntar archivo"
-          accessibilityState={{ disabled: !!disabled || pending !== null }}
+          accessibilityHint={hint ?? (pending ? 'Un adjunto por mensaje: quita el actual para elegir otro.' : undefined)}
+          accessibilityState={{ disabled: disabled || pending !== null }}
           disabled={disabled || pending !== null}
           hitSlop={Spacing.one}
           onPress={() =>
@@ -160,11 +168,13 @@ export function ChatInputDock({ companyId, disabled, onSend }: ChatInputDockProp
           placeholder="Escribe un mensaje…"
           placeholderTextColor={theme.textMuted}
           accessibilityLabel="Escribe un mensaje"
+          accessibilityHint={hint}
           style={[styles.input, { backgroundColor: theme.surfaceInset, color: theme.textPrimary }]}
         />
         <Pressable
           accessibilityRole="button"
           accessibilityLabel="Enviar mensaje"
+          accessibilityHint={hint}
           accessibilityState={{ disabled: !canSend, busy: sending }}
           disabled={!canSend}
           hitSlop={Spacing.one}

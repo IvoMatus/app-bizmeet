@@ -15,6 +15,8 @@ export function DetailHeader({ title }: { title: string }) {
       <Pressable
         accessibilityRole="button"
         accessibilityLabel="Volver"
+        // 44 visibles + 2 por lado = 48 (Material).
+        hitSlop={Spacing.half}
         onPress={() => router.back()}
         style={[styles.back, { backgroundColor: theme.surfaceInset }]}>
         <SymbolView tintColor={theme.textPrimary} name={{ ios: 'chevron.left', android: 'arrow_back', web: 'arrow_back' }} size={18} />

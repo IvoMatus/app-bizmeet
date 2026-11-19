@@ -78,9 +78,11 @@ export function QuotaCard({ cupo }: { cupo: CupoConversaciones }) {
       {hasQuota && (
         <>
           <View
+            // Sin `accessible` iOS no expone una View vacía; `text` para que no se lea como porcentaje.
+            accessible
             accessibilityRole="progressbar"
             accessibilityLabel="Conversaciones nuevas disponibles este mes"
-            accessibilityValue={{ min: 0, max: limite, now: saldo }}
+            accessibilityValue={{ min: 0, max: limite, now: saldo, text: `${saldo} de ${limite}` }}
             style={[styles.track, { backgroundColor: theme.surfaceInset }]}>
             <View style={[styles.fill, { backgroundColor: theme.accent, width: `${limite ? Math.min(100, (saldo / limite) * 100) : 0}%` }]} />
           </View>

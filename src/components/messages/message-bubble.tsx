@@ -2,7 +2,7 @@ import { SymbolView } from 'expo-symbols';
 import { StyleSheet, View } from 'react-native';
 
 import { AvatarSlot } from '@/components/messages/conversation-avatar';
-import { FileAttachmentCard } from '@/components/messages/file-attachment-card';
+import { FileAttachmentCard, fileMeta } from '@/components/messages/file-attachment-card';
 import { PostAttachmentGallery } from '@/components/post/post-attachment-gallery';
 import { ThemedText } from '@/components/themed-text';
 import { Spacing } from '@/constants/theme';
@@ -42,13 +42,15 @@ type MessageBubbleProps = {
   read: boolean;
   /** Foto de la contraparte (avatar 28 de los recibidos). */
   fotoUrl?: string | null;
+  /** Quién escribió los recibidos, para el lector de pantalla. */
+  autorNombre?: string;
   onDownload: (adjunto: AdjuntoMensaje) => void;
 };
 
 /** Burbuja de mensaje (Figma 2046:1408 / 2046:1552): recibido a la izquierda con avatar, enviado a
  * la derecha en `chatSentBubble` con hora y check de leído. Imágenes en galería, documentos en
  * FileAttachmentCard. */
-export function MessageBubble({ message, mine, read, fotoUrl, onDownload }: MessageBubbleProps) {
+export function MessageBubble({ message, mine, read, fotoUrl, autorNombre, onDownload }: MessageBubbleProps) {
   const theme = useTheme();
   const images = message.adjuntos.filter((a) => a.tipo === 'IMAGEN').map((a) => ({ tipo: 'IMAGEN' as const, key: a.key, url: a.url }));
   const docs = message.adjuntos.filter((a) => a.tipo === 'DOCUMENTO');
@@ -56,20 +58,25 @@ export function MessageBubble({ message, mine, read, fotoUrl, onDownload }: Mess
   const fg = mine ? theme.onButtonDark : theme.textPrimary;
 
   return (
-    // Un solo elemento para el lector de pantalla, salvo con documentos: ahí "Descargar" tiene que
-    // quedar alcanzable por separado (un padre `accessible` oculta a sus hijos).
+    // Un solo elemento para el lector de pantalla (autor, texto, adjuntos, hora y leído juntos).
+    // "Descargar" va como acción de accesibilidad: un padre `accessible` oculta el botón en iOS.
     <View
-      accessible={docs.length === 0}
+      accessible
       accessibilityLabel={[
-        mine ? 'Tú' : 'Recibido',
+        mine ? 'Tú' : autorNombre || 'Recibido',
         message.texto,
         images.length ? `${images.length} imagen${images.length === 1 ? '' : 'es'}` : null,
-        ...docs.map((d) => `Documento ${d.nombre ?? ''}`),
+        ...docs.map((d) => `Documento ${d.nombre ?? ''}, ${fileMeta(d)}`),
         time,
         mine ? (read ? 'Leído' : 'Enviado') : null,
       ]
         .filter(Boolean)
         .join(', ')}
+      accessibilityActions={docs.map((d) => ({ name: d.key, label: `Descargar ${d.nombre ?? 'documento'}` }))}
+      onAccessibilityAction={({ nativeEvent }) => {
+        const doc = docs.find((d) => d.key === nativeEvent.actionName);
+        if (doc) onDownload(doc);
+      }}
       style={[styles.row, mine && styles.rowMine]}>
       {!mine && <AvatarSlot uri={fotoUrl} size={28} icon="person" />}
       <View

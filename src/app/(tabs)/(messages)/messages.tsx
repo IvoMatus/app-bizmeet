@@ -107,7 +107,7 @@ export default function MensajesScreen() {
         ]}
       />
       {error && (
-        <Pressable onPress={load} accessibilityRole="button" accessibilityLabel="Reintentar">
+        <Pressable onPress={load} accessibilityRole="button" accessibilityLabel={`${error} Reintentar`} accessibilityLiveRegion="polite">
           <ThemedText style={[styles.centered, { color: theme.textMuted }]}>{error} Toca para reintentar.</ThemedText>
         </Pressable>
       )}
@@ -146,7 +146,9 @@ export default function MensajesScreen() {
             </Pressable>
           </View>
         ) : (
-          <ThemedText style={[styles.centered, { color: theme.textMuted }]}>No hay conversaciones con este filtro</ThemedText>
+          <ThemedText accessibilityLiveRegion="polite" style={[styles.centered, { color: theme.textMuted }]}>
+            No hay conversaciones con este filtro
+          </ThemedText>
         )
       }
       renderItem={({ item }) => (

@@ -35,7 +35,7 @@ export function FileAttachmentCard({ file, onDownload, onRemove, uploading, erro
     <View style={[styles.card, { backgroundColor: theme.surfaceInset, borderColor: theme.surfaceBorder }]}>
       <Pressable
         accessibilityRole={error ? 'button' : undefined}
-        accessibilityLabel={error ? `Reintentar subir ${name}` : `${name}, ${fileMeta(file)}`}
+        accessibilityLabel={error ? `Reintentar subir ${name}` : `${name}, ${uploading ? 'subiendo' : fileMeta(file)}`}
         accessibilityHint={error}
         disabled={!error}
         onPress={onRetry}
@@ -53,13 +53,13 @@ export function FileAttachmentCard({ file, onDownload, onRemove, uploading, erro
         </View>
       </Pressable>
       {uploading ? (
-        <ActivityIndicator color={theme.accent} style={styles.action} />
+        <ActivityIndicator color={theme.accent} accessibilityLabel={`Subiendo ${name}`} style={styles.action} />
       ) : onRemove ? (
-        <Pressable accessibilityRole="button" accessibilityLabel={`Quitar ${name}`} onPress={onRemove} style={styles.action}>
+        <Pressable accessibilityRole="button" accessibilityLabel={`Quitar ${name}`} hitSlop={Spacing.half} onPress={onRemove} style={styles.action}>
           <SymbolView tintColor={theme.textMuted} name={{ ios: 'xmark', android: 'close', web: 'close' }} size={16} />
         </Pressable>
       ) : onDownload ? (
-        <Pressable accessibilityRole="button" accessibilityLabel={`Descargar ${name}`} onPress={onDownload} style={styles.action}>
+        <Pressable accessibilityRole="button" accessibilityLabel={`Descargar ${name}`} hitSlop={Spacing.half} onPress={onDownload} style={styles.action}>
           <SymbolView tintColor={theme.accentText} name={{ ios: 'arrow.down.circle', android: 'download', web: 'download' }} size={20} />
         </Pressable>
       ) : null}
@@ -101,7 +101,7 @@ const styles = StyleSheet.create({
     lineHeight: 16,
     fontWeight: '400',
   },
-  // 44 de área táctil.
+  // 44 + hitSlop={Spacing.half} = 48 de área táctil.
   action: {
     width: 44,
     height: 44,

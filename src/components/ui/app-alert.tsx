@@ -93,6 +93,8 @@ export function AppAlertHost() {
                   button.onPress?.();
                 }}
                 style={styles.button}
+                // 36 visibles (8 + 20 + 8) + 8 por lado = 52; el gap de 16 entre botones evita solaparlos.
+                hitSlop={Spacing.two}
                 accessibilityRole="button"
               >
                 <ThemedText
