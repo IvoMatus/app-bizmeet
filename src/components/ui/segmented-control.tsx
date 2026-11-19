@@ -5,14 +5,16 @@ import { ThemedText } from '@/components/themed-text';
 import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 
-export type SegmentedOption<T extends string> = { value: T; label: string; icon?: ReactNode; badge?: string };
+/** `accessibilityLabel` opcional: cuando `badge`/`icon` aportan información (p.ej. un conteo) que
+ * el lector no oiría, porque el label del tab pisa al contenido. Default: `label`. */
+export type SegmentedOption<T extends string> = { value: T; label: string; icon?: ReactNode; badge?: string; accessibilityLabel?: string };
 
 type SegmentedControlProps<T extends string> = {
   options: SegmentedOption<T>[];
   value: T;
   onChange: (value: T) => void;
   accessibilityLabel: string;
-  /** Fondo del segmento activo. Default `theme.accent` (tabs de entidad); pasar `theme.buttonDark` para el toggle Mensual/Anual. */
+  /** Fondo del segmento activo. Default `theme.accentSolid` (texto blanco AA en los dos modos); Beneficios pasa `theme.buttonDark`. */
   activeBackgroundColor?: string;
 };
 
@@ -25,7 +27,7 @@ export function SegmentedControl<T extends string>({
   activeBackgroundColor,
 }: SegmentedControlProps<T>) {
   const theme = useTheme();
-  const activeBg = activeBackgroundColor ?? theme.accent;
+  const activeBg = activeBackgroundColor ?? theme.accentSolid;
 
   return (
     <View
@@ -40,7 +42,7 @@ export function SegmentedControl<T extends string>({
             key={option.value}
             accessibilityRole="tab"
             accessibilityState={{ selected: active }}
-            accessibilityLabel={option.label}
+            accessibilityLabel={option.accessibilityLabel ?? option.label}
             onPress={() => onChange(option.value)}
             style={[styles.segment, active && { backgroundColor: activeBg }]}
           >

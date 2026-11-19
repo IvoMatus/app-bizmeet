@@ -48,7 +48,7 @@ type MessageBubbleProps = {
 };
 
 /** Burbuja de mensaje (Figma 2046:1408 / 2046:1552): recibido a la izquierda con avatar, enviado a
- * la derecha en `chatSentBubble` con hora y check de leído. Imágenes en galería, documentos en
+ * la derecha en `accentSolid` con hora y check de leído. Imágenes en galería, documentos en
  * FileAttachmentCard. */
 export function MessageBubble({ message, mine, read, fotoUrl, autorNombre, onDownload }: MessageBubbleProps) {
   const theme = useTheme();
@@ -83,7 +83,7 @@ export function MessageBubble({ message, mine, read, fotoUrl, autorNombre, onDow
         style={[
           styles.bubble,
           mine
-            ? [styles.bubbleMine, { backgroundColor: theme.chatSentBubble }]
+            ? [styles.bubbleMine, { backgroundColor: theme.accentSolid }]
             : [styles.bubbleTheirs, { backgroundColor: theme.feedCard, borderColor: theme.surfaceBorder, shadowColor: theme.cardShadow }],
           message.adjuntos.length > 0 && { width: mine ? 287 : 265 },
         ]}>

@@ -142,6 +142,8 @@ const styles = StyleSheet.create({
   },
   footer: {
     flexDirection: 'row',
+    // Con fuente grande "Renueva DD/MM" baja de línea en vez de salirse de la card.
+    flexWrap: 'wrap',
     justifyContent: 'space-between',
     gap: Spacing.two,
   },

@@ -13,8 +13,9 @@ export function useStatusPalette(variant: StatusVariant) {
   const theme = useTheme();
   return {
     neutral: { bg: theme.surfaceInset, border: theme.surfaceBorder, fg: theme.textMuted },
-    accent: { bg: theme.accentSoft, border: theme.accentSoft, fg: theme.accent },
-    success: { bg: theme.successSurface, border: theme.successBorder, fg: theme.success },
+    // fg `accentText`/`successText`: `accent`/`success` no llegan a 4.5:1 sobre su fondo en claro.
+    accent: { bg: theme.accentSoft, border: theme.accentSoft, fg: theme.accentText },
+    success: { bg: theme.successSurface, border: theme.successBorder, fg: theme.successText },
     warning: { bg: theme.warningSoft, border: theme.warningBorder, fg: theme.warningText },
     error: { bg: theme.errorSoft, border: theme.errorBorder, fg: theme.error },
   }[variant];

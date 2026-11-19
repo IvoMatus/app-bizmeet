@@ -58,6 +58,7 @@ export default function MensajesScreen() {
   const bandeja = loaded && loaded.companyId === companyId ? loaded.bandeja : null;
   const all = bandeja?.items ?? [];
   const unread = all.reduce((sum, item) => sum + item.noLeidos, 0);
+  const unreadConversations = all.filter((item) => item.noLeidos > 0).length;
   const q = query.trim().toLowerCase();
   const items = all.filter(
     (item) =>
@@ -98,10 +99,12 @@ export default function MensajesScreen() {
         value={filter}
         onChange={setFilter}
         options={[
-          { value: 'todas', label: 'Todas', badge: all.length ? String(all.length) : undefined },
+          { value: 'todas', label: 'Todas', badge: all.length ? String(all.length) : undefined, accessibilityLabel: all.length ? `Todas, ${all.length}` : undefined },
           {
             value: 'no-leidos',
             label: 'No leídos',
+            // El punto solo dice "hay": al lector, cuántas conversaciones muestra el filtro.
+            accessibilityLabel: unreadConversations ? `No leídos, ${unreadConversations}` : undefined,
             icon: unread > 0 ? <View style={[styles.dot, { backgroundColor: filter === 'no-leidos' ? theme.onButtonDark : theme.accent }]} /> : undefined,
           },
         ]}
@@ -174,6 +177,8 @@ const styles = StyleSheet.create({
   },
   titleRow: {
     flexDirection: 'row',
+    // Con fuente grande la pill baja de línea en vez de salirse.
+    flexWrap: 'wrap',
     alignItems: 'center',
     gap: Spacing.two,
   },
