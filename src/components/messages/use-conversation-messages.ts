@@ -8,6 +8,7 @@ import {
   fetchConversationMessages,
   markConversationRead,
   sendConversationMessage,
+  type Contraparte,
   type MensajeInput,
   type MensajeView,
 } from '@/utils/api';
@@ -34,6 +35,8 @@ export function useConversationMessages(conversationId: string | null, companyId
   const { userId } = useAuth();
   const [messages, setMessages] = useState<MensajeView[] | null>(null);
   const [leidoHasta, setLeidoHasta] = useState<string | null>(null);
+  // Solo viene sin cursor y con `before`: el polling (`after`) no la pisa.
+  const [contraparte, setContraparte] = useState<Contraparte | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [hasOlder, setHasOlder] = useState(false);
   const lastId = useRef<string | undefined>(undefined);
@@ -61,6 +64,7 @@ export function useConversationMessages(conversationId: string | null, companyId
       do {
         page = await fetchConversationMessages(conversationId, companyId, t, { after: lastId.current, limit: PAGE });
         const items = page.items;
+        if (page.contraparte) setContraparte(page.contraparte);
         if (items.length) {
           lastId.current = items[items.length - 1].id;
           setMessages((prev) => mergeById(prev, items));
@@ -109,6 +113,7 @@ export function useConversationMessages(conversationId: string | null, companyId
     loadingOlder.current = true;
     try {
       const page = await fetchConversationMessages(conversationId, companyId, await token(), { before: oldest, limit: PAGE });
+      if (page.contraparte) setContraparte(page.contraparte);
       setMessages((prev) => mergeById(prev, page.items));
       setHasOlder(page.items.length === PAGE);
     } catch {
@@ -146,5 +151,5 @@ export function useConversationMessages(conversationId: string | null, companyId
     [conversationId, companyId, messages, token]
   );
 
-  return { messages, leidoHasta, error, hasOlder, loadOlder, send, isMine, retry: poll, attachmentUrl };
+  return { messages, leidoHasta, contraparte, error, hasOlder, loadOlder, send, isMine, retry: poll, attachmentUrl };
 }

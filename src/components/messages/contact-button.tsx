@@ -25,7 +25,7 @@ export function ContactButton({ post }: { post: PostView }) {
   const { userId } = useAuth();
   const { active, context } = useActiveCompany();
   const companyId = active?.company.id;
-  const hidden = !companyId || post.companyId === companyId || post.autorUserId === userId;
+  const hidden = !companyId || post.companyId === companyId || post.autor.userId === userId;
   const [preview, setPreview] = useState<PreviewConversation | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -36,7 +36,7 @@ export function ContactButton({ post }: { post: PostView }) {
       getToken()
         .then((token) => {
           if (!token) throw new Error('No se pudo obtener la sesión.');
-          return previewConversation(companyId, { userId: post.autorUserId, companyId: post.companyId }, token);
+          return previewConversation(companyId, { userId: post.autor.userId, companyId: post.companyId }, token);
         })
         .then((next) => {
           if (cancelled) return;
@@ -47,7 +47,7 @@ export function ContactButton({ post }: { post: PostView }) {
       return () => {
         cancelled = true;
       };
-    }, [hidden, companyId, post.autorUserId, post.companyId, getToken])
+    }, [hidden, companyId, post.autor.userId, post.companyId, getToken])
   );
 
   if (hidden) return null;
@@ -56,13 +56,16 @@ export function ContactButton({ post }: { post: PostView }) {
 
   function onPress() {
     if (!preview) return;
-    const display = { empresa: post.empresa.name, verificada: post.empresa.verified ? '1' : '' };
     const params: ConversationParams = preview.conversationId
-      ? { id: preview.conversationId, ...display }
+      ? { id: preview.conversationId }
       : {
           id: 'nueva',
-          ...display,
-          destUserId: post.autorUserId,
+          // Cabecera de la conversación nueva: todavía no hay GET de mensajes que la traiga.
+          empresa: post.empresa.name,
+          verificada: post.empresa.verified ? '1' : '',
+          persona: post.autor.nombre ?? '',
+          foto: post.autor.fotoUrl ?? '',
+          destUserId: post.autor.userId,
           destCompanyId: post.companyId,
           requiereCupo: preview.requiereCupo ? '1' : '',
           saldo: preview.saldo === null ? '' : String(preview.saldo),

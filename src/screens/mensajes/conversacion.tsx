@@ -6,7 +6,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { ChatInputDock } from '@/components/messages/chat-input-dock';
 import { ConversationAvatar } from '@/components/messages/conversation-avatar';
 import { DateSeparator, differentDay, MessageBubble } from '@/components/messages/message-bubble';
-import type { ConversationParams } from '@/components/messages/messages-data';
+import { personaLine, type ConversationParams } from '@/components/messages/messages-data';
 import { PlanNotice } from '@/components/messages/quota-card';
 import { useConversationMessages } from '@/components/messages/use-conversation-messages';
 import { DetailHeader } from '@/components/navigation/detail-header';
@@ -44,7 +44,7 @@ export default function ConversacionScreen() {
   const { active, context, reload } = useActiveCompany();
   const companyId = active?.company.id;
   const isNew = params.id === 'nueva';
-  const { messages, leidoHasta, error, hasOlder, loadOlder, send, isMine, retry, attachmentUrl } = useConversationMessages(
+  const { messages, leidoHasta, contraparte, error, hasOlder, loadOlder, send, isMine, retry, attachmentUrl } = useConversationMessages(
     isNew ? null : params.id,
     companyId
   );
@@ -52,7 +52,18 @@ export default function ConversacionScreen() {
   const [noQuota, setNoQuota] = useState(false);
   const [forbidden, setForbidden] = useState<string | null>(null);
 
-  const empresa = params.empresa || 'Conversación';
+  // Cabecera: la nueva, con los datos del post (params); la existente, con la contraparte que trae
+  // GET /conversations/:id/messages (logo/foto firmados: vencen a los 15 min).
+  const header = isNew
+    ? { empresa: params.empresa, verificada: params.verificada === '1', persona: params.persona, logo: null, foto: params.foto }
+    : contraparte && {
+        empresa: contraparte.empresa?.name ?? 'Empresa no disponible',
+        verificada: !!contraparte.empresa?.verified,
+        persona: personaLine(contraparte.nombre, contraparte.cargo),
+        logo: contraparte.empresa?.logoUrl,
+        foto: contraparte.fotoUrl,
+      };
+  const empresa = header?.empresa || 'Conversación';
   const readOnly = forbidden ?? (context?.derechos['receive-conversations']?.permitida === false ? READ_ONLY : null);
   const requiresQuota = isNew && params.requiereCupo === '1' && !noQuota;
 
@@ -68,8 +79,7 @@ export default function ConversacionScreen() {
       if (!token) throw new Error('No se pudo obtener la sesión.');
       const result = await startConversation(companyId, { userId: params.destUserId ?? '', companyId: params.destCompanyId ?? '' }, input, token);
       if (result.cupoConsumido) reload();
-      const { empresa: e, verificada, persona, logo, foto } = params;
-      router.replace({ pathname: '/conversacion/[id]', params: { id: result.conversationId, empresa: e, verificada, persona, logo, foto } });
+      router.replace({ pathname: '/conversacion/[id]', params: { id: result.conversationId } });
       return true;
     } catch (e) {
       const { status, message } = e as Error & { status?: number };
@@ -105,22 +115,24 @@ export default function ConversacionScreen() {
     <ThemedView type="screenBackground" style={styles.flex}>
       <SafeAreaView edges={['top']} style={styles.flex}>
         <DetailHeader title={empresa} />
-        <View style={[styles.context, { borderBottomColor: theme.surfaceBorder }]}>
-          <ConversationAvatar logoUrl={params.logo} fotoUrl={params.foto} size={40} />
-          <View style={styles.contextText}>
-            <View style={styles.contextName}>
-              <ThemedText numberOfLines={1} style={[styles.company, { color: theme.textPrimary }]}>
-                {empresa}
-              </ThemedText>
-              {params.verificada === '1' && <StatusPill label="Verificada" variant="success" />}
+        {header && (
+          <View style={[styles.context, { borderBottomColor: theme.surfaceBorder }]}>
+            <ConversationAvatar logoUrl={header.logo} fotoUrl={header.foto} size={40} />
+            <View style={styles.contextText}>
+              <View style={styles.contextName}>
+                <ThemedText numberOfLines={1} style={[styles.company, { color: theme.textPrimary }]}>
+                  {empresa}
+                </ThemedText>
+                {header.verificada && <StatusPill label="Verificada" variant="success" />}
+              </View>
+              {header.persona ? (
+                <ThemedText numberOfLines={1} style={[styles.meta, { color: theme.textMuted }]}>
+                  {header.persona}
+                </ThemedText>
+              ) : null}
             </View>
-            {params.persona ? (
-              <ThemedText numberOfLines={1} style={[styles.meta, { color: theme.textMuted }]}>
-                {params.persona}
-              </ThemedText>
-            ) : null}
           </View>
-        </View>
+        )}
 
         {!isNew && error && messages === null ? (
           <Pressable onPress={retry} accessibilityRole="button" accessibilityLabel="Reintentar" style={styles.flex}>
@@ -148,7 +160,7 @@ export default function ConversacionScreen() {
                     message={item}
                     mine={mine}
                     read={mine && leidoHasta !== null && item.id <= leidoHasta}
-                    fotoUrl={params.foto}
+                    fotoUrl={header?.foto}
                     onDownload={(adjunto) => openAttachment(item.id, adjunto)}
                   />
                 </View>

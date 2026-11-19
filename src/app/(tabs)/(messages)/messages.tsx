@@ -3,7 +3,6 @@ import { useCallback, useState } from 'react';
 import { FlatList, Pressable, RefreshControl, StyleSheet, View } from 'react-native';
 
 import { ConversationRow, ConversationRowSkeleton } from '@/components/messages/conversation-row';
-import { conversationParams } from '@/components/messages/messages-data';
 import { QuotaCard } from '@/components/messages/quota-card';
 import { StatusPill } from '@/components/profile/profile-primitives';
 import { ThemedText } from '@/components/themed-text';
@@ -151,7 +150,7 @@ export default function MensajesScreen() {
         )
       }
       renderItem={({ item }) => (
-        <ConversationRow item={item} onPress={() => router.push({ pathname: '/conversacion/[id]', params: conversationParams(item) })} />
+        <ConversationRow item={item} onPress={() => router.push({ pathname: '/conversacion/[id]', params: { id: item.id } })} />
       )}
     />
   );

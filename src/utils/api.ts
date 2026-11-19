@@ -455,6 +455,9 @@ export type PostView = {
   adjuntos: AdjuntoView[];
   estado: 'PUBLICADA' | 'OCULTA' | 'ELIMINADA';
   createdAt: string;
+  /** Persona que publicó ("Contactar"). `nombre`/`fotoUrl` null si no completó su perfil; `fotoUrl`
+   * firmada (vence a los 15 min). */
+  autor: { userId: string; nombre: string | null; fotoUrl: string | null };
   /** `GET /posts/feed` en vista COMPLETA ya trae esto embebido — evita el N+1 de pedir
    * `GET /companies/:id` por cada autor distinto del feed (ver `post-card.tsx`). */
   empresa: { id: string; name: string; tipo: 'CLUB' | 'CLIENTE' | 'PARTNER'; verified: boolean };
@@ -987,21 +990,25 @@ export type CupoConversaciones = {
   renuevaEl: string;
 };
 
+/** El otro extremo (bandeja y cabecera de la conversación). URLs firmadas: vencen a los 15 min. */
+export type Contraparte = {
+  userId: string;
+  /** null si la persona no completó (o borró) su perfil. */
+  nombre: string | null;
+  /** Hoy siempre null (el perfil no tiene cargo todavía). */
+  cargo: string | null;
+  fotoUrl: string | null;
+  /** null = empresa no disponible (eliminada). */
+  empresa: { id: string; name: string; verified: boolean; logoUrl: string | null } | null;
+};
+
 export type ConversacionEnBandeja = {
   id: string;
   noLeidos: number;
   iniciadaPorMi: boolean;
   /** `vistaPrevia` ya viene armada ("📷 Imagen" / "📄 nombre.pdf" si es un adjunto). */
   ultimoMensaje: { id: string; vistaPrevia: string; createdAt: string; esMio: boolean };
-  contraparte: {
-    userId: string;
-    /** null si la persona no completó (o borró) su perfil. */
-    nombre: string | null;
-    cargo: string | null;
-    fotoUrl: string | null;
-    /** null = empresa no disponible (eliminada). */
-    empresa: { id: string; name: string; verified: boolean; logoUrl: string | null } | null;
-  };
+  contraparte: Contraparte;
 };
 
 export type Bandeja = { cupo: CupoConversaciones; items: ConversacionEnBandeja[] };
@@ -1031,6 +1038,8 @@ export type MensajesDeConversacion = {
   items: MensajeView[];
   /** Mis mensajes con id <= este ya los leyó la contraparte; null = ninguno. */
   leidoHastaContraparte: string | null;
+  /** Cabecera de la conversación. Viene sin cursor y con `before`; NO con `after` (polling). */
+  contraparte?: Contraparte;
 };
 
 /** Antes de iniciar: si ya existe abre esa; si no, cuánto cupo consume (DC-14). */
