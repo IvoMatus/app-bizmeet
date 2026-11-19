@@ -460,7 +460,8 @@ export type PostView = {
   autor: { userId: string; nombre: string | null; fotoUrl: string | null };
   /** `GET /posts/feed` en vista COMPLETA ya trae esto embebido — evita el N+1 de pedir
    * `GET /companies/:id` por cada autor distinto del feed (ver `post-card.tsx`). */
-  empresa: { id: string; name: string; tipo: 'CLUB' | 'CLIENTE' | 'PARTNER'; verified: boolean };
+  /** null si la empresa autora ya no existe (mostrar "Empresa no disponible"). */
+  empresa: { id: string; name: string; tipo: 'CLUB' | 'CLIENTE' | 'PARTNER'; verified: boolean } | null;
 };
 
 /** RN-PUB-06: lo único que ve el perfil básico de un requerimiento. */

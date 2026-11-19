@@ -161,10 +161,10 @@ export function PostCard({ post, rubros }: { post: PostView; rubros: Rubro[] | n
           <View style={styles.nameRow}>
             <View style={styles.nameWrap}>
               <ThemedText numberOfLines={1} style={[styles.companyName, { color: theme.textPrimary }]}>
-                {post.empresa.name}
+                {post.empresa?.name ?? 'Empresa no disponible'}
               </ThemedText>
               {/* Decisión pendiente (brief): check solo si la empresa está verificada. */}
-              {post.empresa.verified && (
+              {post.empresa?.verified && (
                 <SymbolView
                   accessibilityLabel="Empresa verificada"
                   tintColor={theme.accent}

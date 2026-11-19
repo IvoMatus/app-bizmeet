@@ -15,7 +15,7 @@ import { previewConversation, type PostView, type PreviewConversation } from '@/
 
 /**
  * "Contactar" al autor de una publicación (sin diseño en Figma). Oculto si el post es de la
- * empresa activa o del propio usuario. Se habilita según GET /conversations/preview (no según
+ * empresa activa, del propio usuario o de una empresa que ya no existe (`empresa` null). Se habilita según GET /conversations/preview (no según
  * `derechos`: con saldo 0 igual se puede contactar a la 2ª/3ª persona de una empresa ya pagada);
  * se vuelve a pedir al tomar foco, así al volver de iniciarla abre la existente.
  */
@@ -25,7 +25,8 @@ export function ContactButton({ post }: { post: PostView }) {
   const { userId } = useAuth();
   const { active, context } = useActiveCompany();
   const companyId = active?.company.id;
-  const hidden = !companyId || post.companyId === companyId || post.autor.userId === userId;
+  const empresa = post.empresa;
+  const hidden = !companyId || !empresa || post.companyId === companyId || post.autor.userId === userId;
   const [preview, setPreview] = useState<PreviewConversation | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -55,14 +56,14 @@ export function ContactButton({ post }: { post: PostView }) {
   const enabled = !!preview?.puedeIniciar && !error;
 
   function onPress() {
-    if (!preview) return;
+    if (!preview || !empresa) return;
     const params: ConversationParams = preview.conversationId
       ? { id: preview.conversationId }
       : {
           id: 'nueva',
           // Cabecera de la conversación nueva: todavía no hay GET de mensajes que la traiga.
-          empresa: post.empresa.name,
-          verificada: post.empresa.verified ? '1' : '',
+          empresa: empresa.name,
+          verificada: empresa.verified ? '1' : '',
           persona: post.autor.nombre ?? '',
           foto: post.autor.fotoUrl ?? '',
           destUserId: post.autor.userId,
@@ -77,7 +78,7 @@ export function ContactButton({ post }: { post: PostView }) {
     <View style={styles.container}>
       <Pressable
         accessibilityRole="button"
-        accessibilityLabel={`Contactar a ${post.empresa.name}`}
+        accessibilityLabel={`Contactar a ${empresa.name}`}
         accessibilityState={{ disabled: !enabled, busy: !preview && !error }}
         disabled={!enabled}
         onPress={onPress}
