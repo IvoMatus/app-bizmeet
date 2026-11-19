@@ -34,9 +34,11 @@ function confirmFirstMessage(saldo: string | undefined): Promise<boolean> {
 }
 
 /**
- * Conversación (Figma 2046:1408 claro / 2046:1552 oscuro). Vive en el Stack de Mensajes y en el de
- * Inicio ("Contactar" desde una publicación), re-exportada como empresa/plan. `id = nueva`: todavía
- * no hay conversación — el primer envío la crea (POST /conversations) y reemplaza la ruta.
+ * Conversación (Figma 2046:1408 claro / 2046:1552 oscuro). Vive SOLO en el Stack de Mensajes:
+ * "Contactar" desde otra pestaña cambia a Mensajes y la apila sobre la bandeja. Si viviera también
+ * en el de Inicio, la misma conversación podía quedar abierta en las dos pestañas y tocar la barra
+ * "no hacía nada" (cada pestaña mostraba la misma pantalla). `id = nueva`: todavía no hay
+ * conversación — el primer envío la crea (POST /conversations) y reemplaza la ruta.
  */
 export default function ConversacionScreen() {
   const theme = useTheme();
