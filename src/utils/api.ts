@@ -40,7 +40,8 @@ if (!g.__bizmeetFetchPatched) {
         .then((text: string) => {
           if (!response.ok) {
             console.warn('[api][diag] respuesta no-ok', url, response.status, JSON.stringify(text));
-          } else if (text.length === 0) {
+          } else if (text.length === 0 && response.status !== 204) {
+            // 204 No Content es vacío por definición (p.ej. POST /conversations/:id/read).
             console.warn('[api][diag] respuesta 2xx con body VACÍO — acá es donde explota response.json()', url, response.status);
           }
         })
@@ -1066,7 +1067,7 @@ async function conversationsRequest<T>(path: string, token: string, fallback: st
     const body = await response.json().catch(() => null);
     throw Object.assign(new Error(body?.message ?? `${fallback} (${response.status}).`), { status: response.status });
   }
-  return response.json();
+  return response.status === 204 ? (undefined as T) : response.json();
 }
 
 /** GET /conversations?companyId= — bandeja + cupos de la empresa activa. */
